@@ -17,7 +17,7 @@ Each rectangle represents a file; its **area** is proportional to the file size 
 
 ```bash
 # As a standalone tool (recommended)
-uvx install dirplot
+uv tool install dirplot
 
 # Into the current environment
 pip install dirplot
