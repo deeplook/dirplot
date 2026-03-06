@@ -42,7 +42,7 @@ def _label_color(rgb: tuple[int, int, int]) -> tuple[int, int, int]:
 
 def _text_w(draw: ImageDraw.ImageDraw, text: str, font: ImageFont.FreeTypeFont) -> int:
     bb = draw.textbbox((0, 0), text, font=font)
-    return bb[2] - bb[0]
+    return int(bb[2] - bb[0])
 
 
 def _wrap(name: str, draw: ImageDraw.ImageDraw, font: ImageFont.FreeTypeFont, max_w: int) -> str:

@@ -36,6 +36,9 @@ pip install git+https://github.com/deeplook/dirplot
 ## Usage
 
 ```bash
+# Use it before installing it
+uvx run dirplot --help
+
 # Show dirplot for the current directory (opens image in system viewer)
 dirplot .
 

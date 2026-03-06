@@ -8,6 +8,7 @@ import sys
 import termios
 import time
 import tty
+from typing import BinaryIO, TextIO
 
 
 def _read_fd_response(fd: int, timeout: float = 0.3) -> bytes:
@@ -69,7 +70,7 @@ def _detect_inline_protocol() -> str:
     return ""
 
 
-def _open_tty_write_binary() -> tuple[io.RawIOBase, bool]:
+def _open_tty_write_binary() -> tuple[BinaryIO, bool]:
     """Return (file_obj, owned) for the best available binary output channel.
 
     Tries /dev/tty first using low-level os.open() (avoids O_CREAT/O_TRUNC
@@ -83,7 +84,7 @@ def _open_tty_write_binary() -> tuple[io.RawIOBase, bool]:
         return sys.stdout.buffer, False
 
 
-def _open_tty_write_text() -> tuple[io.TextIOBase, bool]:
+def _open_tty_write_text() -> tuple[TextIO, bool]:
     """Return (file_obj, owned) for the best available text output channel."""
     try:
         fd = os.open("/dev/tty", os.O_WRONLY | os.O_NOCTTY)

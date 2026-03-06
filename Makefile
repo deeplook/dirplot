@@ -5,7 +5,7 @@ install:
 
 lint:
 	uv run ruff check src tests
-	uv run mypy src
+	uv run --all-extras mypy src
 
 format:
 	uv run ruff format src tests
