@@ -2,7 +2,7 @@
 
 import io
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import numpy as np
 import pytest
@@ -12,6 +12,7 @@ from dirplot.colors import assign_colors
 from dirplot.display import display_inline, display_window
 from dirplot.render import draw_node
 from dirplot.scanner import Node
+from tests.test_display import _no_tty
 
 
 def _make_draw(w: int = 100, h: int = 100) -> tuple[Image.Image, ImageDraw.ImageDraw]:
@@ -131,7 +132,7 @@ def test_display_inline(capsys: pytest.CaptureFixture, monkeypatch: pytest.Monke
     monkeypatch.delenv("TERM_PROGRAM", raising=False)
     monkeypatch.delenv("KITTY_WINDOW_ID", raising=False)
     buf = io.BytesIO(b"fake-png-data")
-    with patch("os.open", side_effect=OSError("no tty")):
+    with _no_tty():
         display_inline(buf)
     written = capsys.readouterr().out
     assert "\x1b]1337;" in written
