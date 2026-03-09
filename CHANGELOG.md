@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Rename the treemap command to `map` (dirplot map <root>)
+- Add `termsize` subcommand and restructure CLI as multi-command app.
+- Add `--depht` parameter to limit the scanning of large file trees.
+- Support for SSH remote directory scanning (`pip install dirplot[ssh]`).
+- Support for AWS S3 buckets in the cloud (`pip install dirplot[s3]`).
+- Support for local archive files, .zip, tgz, .tar.xz, .rar, .7z, etc.
+- Include example archives for 17 different extentions for testing.
+- Comprehensive documentation.
+
 ## [0.2.0] - 2026-03-09
 
 ### Added
