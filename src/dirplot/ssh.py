@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 
 def _require_paramiko() -> Any:
     try:
-        import paramiko  # type: ignore[import-untyped]
+        import paramiko
 
         return paramiko
     except ImportError:
@@ -30,7 +30,7 @@ def _require_paramiko() -> Any:
 def load_ssh_config(host: str) -> dict[str, Any]:
     """Parse ~/.ssh/config and return resolved options for *host*."""
     try:
-        from paramiko import SSHConfig  # type: ignore[import-untyped]
+        from paramiko import SSHConfig
     except ImportError:
         return {}
 
