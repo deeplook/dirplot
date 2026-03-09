@@ -81,6 +81,72 @@ buf = create_treemap(root, width_px=1920, height_px=1080)
 
 ---
 
+## GitHub
+
+Scan any GitHub repository using the [Git trees API](https://docs.github.com/en/rest/git/trees). File sizes come from blob metadata — no file content is downloaded. No extra dependency is required; dirplot uses `urllib` from the Python standard library.
+
+### Usage
+
+```bash
+# Short form
+dirplot map github:owner/repo
+
+# Specific branch, tag, or commit SHA
+dirplot map github:owner/repo@dev
+
+# Full GitHub URL (also accepted)
+dirplot map https://github.com/owner/repo/tree/main
+
+# Save to file
+dirplot map github:pallets/flask --output flask.png --no-show
+```
+
+### Authentication
+
+A token is **not required for public repositories** under normal use. Each scan makes 1–2 API calls, and GitHub allows 60 unauthenticated requests per hour per IP. A token is needed when:
+
+- Scanning **private repositories**
+- Running in CI/CD where many processes share the same IP
+- Scanning repeatedly and hitting the unauthenticated rate limit
+
+Tokens are resolved in this order:
+
+1. `--github-token` flag
+2. `GITHUB_TOKEN` environment variable
+3. No token — anonymous access (public repos only, 60 req/h)
+
+### Options
+
+| Flag | Default | Description |
+|---|---|---|
+| `--github-token` | `GITHUB_TOKEN` env var | Personal access token |
+| `--depth` | unlimited | Maximum recursion depth |
+| `--exclude` | — | Repo-relative path to skip (repeatable) |
+
+### Notes
+
+- Dotfiles and dot-directories (`.github`, `.env`, etc.) are skipped, consistent with local scanning behaviour.
+- If the repository tree exceeds GitHub's API limit (~100k entries), the response will be truncated. dirplot prints a warning and renders what was returned. Use `--depth` to avoid this.
+- The `--depth` flag here applies to the in-memory tree built from the API response, not to the number of API calls (the full flat tree is always fetched in one request).
+
+### Python API
+
+```python
+from dirplot.github import build_tree_github
+from dirplot.render import create_treemap
+import os
+
+root, branch = build_tree_github(
+    "pallets", "flask",
+    token=os.environ.get("GITHUB_TOKEN"),
+    depth=4,
+)
+print(f"Branch: {branch}, size: {root.size:,} bytes")
+buf = create_treemap(root, width_px=1920, height_px=1080)
+```
+
+---
+
 ## AWS S3
 
 Scan S3 buckets using [boto3](https://boto3.amazonaws.com/v1/documentation/api/latest/index.html). File sizes come from S3 object metadata — no data is downloaded.

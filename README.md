@@ -24,7 +24,7 @@
 - Save output to a PNG file with `--output`.
 - Exclude paths with `--exclude` (repeatable).
 - Works on macOS, Linux, and Windows; WSL2 fully supported.
-- Scan remote hosts over SSH (`pip install "dirplot[ssh]"`) or AWS S3 buckets (`pip install "dirplot[s3]"`). See [REMOTE-ACCESS.md](REMOTE-ACCESS.md).
+- Scan remote hosts over SSH (`pip install "dirplot[ssh]"`), AWS S3 buckets (`pip install "dirplot[s3]"`), or any public/private GitHub repository (no extra dependency). See [REMOTE-ACCESS.md](REMOTE-ACCESS.md).
 
 ## How It Works
 
@@ -136,11 +136,13 @@ dirplot can scan SSH hosts and AWS S3 buckets as well as local directories. See 
 ```bash
 pip install "dirplot[ssh]"   # SSH via paramiko
 pip install "dirplot[s3]"    # AWS S3 via boto3
+                             # GitHub: no extra dependency needed
 ```
 
 ```bash
 dirplot map ssh://alice@prod.example.com/var/www
 dirplot map s3://noaa-ghcn-pds --no-sign
+dirplot map github:pallets/flask
 ```
 
 ## Python API

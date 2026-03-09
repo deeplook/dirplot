@@ -8,6 +8,7 @@ import typer
 
 from dirplot import __version__
 from dirplot.display import display_inline, display_window
+from dirplot.github import build_tree_github, is_github_path, parse_github_path
 from dirplot.render import create_treemap
 from dirplot.s3 import build_tree_s3, is_s3_path, make_s3_client, parse_s3_path
 from dirplot.scanner import apply_log_sizes, build_tree, collect_extensions
@@ -51,7 +52,9 @@ def termsize() -> None:
 @app.command(name="map", epilog=_EPILOG)
 def main(
     root: str = typer.Argument(
-        ..., help="Root directory to map (local path, ssh://user@host/path, or s3://bucket/prefix)"
+        ...,
+        help="Root directory to map: local path, ssh://user@host/path, s3://bucket/prefix, "
+        "github:owner/repo[@branch], or https://github.com/owner/repo[/tree/branch]",
     ),
     version: bool = typer.Option(
         False,
@@ -105,6 +108,9 @@ def main(
     no_sign: bool = typer.Option(
         False, "--no-sign", help="Skip AWS signing for anonymous access to public S3 buckets"
     ),
+    github_token: str | None = typer.Option(
+        None, "--github-token", envvar="GITHUB_TOKEN", help="GitHub personal access token"
+    ),
     size: str | None = typer.Option(
         None,
         "--size",
@@ -130,7 +136,19 @@ def main(
         valid = ", ".join(sorted(plt.colormaps()))
         typer.echo(f"Unknown colormap '{colormap}'. Valid options:\n{valid}", err=True)
         raise typer.Exit(1)
-    if is_s3_path(root):
+    if is_github_path(root):
+        gh_owner, gh_repo, gh_branch = parse_github_path(root)
+        root_node, resolved_branch = build_tree_github(
+            gh_owner,
+            gh_repo,
+            gh_branch,
+            token=github_token,
+            exclude=frozenset(exclude),
+            depth=depth,
+        )
+        if header:
+            typer.echo(f"Scanning github:{gh_owner}/{gh_repo}@{resolved_branch} ...")
+    elif is_s3_path(root):
         bucket, prefix = parse_s3_path(root)
         if header:
             typer.echo(f"Scanning {root} ...")
