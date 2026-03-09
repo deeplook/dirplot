@@ -129,6 +129,16 @@ The default mode (`--show`, no `--inline`) opens the PNG in the system viewer (`
 
 > **Note:** `--inline` does not work in AI coding assistants such as Claude Code, Cursor, or GitHub Copilot Chat. These tools intercept terminal output as plain text and do not implement any graphics protocol, so the escape sequences are either stripped or displayed as garbage. Use the default `--show` mode (system viewer) or `--output` to save the PNG to a file instead. Or use [Pi](https://pi.dev) where it is easily added as an extension.
 
+## Archives
+
+dirplot can read local archive files (zip, tar, 7z, rar, and ZIP-based formats like jar, whl, apk) as treemap inputs without unpacking them. See [ARCHIVES.md](ARCHIVES.md) for supported formats, dependencies, and RAR setup on macOS.
+
+```bash
+dirplot map project.zip
+dirplot map release.tar.gz --depth 2
+dirplot map app.jar
+```
+
 ## Remote Access
 
 dirplot can scan SSH hosts and AWS S3 buckets as well as local directories. See [REMOTE-ACCESS.md](REMOTE-ACCESS.md) for full details.

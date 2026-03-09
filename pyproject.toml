@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "dirplot"
 version = "0.2.0"
-description = "Static treemap bitmaps for directory trees, displayed as inline terminal images"
+description = "Static treemap bitmaps for directory trees and archives, displayed as inline terminal images"
 readme = "README.md"
 license = {text = "MIT"}
 requires-python = ">=3.10"
@@ -32,6 +32,8 @@ classifiers = [
 dependencies = [
     "matplotlib>=3.7",
     "pillow>=9.0",
+    "py7zr>=0.20",
+    "rarfile>=4.0",
     "squarify>=0.4",
     "typer>=0.9",
 ]
@@ -86,7 +88,7 @@ python_version = "3.10"
 strict = true
 
 [[tool.mypy.overrides]]
-module = ["matplotlib.*", "squarify", "PIL.*", "paramiko.*", "boto3.*", "botocore.*"]
+module = ["matplotlib.*", "squarify", "PIL.*", "paramiko.*", "boto3.*", "botocore.*", "py7zr.*", "rarfile"]
 ignore_missing_imports = true
 
 # ---------------------------------------------------------------------------
