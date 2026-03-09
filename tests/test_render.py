@@ -3,8 +3,10 @@
 import io
 from pathlib import Path
 
+import squarify
 from PIL import Image
 
+from dirplot.colors import assign_colors
 from dirplot.render import _label_color, create_treemap
 from dirplot.scanner import build_tree
 
@@ -72,6 +74,64 @@ def test_treemap_legend(sample_tree: Path) -> None:
     buf = create_treemap(root, width_px=320, height_px=240, legend=True)
     img = Image.open(buf)
     assert img.size == (320, 240)
+
+
+def test_treemap_tile_colors(tmp_path: Path) -> None:
+    """With cushion disabled, each file tile's pixels must match the expected fill color.
+
+    Two files with distinct Linguist-mapped extensions and equal sizes are placed in a
+    flat directory. squarify is used to replicate draw_node's interior geometry so we
+    know where each tile lands. Pixels are sampled from the corner regions of each tile
+    (away from the center where a label may be rendered).
+    """
+    # Files sorted by name → a.js first, b.py second in the squarify layout
+    (tmp_path / "a.js").write_bytes(b"x" * 1000)
+    (tmp_path / "b.py").write_bytes(b"x" * 1000)
+
+    width, height, font_size = 400, 200, 12
+    root = build_tree(tmp_path)
+    buf = create_treemap(
+        root, width_px=width, height_px=height, font_size=font_size, colormap="tab20", cushion=False
+    )
+    img = Image.open(buf)
+
+    # Expected fill colors (same call as create_treemap → assign_colors)
+    color_map = assign_colors([".js", ".py"], "tab20")
+
+    def to_rgb(ext: str) -> tuple[int, int, int]:
+        r, g, b, _ = color_map[ext]
+        return int(r * 255), int(g * 255), int(b * 255)
+
+    # Replicate draw_node's interior geometry for the root directory.
+    # header_h = font.size + 4; for a FreeType font font.size == the requested size.
+    header_h = font_size + 4
+    ix, iy = 2, 2 + header_h
+    iw = width - 3
+    ih = height - 3 - header_h
+
+    sizes = [1000, 1000]  # a.js, b.py (sorted)
+    normed = squarify.normalize_sizes(sizes, iw, ih)
+    rects = squarify.squarify(normed, ix, iy, iw, ih)
+
+    for rect, ext in zip(rects, [".js", ".py"], strict=False):
+        rx = round(rect["x"])
+        ry = round(rect["y"])
+        rw = round(rect["x"] + rect["dx"]) - rx - 1  # draw_node passes rw-1 to child
+        rh = round(rect["y"] + rect["dy"]) - ry - 1
+        expected = to_rgb(ext)
+
+        # Sample from two corner regions (top-left and bottom-right quadrants)
+        # to avoid the center where label text may overlay the fill color.
+        margin = max(3, rw // 8)
+        sample_points = [
+            (rx + margin, ry + margin),
+            (rx + rw - 1 - margin, ry + rh - 1 - margin),
+        ]
+        for px, py in sample_points:
+            actual = img.getpixel((px, py))[:3]
+            assert actual == expected, (
+                f"Tile for {ext} at ({px},{py}): expected RGB{expected}, got RGB{actual}"
+            )
 
 
 def test_treemap_visual() -> None:
