@@ -1,10 +1,8 @@
 """Terminal size detection."""
 
-import fcntl
 import os
 import struct
 import sys
-import termios
 
 
 def get_terminal_pixel_size() -> tuple[int, int, int]:
@@ -14,6 +12,9 @@ def get_terminal_pixel_size() -> tuple[int, int, int]:
     (e.g. when stdout is not a tty).
     """
     try:
+        import fcntl
+        import termios
+
         buf = b"\x00" * 8
         result = fcntl.ioctl(sys.stdout.fileno(), termios.TIOCGWINSZ, buf)
         rows, _cols, width_px, height_px = struct.unpack("HHHH", result)

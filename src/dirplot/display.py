@@ -3,12 +3,20 @@
 import base64
 import io
 import os
-import select
 import sys
-import termios
 import time
-import tty
 from typing import BinaryIO, TextIO
+
+_IS_WINDOWS = sys.platform == "win32"
+
+try:
+    import select as _select
+    import termios
+    import tty
+
+    _HAS_TERMIOS = True
+except ImportError:
+    _HAS_TERMIOS = False
 
 
 def _read_fd_response(fd: int, timeout: float = 0.3) -> bytes:
@@ -19,7 +27,7 @@ def _read_fd_response(fd: int, timeout: float = 0.3) -> bytes:
         remaining = deadline - time.monotonic()
         if remaining <= 0:
             break
-        ready, _, _ = select.select([fd], [], [], min(remaining, 0.05))
+        ready, _, _ = _select.select([fd], [], [], min(remaining, 0.05))
         if ready:
             chunk = os.read(fd, 256)
             if chunk:
@@ -33,32 +41,33 @@ def _read_fd_response(fd: int, timeout: float = 0.3) -> bytes:
 
 def _detect_inline_protocol() -> str:
     """Return ``"iterm2"``, ``"kitty"``, or ``""`` based on terminal probing."""
-    try:
-        fd = os.open("/dev/tty", os.O_RDWR | os.O_NOCTTY)
-    except OSError:
-        fd = -1
-
-    if fd >= 0:
-        old = termios.tcgetattr(fd)
+    if _HAS_TERMIOS and not _IS_WINDOWS:
         try:
-            tty.setraw(fd)
+            fd = os.open("/dev/tty", os.O_RDWR | os.O_NOCTTY)
+        except OSError:
+            fd = -1
 
-            # Probe iTerm2 capabilities
-            os.write(fd, b"\x1b]1337;Capabilities\x1b\\")
-            resp = _read_fd_response(fd, 0.3)
-            if b"Capabilities=" in resp and b"F" in resp:
-                return "iterm2"
+        if fd >= 0:
+            old = termios.tcgetattr(fd)
+            try:
+                tty.setraw(fd)
 
-            # Probe Kitty APC graphics protocol
-            os.write(fd, b"\x1b_Gi=31,s=1,v=1,a=q,t=d,f=24;AAAA\x1b\\\x1b[c")
-            resp = _read_fd_response(fd, 0.3)
-            if b"\x1b_G" in resp:
-                return "kitty"
-        except Exception:  # noqa: BLE001
-            pass
-        finally:
-            termios.tcsetattr(fd, termios.TCSADRAIN, old)
-            os.close(fd)
+                # Probe iTerm2 capabilities
+                os.write(fd, b"\x1b]1337;Capabilities\x1b\\")
+                resp = _read_fd_response(fd, 0.3)
+                if b"Capabilities=" in resp and b"F" in resp:
+                    return "iterm2"
+
+                # Probe Kitty APC graphics protocol
+                os.write(fd, b"\x1b_Gi=31,s=1,v=1,a=q,t=d,f=24;AAAA\x1b\\\x1b[c")
+                resp = _read_fd_response(fd, 0.3)
+                if b"\x1b_G" in resp:
+                    return "kitty"
+            except Exception:  # noqa: BLE001
+                pass
+            finally:
+                termios.tcsetattr(fd, termios.TCSADRAIN, old)
+                os.close(fd)
 
     # Env-var heuristic fallback
     term_program = os.environ.get("TERM_PROGRAM", "").lower()
@@ -73,10 +82,16 @@ def _detect_inline_protocol() -> str:
 def _open_tty_write_binary() -> tuple[BinaryIO, bool]:
     """Return (file_obj, owned) for the best available binary output channel.
 
-    Tries /dev/tty first using low-level os.open() (avoids O_CREAT/O_TRUNC
+    On Unix, tries /dev/tty first using low-level os.open() (avoids O_CREAT/O_TRUNC
     that Python's built-in open() adds, which can fail on some macOS setups).
-    Falls back to sys.stdout.buffer if /dev/tty is unavailable.
+    On Windows, tries CONOUT$ instead.
+    Falls back to sys.stdout.buffer if neither is available.
     """
+    if _IS_WINDOWS:
+        try:
+            return open("CONOUT$", "wb", buffering=0), True  # noqa: SIM115
+        except OSError:
+            return sys.stdout.buffer, False
     try:
         fd = os.open("/dev/tty", os.O_WRONLY | os.O_NOCTTY)
         return os.fdopen(fd, "wb", buffering=0, closefd=True), True
@@ -86,6 +101,11 @@ def _open_tty_write_binary() -> tuple[BinaryIO, bool]:
 
 def _open_tty_write_text() -> tuple[TextIO, bool]:
     """Return (file_obj, owned) for the best available text output channel."""
+    if _IS_WINDOWS:
+        try:
+            return open("CONOUT$", "w"), True  # noqa: SIM115
+        except OSError:
+            return sys.stdout, False
     try:
         fd = os.open("/dev/tty", os.O_WRONLY | os.O_NOCTTY)
         return os.fdopen(fd, "w", closefd=True), True
