@@ -9,6 +9,7 @@ import typer
 from dirplot import __version__
 from dirplot.display import display_inline, display_window
 from dirplot.render import create_treemap
+from dirplot.s3 import build_tree_s3, is_s3_path, make_s3_client, parse_s3_path
 from dirplot.scanner import apply_log_sizes, build_tree, collect_extensions
 from dirplot.ssh import build_tree_ssh, connect, is_ssh_path, parse_ssh_path
 from dirplot.terminal import get_terminal_pixel_size, get_terminal_size
@@ -50,7 +51,7 @@ def termsize() -> None:
 @app.command(name="map", epilog=_EPILOG)
 def main(
     root: str = typer.Argument(
-        ..., help="Root directory to map (local path or ssh://user@host/path)"
+        ..., help="Root directory to map (local path, ssh://user@host/path, or s3://bucket/prefix)"
     ),
     version: bool = typer.Option(
         False,
@@ -98,6 +99,12 @@ def main(
     depth: int | None = typer.Option(
         None, "--depth", help="Maximum recursion depth for remote trees"
     ),
+    aws_profile: str | None = typer.Option(
+        None, "--aws-profile", envvar="AWS_PROFILE", help="AWS profile name for S3 access"
+    ),
+    no_sign: bool = typer.Option(
+        False, "--no-sign", help="Skip AWS signing for anonymous access to public S3 buckets"
+    ),
     size: str | None = typer.Option(
         None,
         "--size",
@@ -123,7 +130,23 @@ def main(
         valid = ", ".join(sorted(plt.colormaps()))
         typer.echo(f"Unknown colormap '{colormap}'. Valid options:\n{valid}", err=True)
         raise typer.Exit(1)
-    if is_ssh_path(root):
+    if is_s3_path(root):
+        bucket, prefix = parse_s3_path(root)
+        if header:
+            typer.echo(f"Scanning {root} ...")
+        s3 = make_s3_client(profile=aws_profile, no_sign=no_sign)
+        progress = [0]
+        root_node = build_tree_s3(
+            s3,
+            bucket,
+            prefix,
+            exclude=frozenset(exclude),
+            depth=depth,
+            _progress=progress,
+        )
+        if progress[0] >= 100:
+            print("", file=sys.stderr)
+    elif is_ssh_path(root):
         ssh_user, ssh_host, remote_path = parse_ssh_path(root)
         if header:
             typer.echo(f"Scanning {root} ...")

@@ -24,7 +24,7 @@
 - Save output to a PNG file with `--output`.
 - Exclude paths with `--exclude` (repeatable).
 - Works on macOS, Linux, and Windows; WSL2 fully supported.
-- Scan remote hosts over SSH via an optional [paramiko](https://www.paramiko.org/) dependency (`pip install "dirplot[ssh]"`).
+- Scan remote hosts over SSH (`pip install "dirplot[ssh]"`) or AWS S3 buckets (`pip install "dirplot[s3]"`). See [REMOTE-ACCESS.md](REMOTE-ACCESS.md).
 
 ## How It Works
 
@@ -129,77 +129,18 @@ The default mode (`--show`, no `--inline`) opens the PNG in the system viewer (`
 
 > **Note:** `--inline` does not work in AI coding assistants such as Claude Code, Cursor, or GitHub Copilot Chat. These tools intercept terminal output as plain text and do not implement any graphics protocol, so the escape sequences are either stripped or displayed as garbage. Use the default `--show` mode (system viewer) or `--output` to save the PNG to a file instead. Or use [Pi](https://pi.dev) where it is easily added as an extension.
 
-## Remote Access (SSH)
+## Remote Access
 
-dirplot can scan directory trees on remote hosts over SSH using [paramiko](https://www.paramiko.org/). Install the optional dependency first:
+dirplot can scan SSH hosts and AWS S3 buckets as well as local directories. See [REMOTE-ACCESS.md](REMOTE-ACCESS.md) for full details.
 
 ```bash
-pip install "dirplot[ssh]"
+pip install "dirplot[ssh]"   # SSH via paramiko
+pip install "dirplot[s3]"    # AWS S3 via boto3
 ```
 
-Then pass an SSH URI as the root argument:
-
 ```bash
-# ssh://user@host/path format
 dirplot map ssh://alice@prod.example.com/var/www
-
-# SCP-style user@host:/path format
-dirplot map alice@prod.example.com:/var/www
-
-# Exclude paths, cap depth, save to file
-dirplot map ssh://alice@prod.example.com/var --exclude /var/cache --depth 4 --output remote.png --no-show
-```
-
-### Authentication
-
-Credentials are resolved in this order:
-
-1. `--ssh-key PATH` — explicit private key file
-2. `SSH_KEY` environment variable — path to key file
-3. `IdentityFile` from `~/.ssh/config` for the target host
-4. ssh-agent (picked up automatically)
-5. `--ssh-password` / `SSH_PASSWORD` environment variable
-6. Interactive password prompt as a last resort
-
-### SSH config
-
-`~/.ssh/config` is read automatically. Host aliases, custom ports, and `IdentityFile` directives all work as expected:
-
-```
-Host prod
-    HostName prod.example.com
-    User alice
-    IdentityFile ~/.ssh/prod_key
-    Port 2222
-```
-
-```bash
-dirplot map ssh://prod/var/www   # resolves using the config block above
-```
-
-### Remote access options
-
-| Flag | Default | Description |
-|---|---|---|
-| `--ssh-key` | `~/.ssh/id_rsa` | Path to SSH private key |
-| `--ssh-password` | `SSH_PASSWORD` env var | SSH password |
-| `--depth` | unlimited | Maximum recursion depth |
-
-### Python API
-
-```python
-from dirplot.ssh import connect, build_tree_ssh
-from dirplot.render import create_treemap
-
-client = connect("prod.example.com", "alice", ssh_key="~/.ssh/prod_key")
-sftp = client.open_sftp()
-try:
-    root = build_tree_ssh(sftp, "/var/www", depth=5)
-finally:
-    sftp.close()
-    client.close()
-
-buf = create_treemap(root, width_px=1920, height_px=1080)
+dirplot map s3://noaa-ghcn-pds --no-sign
 ```
 
 ## Python API
