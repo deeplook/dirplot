@@ -11,7 +11,7 @@ from dirplot.scanner import Node
 
 def _require_boto3() -> Any:
     try:
-        import boto3  # type: ignore[import-untyped]
+        import boto3
 
         return boto3
     except ImportError:
@@ -52,8 +52,8 @@ def make_s3_client(profile: str | None = None, no_sign: bool = False) -> Any:
     (equivalent to ``aws s3 --no-sign-request``).
     """
     boto3 = _require_boto3()
-    from botocore import UNSIGNED  # type: ignore[import-untyped]
-    from botocore.config import Config  # type: ignore[import-untyped]
+    from botocore import UNSIGNED
+    from botocore.config import Config
 
     session = boto3.Session(profile_name=profile)
     config = Config(signature_version=UNSIGNED) if no_sign else None
