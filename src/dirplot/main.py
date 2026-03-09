@@ -1,5 +1,6 @@
 """CLI entry point."""
 
+import sys
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -9,6 +10,7 @@ from dirplot import __version__
 from dirplot.display import display_inline, display_window
 from dirplot.render import create_treemap
 from dirplot.scanner import apply_log_sizes, build_tree, collect_extensions
+from dirplot.ssh import build_tree_ssh, connect, is_ssh_path, parse_ssh_path
 from dirplot.terminal import get_terminal_pixel_size, get_terminal_size
 
 app = typer.Typer(
@@ -47,7 +49,9 @@ def termsize() -> None:
 
 @app.command(name="map", epilog=_EPILOG)
 def main(
-    root: Path = typer.Argument(..., help="Root directory to map"),
+    root: str = typer.Argument(
+        ..., help="Root directory to map (local path or ssh://user@host/path)"
+    ),
     version: bool = typer.Option(
         False,
         "--version",
@@ -84,7 +88,16 @@ def main(
             "Run with an invalid name to see all options."
         ),
     ),
-    exclude: list[Path] = typer.Option([], "--exclude", "-e", help="Paths to exclude (repeatable)"),
+    exclude: list[str] = typer.Option([], "--exclude", "-e", help="Paths to exclude (repeatable)"),
+    ssh_key: str | None = typer.Option(
+        None, "--ssh-key", help="SSH private key file (default: ~/.ssh/id_rsa)"
+    ),
+    ssh_password: str | None = typer.Option(
+        None, "--ssh-password", envvar="SSH_PASSWORD", help="SSH password"
+    ),
+    depth: int | None = typer.Option(
+        None, "--depth", help="Maximum recursion depth for remote trees"
+    ),
     size: str | None = typer.Option(
         None,
         "--size",
@@ -110,17 +123,40 @@ def main(
         valid = ", ".join(sorted(plt.colormaps()))
         typer.echo(f"Unknown colormap '{colormap}'. Valid options:\n{valid}", err=True)
         raise typer.Exit(1)
-    if not root.exists():
-        typer.echo(f"Path does not exist: {root}", err=True)
-        raise typer.Exit(1)
-    if not root.is_dir():
-        typer.echo(f"Not a directory: {root}", err=True)
-        raise typer.Exit(1)
+    if is_ssh_path(root):
+        ssh_user, ssh_host, remote_path = parse_ssh_path(root)
+        if header:
+            typer.echo(f"Scanning {root} ...")
+        client = connect(ssh_host, ssh_user, ssh_key=ssh_key, ssh_password=ssh_password)
+        sftp = client.open_sftp()
+        progress = [0]
+        try:
+            root_node = build_tree_ssh(
+                sftp,
+                remote_path,
+                exclude=frozenset(exclude),
+                depth=depth,
+                _progress=progress,
+            )
+        finally:
+            sftp.close()
+            client.close()
+        if progress[0] >= 100:
+            print("", file=sys.stderr)
+    else:
+        root_path = Path(root)
+        if not root_path.exists():
+            typer.echo(f"Path does not exist: {root}", err=True)
+            raise typer.Exit(1)
+        if not root_path.is_dir():
+            typer.echo(f"Not a directory: {root}", err=True)
+            raise typer.Exit(1)
 
-    excluded = frozenset(p.resolve() for p in exclude)
-    if header:
-        typer.echo(f"Scanning {root} ...")
-    root_node = build_tree(root.resolve(), excluded)
+        excluded = frozenset(Path(e).resolve() for e in exclude)
+        if header:
+            typer.echo(f"Scanning {root} ...")
+        root_node = build_tree(root_path.resolve(), excluded)
+
     if log:
         apply_log_sizes(root_node)
     total_files = len(collect_extensions(root_node))
