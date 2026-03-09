@@ -1,7 +1,9 @@
 """Tests for inline terminal display with /dev/tty unavailable."""
 
+import builtins
 import io
 import sys
+from contextlib import contextmanager
 from unittest.mock import patch
 
 import pytest
@@ -22,20 +24,43 @@ def _buf() -> io.BytesIO:
     return io.BytesIO(PNG_BYTES)
 
 
+@contextmanager
+def _no_tty():
+    """Simulate no tty on all platforms.
+
+    On Unix, patching os.open is sufficient.
+    On Windows the code uses builtins.open("CONOUT$", ...) instead of os.open,
+    so we also intercept that call.
+    """
+    _real_open = builtins.open
+
+    def _open_no_conout(file, *args, **kwargs):
+        if file == "CONOUT$":
+            raise OSError("no tty")
+        return _real_open(file, *args, **kwargs)
+
+    with patch("os.open", side_effect=OSError("no tty")):
+        if sys.platform == "win32":
+            with patch("builtins.open", side_effect=_open_no_conout):
+                yield
+        else:
+            yield
+
+
 # ---------------------------------------------------------------------------
 # _open_tty_write_binary / _open_tty_write_text
 # ---------------------------------------------------------------------------
 
 
 def test_open_tty_write_binary_falls_back_to_stdout_buffer() -> None:
-    with patch("os.open", side_effect=OSError("no tty")):
+    with _no_tty():
         f, owned = _open_tty_write_binary()
     assert f is sys.stdout.buffer
     assert owned is False
 
 
 def test_open_tty_write_text_falls_back_to_stdout() -> None:
-    with patch("os.open", side_effect=OSError("no tty")):
+    with _no_tty():
         f, owned = _open_tty_write_text()
     assert f is sys.stdout
     assert owned is False
@@ -47,7 +72,7 @@ def test_open_tty_write_text_falls_back_to_stdout() -> None:
 
 
 def test_display_kitty_no_tty_writes_to_stdout(capsys: pytest.CaptureFixture) -> None:
-    with patch("os.open", side_effect=OSError("no tty")):
+    with _no_tty():
         display_kitty(_buf())
 
     raw = capsys.readouterr().out.encode(sys.stdout.encoding or "utf-8", errors="replace")
@@ -61,7 +86,7 @@ def test_display_kitty_no_tty_writes_to_stdout(capsys: pytest.CaptureFixture) ->
 
 
 def test_display_iterm2_no_tty_writes_to_stdout(capsys: pytest.CaptureFixture) -> None:
-    with patch("os.open", side_effect=OSError("no tty")):
+    with _no_tty():
         _display_iterm2(_buf())
 
     out = capsys.readouterr().out
@@ -77,28 +102,28 @@ def test_display_iterm2_no_tty_writes_to_stdout(capsys: pytest.CaptureFixture) -
 def test_detect_protocol_no_tty_kitty_env(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("KITTY_WINDOW_ID", "1")
     monkeypatch.delenv("TERM_PROGRAM", raising=False)
-    with patch("os.open", side_effect=OSError("no tty")):
+    with _no_tty():
         assert _detect_inline_protocol() == "kitty"
 
 
 def test_detect_protocol_no_tty_iterm2_env(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("TERM_PROGRAM", "iTerm.app")
     monkeypatch.delenv("KITTY_WINDOW_ID", raising=False)
-    with patch("os.open", side_effect=OSError("no tty")):
+    with _no_tty():
         assert _detect_inline_protocol() == "iterm2"
 
 
 def test_detect_protocol_no_tty_ghostty_env(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("TERM_PROGRAM", "ghostty")
     monkeypatch.delenv("KITTY_WINDOW_ID", raising=False)
-    with patch("os.open", side_effect=OSError("no tty")):
+    with _no_tty():
         assert _detect_inline_protocol() == "kitty"
 
 
 def test_detect_protocol_no_tty_no_env(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("TERM_PROGRAM", raising=False)
     monkeypatch.delenv("KITTY_WINDOW_ID", raising=False)
-    with patch("os.open", side_effect=OSError("no tty")):
+    with _no_tty():
         assert _detect_inline_protocol() == ""
 
 
@@ -112,7 +137,7 @@ def test_display_inline_no_tty_routes_kitty(
 ) -> None:
     monkeypatch.setenv("KITTY_WINDOW_ID", "1")
     monkeypatch.delenv("TERM_PROGRAM", raising=False)
-    with patch("os.open", side_effect=OSError("no tty")):
+    with _no_tty():
         display_inline(_buf())
 
     raw = capsys.readouterr().out.encode(sys.stdout.encoding or "utf-8", errors="replace")
@@ -124,7 +149,7 @@ def test_display_inline_no_tty_routes_iterm2(
 ) -> None:
     monkeypatch.setenv("TERM_PROGRAM", "iTerm.app")
     monkeypatch.delenv("KITTY_WINDOW_ID", raising=False)
-    with patch("os.open", side_effect=OSError("no tty")):
+    with _no_tty():
         display_inline(_buf())
 
     out = capsys.readouterr().out
@@ -137,7 +162,7 @@ def test_display_inline_no_tty_no_env_falls_back_to_iterm2(
     """With no env hints, display_inline falls through to _display_iterm2."""
     monkeypatch.delenv("TERM_PROGRAM", raising=False)
     monkeypatch.delenv("KITTY_WINDOW_ID", raising=False)
-    with patch("os.open", side_effect=OSError("no tty")):
+    with _no_tty():
         display_inline(_buf())
 
     out = capsys.readouterr().out
