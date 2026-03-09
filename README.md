@@ -67,25 +67,28 @@ This tool has been developed and tested on macOS and is CI-tested on Linux and W
 uvx dirplot --help
 
 # Show dirplot for the current directory (opens image in system viewer)
-dirplot .
+dirplot map .
+
+# Show current terminal size in characters and pixels
+dirplot termsize
 
 # Save to a file without displaying
-dirplot . --output dirplot.png --no-show
+dirplot map . --output dirplot.png --no-show
 
 # Display inline (protocol auto-detected: iTerm2, Kitty, Ghostty)
-dirplot . --inline
+dirplot map . --inline
 
 # Exclude directories
-dirplot . --exclude .venv --exclude .git
+dirplot map . --exclude .venv --exclude .git
 
 # Use a different colormap and larger directory labels
-dirplot . --colormap Set2 --font-size 18
+dirplot map . --colormap Set2 --font-size 18
 
 # Render at a fixed resolution instead of terminal size
-dirplot . --size 1920x1080 --output dirplot.png --no-show
+dirplot map . --size 1920x1080 --output dirplot.png --no-show
 
 # Don't apply cushion shading — makes tiles look flat
-dirplot . --no-cushion
+dirplot map . --no-cushion
 ```
 
 ### Options
@@ -120,6 +123,8 @@ The `--inline` flag renders the image directly in the terminal. The protocol is 
 The default mode (`--show`, no `--inline`) opens the PNG in the system viewer (`open` on macOS, `xdg-open` on Linux, system default on Windows) and works in any terminal.
 
 > **Windows note:** Common Windows shells (PowerShell, cmd, Git Bash) and terminal emulators (Windows Terminal, ConEmu) do not support any inline image protocol. `--inline` will silently produce no output in these environments. [WezTerm](https://wezfurlong.org/wezterm/) is currently the only mainstream Windows terminal emulator that supports inline image rendering (via the Kitty graphics protocol). WSL2 is treated as Linux and has full support.
+
+> **Tip:** In terminals that support inline images (iTerm2, WezTerm, Kitty, etc.), the rendered image can often be dragged directly out of the terminal window and dropped into another application or saved to the desktop — no `--output` needed. This drag-and-drop behaviour is not guaranteed across all terminals.
 
 > **Note:** `--inline` does not work in AI coding assistants such as Claude Code, Cursor, or GitHub Copilot Chat. These tools intercept terminal output as plain text and do not implement any graphics protocol, so the escape sequences are either stripped or displayed as garbage. Use the default `--show` mode (system viewer) or `--output` to save the PNG to a file instead. Or use [Pi](https://pi.dev) where it is easily added as an extension.
 

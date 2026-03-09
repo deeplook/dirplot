@@ -9,7 +9,7 @@ from dirplot import __version__
 from dirplot.display import display_inline, display_window
 from dirplot.render import create_treemap
 from dirplot.scanner import apply_log_sizes, build_tree, collect_extensions
-from dirplot.terminal import get_terminal_pixel_size
+from dirplot.terminal import get_terminal_pixel_size, get_terminal_size
 
 app = typer.Typer(
     context_settings={"help_option_names": ["-h", "--help"]},
@@ -25,19 +25,27 @@ def _version_callback(value: bool) -> None:
 
 _EPILOG = (
     "[bold]Examples[/bold]\n\n"
-    "  dirplot .  [dim]# open in system viewer[/dim]\n\n"
-    "  dirplot . --no-show --output treemap.png  [dim]# save to file[/dim]\n\n"
-    "  dirplot . --inline  [dim]# render inline (iTerm2 / Kitty / Ghostty)[/dim]\n\n"
-    "  dirplot . --legend  [dim]# show extension colour legend[/dim]\n\n"
-    "  dirplot . --exclude .venv --exclude .git  [dim]# skip paths[/dim]\n\n"
-    "  dirplot . --colormap Set2 --font-size 14  [dim]# custom colours and label size[/dim]\n\n"
-    "  dirplot . --size 1920x1080 --no-show --output out.png  [dim]# fixed resolution[/dim]\n\n"
-    "  dirplot . --no-header --inline  [dim]# suppress info lines before the plot[/dim]\n\n"
-    "  dirplot . --no-cushion  [dim]# makes tiles look flat[/dim]"
+    "  dirplot map .  [dim]# open in system viewer[/dim]\n\n"
+    "  dirplot map . --no-show --output treemap.png  [dim]# save to file[/dim]\n\n"
+    "  dirplot map . --inline  [dim]# render inline (iTerm2 / Kitty / Ghostty)[/dim]\n\n"
+    "  dirplot map . --legend  [dim]# show extension colour legend[/dim]\n\n"
+    "  dirplot map . --exclude .venv --exclude .git  [dim]# skip paths[/dim]\n\n"
+    "  dirplot map . --colormap Set2 --font-size 14  [dim]# custom colours and label size[/dim]\n\n"
+    "  dirplot map . --size 1920x1080 --no-show --output out.png  [dim]# fixed resolution[/dim]\n\n"
+    "  dirplot map . --no-header --inline  [dim]# suppress info lines before the plot[/dim]\n\n"
+    "  dirplot map . --no-cushion  [dim]# makes tiles look flat[/dim]"
 )
 
 
-@app.command(epilog=_EPILOG)
+@app.command(name="termsize")
+def termsize() -> None:
+    """Show the current terminal size in characters and pixels."""
+    cols, rows, width_px, height_px = get_terminal_size()
+    typer.echo(f"Characters : {cols} cols × {rows} rows")
+    typer.echo(f"Pixels     : {width_px} × {height_px}")
+
+
+@app.command(name="map", epilog=_EPILOG)
 def main(
     root: Path = typer.Argument(..., help="Root directory to map"),
     version: bool = typer.Option(
