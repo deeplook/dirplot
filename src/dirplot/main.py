@@ -97,7 +97,7 @@ def main(
         None, "--ssh-password", envvar="SSH_PASSWORD", help="SSH password"
     ),
     depth: int | None = typer.Option(
-        None, "--depth", help="Maximum recursion depth for remote trees"
+        None, "--depth", help="Maximum recursion depth (local and remote)"
     ),
     aws_profile: str | None = typer.Option(
         None, "--aws-profile", envvar="AWS_PROFILE", help="AWS profile name for S3 access"
@@ -178,7 +178,7 @@ def main(
         excluded = frozenset(Path(e).resolve() for e in exclude)
         if header:
             typer.echo(f"Scanning {root} ...")
-        root_node = build_tree(root_path.resolve(), excluded)
+        root_node = build_tree(root_path.resolve(), excluded, depth)
 
     if log:
         apply_log_sizes(root_node)
