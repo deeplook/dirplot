@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import typer
 
 from dirplot import __version__
+from dirplot.archives import build_tree_archive, is_archive_path
 from dirplot.display import display_inline, display_window
 from dirplot.github import build_tree_github, is_github_path, parse_github_path
 from dirplot.render import create_treemap
@@ -37,7 +38,10 @@ _EPILOG = (
     "  dirplot map . --colormap Set2 --font-size 14  [dim]# custom colours and label size[/dim]\n\n"
     "  dirplot map . --size 1920x1080 --no-show --output out.png  [dim]# fixed resolution[/dim]\n\n"
     "  dirplot map . --no-header --inline  [dim]# suppress info lines before the plot[/dim]\n\n"
-    "  dirplot map . --no-cushion  [dim]# makes tiles look flat[/dim]"
+    "  dirplot map . --no-cushion  [dim]# makes tiles look flat[/dim]\n\n"
+    "  dirplot map archive.zip  [dim]# map a zip archive without unpacking[/dim]\n\n"
+    "  dirplot map release.tar.gz --depth 2  [dim]# limit depth into a tarball[/dim]\n\n"
+    "  dirplot map app.jar --exclude META-INF  [dim]# skip a member directory[/dim]"
 )
 
 
@@ -53,7 +57,8 @@ def termsize() -> None:
 def main(
     root: str = typer.Argument(
         ...,
-        help="Root directory to map: local path, ssh://user@host/path, s3://bucket/prefix, "
+        help="Root to map: local directory, archive file (.zip .tar.gz .7z .rar …), "
+        "ssh://user@host/path, s3://bucket/prefix, "
         "github:owner/repo[@branch], or https://github.com/owner/repo[/tree/branch]",
     ),
     version: bool = typer.Option(
@@ -184,6 +189,17 @@ def main(
             client.close()
         if progress[0] >= 100:
             print("", file=sys.stderr)
+    elif is_archive_path(root):
+        archive_path = Path(root)
+        if not archive_path.exists():
+            typer.echo(f"Path does not exist: {root}", err=True)
+            raise typer.Exit(1)
+        if not archive_path.is_file():
+            typer.echo(f"Not a file: {root}", err=True)
+            raise typer.Exit(1)
+        if header:
+            typer.echo(f"Reading archive {root} ...")
+        root_node = build_tree_archive(archive_path, exclude=frozenset(exclude), depth=depth)
     else:
         root_path = Path(root)
         if not root_path.exists():
