@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "dirplot"
-version = "0.1.3"
+version = "0.2.0"
 description = "Static treemap bitmaps for directory trees, displayed as inline terminal images"
 readme = "README.md"
 license = {text = "MIT"}
@@ -22,6 +22,7 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Topic :: Scientific/Engineering :: Visualization",
     "Topic :: System :: Filesystems",
     "Topic :: Terminals",

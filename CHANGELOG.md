@@ -7,9 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-03-09
+
 ### Added
 
-- Support for Windows (testing)
+- Support for Windows, incl. full test suite
+
+### Fixed
+
+- Improved README, Makefile
 
 ## [0.1.2] - 2026-03-06
 
