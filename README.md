@@ -131,7 +131,7 @@ The default mode (`--show`, no `--inline`) opens the PNG in the system viewer (`
 
 ## Archives
 
-dirplot can read local archive files (zip, tar, 7z, rar, and ZIP-based formats like jar, whl, apk) as treemap inputs without unpacking them. See [ARCHIVES.md](ARCHIVES.md) for supported formats, dependencies, and RAR setup on macOS.
+dirplot can read local archive files (zip, tar, 7z, rar, and ZIP-based formats like jar, whl, apk) as treemap inputs without unpacking them. See [ARCHIVES.md](docs/ARCHIVES.md) for supported formats, dependencies, and RAR setup on macOS.
 
 ```bash
 dirplot map project.zip
@@ -141,7 +141,7 @@ dirplot map app.jar
 
 ## Remote Access
 
-dirplot can scan SSH hosts and AWS S3 buckets as well as local directories. See [REMOTE-ACCESS.md](REMOTE-ACCESS.md) for full details.
+dirplot can scan SSH hosts and AWS S3 buckets as well as local directories. See [REMOTE-ACCESS.md](docs/REMOTE-ACCESS.md) for full details.
 
 ```bash
 pip install "dirplot[ssh]"   # SSH via paramiko
