@@ -17,12 +17,18 @@ class Node:
     children: list["Node"] = field(default_factory=list)
 
 
-def build_tree(root: Path, exclude: frozenset[Path] = frozenset()) -> Node:
+def build_tree(
+    root: Path,
+    exclude: frozenset[Path] = frozenset(),
+    depth: int | None = None,
+) -> Node:
     """Recursively build a Node tree from *root*.
 
     Args:
         root: Directory to scan.
         exclude: Resolved absolute paths to skip entirely.
+        depth: Maximum recursion depth. ``None`` means unlimited.
+            ``depth=1`` lists direct children without recursing into subdirs.
 
     Returns:
         Root node whose ``size`` is the total size of all descendants.
@@ -40,7 +46,10 @@ def build_tree(root: Path, exclude: frozenset[Path] = frozenset()) -> Node:
         if entry.is_symlink():
             continue
         if entry.is_dir():
-            child = build_tree(entry, exclude)
+            if depth is not None and depth <= 1:
+                child = Node(name=entry.name, path=entry, size=1, is_dir=True)
+            else:
+                child = build_tree(entry, exclude, None if depth is None else depth - 1)
         elif entry.is_file():
             try:
                 size = max(1, entry.stat().st_size)

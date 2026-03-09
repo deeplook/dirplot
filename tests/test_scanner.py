@@ -34,6 +34,16 @@ def test_build_tree_exclude(sample_tree: Path) -> None:
     assert root.size == 130  # 80 + 50
 
 
+def test_build_tree_depth_limit(sample_tree: Path) -> None:
+    root = build_tree(sample_tree, depth=1)
+    child_names = {c.name for c in root.children}
+    assert "src" in child_names
+    assert "docs" in child_names
+    src = next(c for c in root.children if c.name == "src")
+    assert src.is_dir
+    assert src.children == []  # not recursed into
+
+
 def test_build_tree_no_ext(tmp_path: Path) -> None:
     (tmp_path / "Makefile").write_bytes(b"x" * 10)
     root = build_tree(tmp_path)
