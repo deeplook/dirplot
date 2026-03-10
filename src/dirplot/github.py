@@ -16,7 +16,7 @@ from dirplot.scanner import Node
 
 def is_github_path(s: str) -> bool:
     """Return True if *s* looks like a GitHub repository reference."""
-    return s.startswith("github:") or "github.com/" in s
+    return s.startswith("github://") or "github.com/" in s
 
 
 def parse_github_path(s: str) -> tuple[str, str, str | None]:
@@ -24,13 +24,13 @@ def parse_github_path(s: str) -> tuple[str, str, str | None]:
 
     Accepted formats::
 
-        github:owner/repo
-        github:owner/repo@branch
+        github://owner/repo
+        github://owner/repo@branch
         https://github.com/owner/repo
         https://github.com/owner/repo/tree/branch
     """
-    if s.startswith("github:"):
-        rest = s[len("github:") :]
+    if s.startswith("github://"):
+        rest = s[len("github://") :]
         branch: str | None
         if "@" in rest:
             repo_part, branch = rest.rsplit("@", 1)

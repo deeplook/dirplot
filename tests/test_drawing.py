@@ -43,16 +43,19 @@ def test_draw_node_skips_tiny_rect() -> None:
     assert _px(img, 5, 5) == bg
 
 
-def test_draw_node_file_has_no_border() -> None:
+def test_draw_node_file_border_is_dark_not_white() -> None:
     img, draw = _make_draw(50, 50)
     node = Node(name="f.py", path=Path("f.py"), size=10, is_dir=False, extension=".py")
     color_map = assign_colors([".py"])
     draw_node(draw, node, 0, 0, 50, 50, color_map, _font())
     rgba = color_map[".py"]
-    expected = (int(rgba[0] * 255), int(rgba[1] * 255), int(rgba[2] * 255))
-    # Edge pixels should be the fill colour, not white
-    assert _px(img, 0, 0) == expected, "top-left corner should be fill colour, not a border"
-    assert _px(img, 49, 49) == expected, "bottom-right corner should be fill colour, not a border"
+    fill = (int(rgba[0] * 255), int(rgba[1] * 255), int(rgba[2] * 255))
+    dark = (max(0, fill[0] - 60), max(0, fill[1] - 60), max(0, fill[2] - 60))
+    # Edge pixels are the darkened outline colour, not white (no dir-style white border)
+    assert _px(img, 0, 0) == dark, "top-left corner should be the dark outline, not white"
+    assert _px(img, 49, 49) == dark, "bottom-right corner should be the dark outline, not white"
+    # Interior pixel away from the label should be the fill colour
+    assert _px(img, 2, 2) == fill, "interior (away from label) should be the fill colour"
 
 
 def test_draw_node_file_interior_is_fill_color() -> None:
