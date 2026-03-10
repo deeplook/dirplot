@@ -101,6 +101,9 @@ testpaths = ["tests"]
 python_files = ["test_*.py"]
 python_functions = ["test_*"]
 addopts = "-v --tb=short"
+markers = [
+    "docker: requires a running Docker daemon (deselect with -m 'not docker')",
+]
 
 [tool.coverage.run]
 source = ["src"]
