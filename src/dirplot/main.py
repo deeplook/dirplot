@@ -1,6 +1,7 @@
 """CLI entry point."""
 
 import sys
+import webbrowser
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -14,6 +15,7 @@ from dirplot.render import create_treemap
 from dirplot.s3 import build_tree_s3, is_s3_path, make_s3_client, parse_s3_path
 from dirplot.scanner import apply_log_sizes, build_tree, collect_extensions
 from dirplot.ssh import build_tree_ssh, connect, is_ssh_path, parse_ssh_path
+from dirplot.svg_render import create_treemap_svg
 from dirplot.terminal import get_terminal_pixel_size, get_terminal_size
 
 app = typer.Typer(
@@ -59,7 +61,7 @@ def main(
         ...,
         help="Root to map: local directory, archive file (.zip .tar.gz .7z .rar …), "
         "ssh://user@host/path, s3://bucket/prefix, "
-        "github:owner/repo[@branch], or https://github.com/owner/repo[/tree/branch]",
+        r"github:owner/repo\[@branch], or https://github.com/owner/repo\[/tree/branch]",
     ),
     version: bool = typer.Option(
         False,
@@ -69,7 +71,16 @@ def main(
         is_eager=True,
         help="Show version and exit",
     ),
-    output: Path | None = typer.Option(None, "--output", "-o", help="Output PNG path (optional)"),
+    output: Path | None = typer.Option(
+        None, "--output", "-o", help="Output path (optional). Use .svg extension for SVG output."
+    ),
+    fmt: str | None = typer.Option(
+        None,
+        "--format",
+        "-f",
+        help="Output format: png or svg. Defaults to svg if --output ends in .svg, else png.",
+        metavar="FORMAT",
+    ),
     show: bool = typer.Option(True, "--show/--no-show", help="Display the image after rendering"),
     inline: bool = typer.Option(
         False,
@@ -239,7 +250,23 @@ def main(
         if header:
             typer.echo(f"Terminal size: {width_px}x{height_px}px")
 
-    buf = create_treemap(root_node, width_px, height_px, font_size, colormap, legend, cushion)
+    # Resolve output format: explicit --format > inferred from --output extension > png
+    if fmt is not None:
+        if fmt not in ("png", "svg"):
+            typer.echo(f"Unknown format '{fmt}'. Valid options: png, svg", err=True)
+            raise typer.Exit(1)
+        use_svg = fmt == "svg"
+    elif output is not None and output.suffix.lower() == ".svg":
+        use_svg = True
+    else:
+        use_svg = False
+
+    if use_svg:
+        buf = create_treemap_svg(
+            root_node, width_px, height_px, font_size, colormap, legend, cushion
+        )
+    else:
+        buf = create_treemap(root_node, width_px, height_px, font_size, colormap, legend, cushion)
 
     if output is not None:
         output.write_bytes(buf.read())
@@ -248,7 +275,16 @@ def main(
         buf.seek(0)
 
     if show:
-        if inline:
+        if use_svg:
+            if output is not None:
+                webbrowser.open(output.resolve().as_uri())
+            else:
+                import tempfile
+
+                with tempfile.NamedTemporaryFile(suffix=".svg", delete=False) as tmp:
+                    tmp.write(buf.read())
+                    webbrowser.open(Path(tmp.name).resolve().as_uri())
+        elif inline:
             display_inline(buf)
         else:
             display_window(buf)

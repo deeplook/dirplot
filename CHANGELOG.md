@@ -9,7 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Rename the treemap command to `map` (dirplot map <root>)
+- SVG output format via `--format svg` or by saving to a `.svg`-suffixed path with `--output`.
+  The output is a fully self-contained, interactive SVG file:
+  - **CSS hover highlight** — file tiles brighten and gain a soft glow; directory headers
+    brighten on mouse-over (`.tile` / `.dir-tile` classes, no JavaScript needed).
+  - **Floating tooltip panel** — a JavaScript-driven semi-transparent panel tracks the cursor
+    and shows the file or directory name, human-readable size, and file-type / item count.
+    No external scripts or stylesheets — the panel logic is embedded in the SVG itself.
+  - **Van Wijk cushion shading** — approximated via a single diagonal `linearGradient`
+    overlay (`gradientUnits="objectBoundingBox"`), defined once and shared across all tiles.
+    Matches the ×1.20 highlight / ×0.80 shadow range of the PNG renderer.
+    Disabled with `--no-cushion`.
+- `--format png|svg` CLI option; format is also auto-detected from the `--output` file extension.
+- `create_treemap_svg()` added to the public Python API (`from dirplot import create_treemap_svg`).
+- `drawsvg>=2.4` added as a core dependency.
+- Rename the treemap command to `map` (dirplot map <root>).
 - Add `termsize` subcommand and restructure CLI as multi-command app.
 - Add `--depht` parameter to limit the scanning of large file trees.
 - Support for SSH remote directory scanning (`pip install dirplot[ssh]`).

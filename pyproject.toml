@@ -31,6 +31,7 @@ classifiers = [
     "Typing :: Typed",
 ]
 dependencies = [
+    "drawsvg>=2.4.1",
     "matplotlib>=3.7",
     "pillow>=9.0",
     "py7zr>=0.20",
@@ -89,7 +90,7 @@ python_version = "3.10"
 strict = true
 
 [[tool.mypy.overrides]]
-module = ["matplotlib.*", "squarify", "PIL.*", "paramiko.*", "boto3.*", "botocore.*", "py7zr.*", "rarfile"]
+module = ["matplotlib.*", "squarify", "PIL.*", "paramiko.*", "boto3.*", "botocore.*", "py7zr.*", "rarfile", "drawsvg.*"]
 ignore_missing_imports = true
 
 # ---------------------------------------------------------------------------
