@@ -115,6 +115,7 @@ dirplot map . --format svg --output treemap.svg --no-show
 | `--header/--no-header` | | `--header` | Print info lines before rendering |
 | `--cushion/--no-cushion` | | `--cushion` | Apply van Wijk cushion shading for a raised 3-D look |
 | `--log/--no-log` | | `--no-log` | Use log of file sizes for layout, making small files more visible |
+| `--github-token` | | `$GITHUB_TOKEN` | GitHub personal access token for private repos or higher rate limits |
 
 ## Inline Display
 
@@ -162,6 +163,23 @@ dirplot map ssh://alice@prod.example.com/var/www
 dirplot map s3://noaa-ghcn-pds --no-sign
 dirplot map github:pallets/flask
 ```
+
+### GitHub authentication
+
+Public repositories work without a token but are subject to GitHub's unauthenticated rate limit of **60 requests/hour**. A personal access token raises this to **5,000 requests/hour** and is required for private repositories.
+
+Pass a token via the `--github-token` flag or the `GITHUB_TOKEN` environment variable:
+
+```bash
+# via flag
+dirplot map github:my-org/private-repo --github-token ghp_…
+
+# via environment variable (also picked up automatically by the CLI)
+export GITHUB_TOKEN=ghp_…
+dirplot map github:my-org/private-repo
+```
+
+To create a token: GitHub → Settings → Developer settings → Personal access tokens → Generate new token (see [GitHub's guide](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens)). For read-only treemap access the `public_repo` scope (or no scope for public repos) is sufficient; add `repo` for private repositories.
 
 ## Python API
 
