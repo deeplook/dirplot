@@ -20,8 +20,9 @@
 - Label colour (black/white) chosen automatically based on background luminance.
 - Output resolution matches the current terminal window pixel size (via `TIOCGWINSZ`), or a custom `WIDTHxHEIGHT`.
 - Van Wijk cushion shading gives tiles a raised 3-D appearance (optional).
+- **SVG output** (`--format svg` or `--output file.svg`) produces a fully self-contained interactive file: CSS hover highlight, a JavaScript floating tooltip panel, and cushion shading via a gradient — no external dependencies.
 - Display via system image viewer or inline in the terminal (iTerm2 and Kitty protocols, auto-detected).
-- Save output to a PNG file with `--output`.
+- Save output to a PNG or SVG file with `--output`.
 - Exclude paths with `--exclude` (repeatable).
 - Works on macOS, Linux, and Windows; WSL2 fully supported.
 - Scan remote hosts over SSH (`pip install "dirplot[ssh]"`), AWS S3 buckets (`pip install "dirplot[s3]"`), or any public/private GitHub repository (no extra dependency). See [REMOTE-ACCESS.md](REMOTE-ACCESS.md).
@@ -90,15 +91,22 @@ dirplot map . --size 1920x1080 --output dirplot.png --no-show
 
 # Don't apply cushion shading — makes tiles look flat
 dirplot map . --no-cushion
+
+# Save as an interactive SVG (hover highlight + floating tooltip)
+dirplot map . --output treemap.svg --no-show
+
+# Force SVG format explicitly
+dirplot map . --format svg --output treemap.svg --no-show
 ```
 
 ### Options
 
 | Flag | Short | Default | Description |
 |---|---|---|---|
-| `--output` | `-o` | — | Save PNG to this path |
+| `--output` | `-o` | — | Save to this path (PNG or SVG) |
+| `--format` | `-f` | auto | Output format: `png` or `svg`. Auto-detected from `--output` extension |
 | `--show/--no-show` | | `--show` | Display the image after rendering |
-| `--inline` | | off | Display in terminal (protocol auto-detected) |
+| `--inline` | | off | Display in terminal (protocol auto-detected; PNG only) |
 | `--legend/--no-legend` | | `--no-legend` | Show file-extension colour legend |
 | `--font-size` | `-s` | `12` | Directory label font size in pixels |
 | `--colormap` | `-c` | `tab20` | Matplotlib colormap for unknown extensions |
@@ -157,26 +165,25 @@ dirplot map github:pallets/flask
 
 ## Python API
 
-The public API is small — `build_tree`, `create_treemap`, and the display helpers:
+The public API is small — `build_tree`, `create_treemap`, `create_treemap_svg`, and the display helpers:
 
 ```python
 from pathlib import Path
-from dirplot.scanner import build_tree
-from dirplot.render import create_treemap
+from dirplot import build_tree, create_treemap, create_treemap_svg
 
-# Build the tree and render to a PNG in memory
 root = build_tree(Path("/path/to/project"))
-buf = create_treemap(root, width_px=1920, height_px=1080, colormap="tab20", cushion=True)
 
-# Save to disk
+# PNG — returns a BytesIO containing PNG bytes
+buf = create_treemap(root, width_px=1920, height_px=1080, colormap="tab20", cushion=True)
 Path("treemap.png").write_bytes(buf.read())
 
-# In a Jupyter notebook: display inline as a cell output (no save needed)
-from PIL import Image
-Image.open(buf)  # Jupyter renders PIL images automatically via _repr_png_()
+# SVG — returns a BytesIO containing UTF-8 SVG bytes
+# Includes CSS hover highlight, a JS floating tooltip, and cushion gradient shading.
+buf = create_treemap_svg(root, width_px=1920, height_px=1080, cushion=True)
+Path("treemap.svg").write_bytes(buf.read())
 ```
 
-To open the result in the system image viewer or display it inline:
+To open a PNG in the system image viewer or display it inline in the terminal:
 
 ```python
 from dirplot.display import display_window, display_inline
@@ -186,6 +193,14 @@ display_window(buf)   # system viewer (works everywhere)
 
 buf.seek(0)
 display_inline(buf)   # inline in terminal (iTerm2 / Kitty / WezTerm)
+```
+
+In a Jupyter notebook, PNG output renders automatically via PIL:
+
+```python
+from PIL import Image
+buf = create_treemap(root, width_px=1280, height_px=720)
+Image.open(buf)  # Jupyter renders PIL images automatically via _repr_png_()
 ```
 
 ## Development
