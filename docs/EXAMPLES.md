@@ -1,12 +1,12 @@
 # Examples for Remote Access
 
-dirplot can scan directory trees on remote sources without copying files locally. Remote backends are optional dependencies — install only what you need.
+*dirplot* can scan directory trees on remote sources (remote servers via SSH, AWS S3 buckets, Github repositories, Docker containers, and Kubernetes pods) without copying files locally. Remote backends are optional dependencies — install only what you need.
 
 > **Warning:** Remote trees can contain hundreds of thousands of files. Use `--depth N` to limit how far down the tree dirplot recurses until you have a feel for the size of the target.
 
 ---
 
-## SSH
+## Remote Servers via SSH
 
 Scan hosts reachable over SSH using [paramiko](https://www.paramiko.org/).
 
@@ -78,100 +78,6 @@ finally:
 
 buf = create_treemap(root, width_px=1920, height_px=1080)
 ```
-
----
-
-## GitHub
-
-Scan any GitHub repository using the [Git trees API](https://docs.github.com/en/rest/git/trees). File sizes come from blob metadata — no file content is downloaded. No extra dependency is required; dirplot uses `urllib` from the Python standard library.
-
-### Usage
-
-```bash
-# github:// scheme
-dirplot map github://owner/repo
-
-# Specific branch, tag, or commit SHA
-dirplot map github://owner/repo@dev
-
-# Full GitHub URL (also accepted)
-dirplot map https://github.com/owner/repo/tree/main
-
-# Save to file
-dirplot map github://FastAPI/FastAPI --output fastapi.png --no-show
-```
-
-<figure>
-  <img src="fastapi.png" alt="FastAPI repository treemap">
-  <figcaption><code>dirplot map github://FastAPI/FastAPI</code></figcaption>
-</figure>
-
-### Roundtrip example
-
-```bash
-dirplot map github://torvalds/linux --inline
-dirplot map github://python/cpython@main --inline
-dirplot map github://django/django --depth 2 --inline
-```
-
-<figure>
-  <img src="python.png" alt="CPython repository treemap">
-  <figcaption><code>dirplot map github://python/cpython</code></figcaption>
-</figure>
-
-<figure>
-  <img src="pypy.png" alt="PyPy repository treemap">
-  <figcaption><code>dirplot map github://pypy/pypy</code></figcaption>
-</figure>
-
-### Authentication
-
-A token is **not required for public repositories** under normal use. Each scan makes 1–2 API calls, and GitHub allows 60 unauthenticated requests per hour per IP. A token is needed when:
-
-- Scanning **private repositories**
-- Running in CI/CD where many processes share the same IP
-- Scanning repeatedly and hitting the unauthenticated rate limit
-
-Tokens are resolved in this order:
-
-1. `--github-token` flag
-2. `GITHUB_TOKEN` environment variable
-3. No token — anonymous access (public repos only, 60 req/h)
-
-### Options
-
-| Flag | Default | Description |
-|---|---|---|
-| `--github-token` | `GITHUB_TOKEN` env var | Personal access token |
-| `--depth` | unlimited | Maximum recursion depth |
-| `--exclude` | — | Repo-relative path to skip (repeatable) |
-
-### Notes
-
-- Dotfiles and dot-directories (`.github`, `.env`, etc.) are skipped, consistent with local scanning behaviour.
-- If the repository tree exceeds GitHub's API limit (~100k entries), the response will be truncated. dirplot prints a warning and renders what was returned. Use `--depth` to avoid this.
-- The `--depth` flag here applies to the in-memory tree built from the API response, not to the number of API calls (the full flat tree is always fetched in one request).
-
-### Python API
-
-```python
-from dirplot.github import build_tree_github
-from dirplot.render import create_treemap
-import os
-
-root, branch = build_tree_github(
-    "pallets", "flask",
-    token=os.environ.get("GITHUB_TOKEN"),
-    depth=4,
-)
-print(f"Branch: {branch}, size: {root.size:,} bytes")
-buf = create_treemap(root, width_px=1920, height_px=1080)
-```
-
-<figure>
-  <img src="flask.png" alt="Flask repository treemap">
-  <figcaption><code>dirplot map github://pallets/flask --legend</code></figcaption>
-</figure>
 
 ---
 
@@ -252,7 +158,95 @@ These buckets are publicly accessible with `--no-sign`:
 
 ---
 
-## Docker
+## GitHub Repositories
+
+Scan any GitHub repository using the [Git trees API](https://docs.github.com/en/rest/git/trees). File sizes come from blob metadata — no file content is downloaded. No extra dependency is required; dirplot uses `urllib` from the Python standard library.
+
+### Usage
+
+```bash
+# github:// scheme
+dirplot map github://owner/repo
+
+# Specific branch, tag, or commit SHA
+dirplot map github://owner/repo@dev
+
+# Full GitHub URL (also accepted)
+dirplot map https://github.com/owner/repo/tree/main
+
+# Save to file
+dirplot map github://FastAPI/FastAPI --output fastapi.png --no-show
+```
+
+<figure>
+  <img src="fastapi.png" alt="FastAPI repository treemap">
+  <figcaption><code>dirplot map github://FastAPI/FastAPI</code></figcaption>
+</figure>
+
+<!-- dirplot map github://torvalds/linux --inline -->
+
+<figure>
+  <img src="python.png" alt="CPython repository treemap">
+  <figcaption><code>dirplot map github://python/cpython</code></figcaption>
+</figure>
+
+<figure>
+  <img src="pypy.png" alt="PyPy repository treemap">
+  <figcaption><code>dirplot map github://pypy/pypy</code></figcaption>
+</figure>
+
+### Authentication
+
+A token is **not required for public repositories** under normal use. Each scan makes 1–2 API calls, and GitHub allows 60 unauthenticated requests per hour per IP. A token is needed when:
+
+- Scanning **private repositories**
+- Running in CI/CD where many processes share the same IP
+- Scanning repeatedly and hitting the unauthenticated rate limit
+
+Tokens are resolved in this order:
+
+1. `--github-token` flag
+2. `GITHUB_TOKEN` environment variable
+3. No token — anonymous access (public repos only, 60 req/h)
+
+### Options
+
+| Flag | Default | Description |
+|---|---|---|
+| `--github-token` | `GITHUB_TOKEN` env var | Personal access token |
+| `--depth` | unlimited | Maximum recursion depth |
+| `--exclude` | — | Repo-relative path to skip (repeatable) |
+
+### Notes
+
+- Dotfiles and dot-directories (`.github`, `.env`, etc.) are skipped, consistent with local scanning behaviour.
+- If the repository tree exceeds GitHub's API limit (~100k entries), the response will be truncated. dirplot prints a warning and renders what was returned. Use `--depth` to avoid this.
+- The `--depth` flag here applies to the in-memory tree built from the API response, not to the number of API calls (the full flat tree is always fetched in one request).
+
+### Python API
+
+```python
+from dirplot.github import build_tree_github
+from dirplot.render import create_treemap
+import os
+
+root, branch = build_tree_github(
+    "pallets", "flask",
+    token=os.environ.get("GITHUB_TOKEN"),
+    depth=4,
+)
+print(f"Branch: {branch}, size: {root.size:,} bytes")
+buf = create_treemap(root, width_px=1920, height_px=1080)
+```
+
+<figure>
+  <img src="flask.png" alt="Flask repository treemap">
+  <figcaption><code>dirplot map github://pallets/flask --legend</code></figcaption>
+</figure>
+
+---
+
+## Docker Containers
 
 Scan a running Docker container's filesystem using `docker exec`. No extra dependency is required beyond the `docker` CLI being in `PATH`.
 
@@ -267,11 +261,8 @@ dirplot map docker://my-container:/app
 
 # Cap depth, save to file
 dirplot map docker://my-container:/usr --depth 3 --output container.png --no-show
-```
 
-### Roundtrip example
-
-```bash
+# Real example
 docker run -d --name pg-demo -e POSTGRES_PASSWORD=x postgres:17-alpine
 dirplot map docker://pg-demo:/usr --inline
 docker rm -f pg-demo
@@ -313,7 +304,7 @@ buf = create_treemap(root, width_px=1920, height_px=1080)
 
 ---
 
-## Kubernetes pod
+## Kubernetes Pods
 
 Scan a running Kubernetes pod's filesystem using `kubectl exec`. No extra dependency is required beyond `kubectl` being in `PATH` and configured to reach a cluster.
 
@@ -337,11 +328,8 @@ dirplot map pod://my-pod:/app --k8s-container sidecar
 
 # Cap depth, save to file
 dirplot map pod://my-pod:/usr --depth 3 --output pod.png --no-show
-```
 
-### Roundtrip example (minikube)
-
-```bash
+# Real example (minikube)
 minikube start
 
 kubectl run pg-demo --image=postgres:17-alpine --restart=Never \
