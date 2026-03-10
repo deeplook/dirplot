@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Kubernetes pod scanning via `pod://pod-name/path` syntax — uses `kubectl exec` and
+  `find` to build the tree without copying files out of the pod. Works on any running
+  pod that has a POSIX shell and `find` (GNU or BusyBox). No extra dependency; only
+  `kubectl` is required.
+  - Namespace can be specified inline (`pod://pod-name@namespace:/path`) or via
+    `--k8s-namespace`.
+  - Container can be selected for multi-container pods via `--k8s-container`.
+  - `-xdev` is intentionally omitted so mounted volumes (emptyDir, PVC, etc.) within
+    the scanned path are traversed — the common case in k8s where images declare
+    `VOLUME` entries that are always mounted on a separate filesystem.
+  - Automatically falls back to a portable `sh` + `stat` loop on BusyBox/Alpine pods.
+- `github://owner/repo[@branch]` URI scheme for GitHub repository scanning. The old
+  `github:owner/repo` shorthand has been removed.
+- File tiles now have a 1-px dark outline (60/255 below fill colour per channel) so
+  adjacent same-coloured tiles — e.g. a directory full of extension-less files — are
+  always visually distinct rather than blending into a single flat block.
+
+### Changed
+
+- `docs/REMOTE-ACCESS.md` renamed to `docs/EXAMPLES.md`; Docker and Kubernetes pod
+  sections added; images with captions added for all remote backends.
+
 ### Fixed
 
 - SVG tooltips now show the original byte count when `--log` is active, not the

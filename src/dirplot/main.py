@@ -12,6 +12,7 @@ from dirplot.archives import build_tree_archive, is_archive_path
 from dirplot.display import display_inline, display_window
 from dirplot.docker import build_tree_docker, is_docker_path, parse_docker_path
 from dirplot.github import build_tree_github, is_github_path, parse_github_path
+from dirplot.k8s import build_tree_pod, is_pod_path, parse_pod_path
 from dirplot.render import create_treemap
 from dirplot.s3 import build_tree_s3, is_s3_path, make_s3_client, parse_s3_path
 from dirplot.scanner import apply_log_sizes, build_tree, collect_extensions
@@ -35,6 +36,7 @@ _EPILOG = (
     "[bold]Examples[/bold]\n\n"
     "  dirplot map .  [dim]# open in system viewer[/dim]\n\n"
     "  dirplot map . --no-show --output treemap.png  [dim]# save to file[/dim]\n\n"
+    "  dirplot map github://owner/repo  [dim]# map a GitHub repo[/dim]\n\n"
     "  dirplot map . --inline  [dim]# render inline (iTerm2 / Kitty / Ghostty)[/dim]\n\n"
     "  dirplot map . --legend  [dim]# show extension colour legend[/dim]\n\n"
     "  dirplot map . --exclude .venv --exclude .git  [dim]# skip paths[/dim]\n\n"
@@ -62,8 +64,8 @@ def main(
         ...,
         help="Root to map: local directory, archive file (.zip .tar.gz .7z .rar …), "
         "ssh://user@host/path, s3://bucket/prefix, "
-        r"github:owner/repo\[@branch], https://github.com/owner/repo\[/tree/branch], "
-        "or docker://container:/path",
+        r"github://owner/repo\[@branch], https://github.com/owner/repo\[/tree/branch], "
+        r"docker://container:/path, or pod://pod-name\[@namespace]/path",
     ),
     version: bool = typer.Option(
         False,
@@ -129,6 +131,12 @@ def main(
     github_token: str | None = typer.Option(
         None, "--github-token", envvar="GITHUB_TOKEN", help="GitHub personal access token"
     ),
+    k8s_namespace: str | None = typer.Option(
+        None, "--k8s-namespace", "-N", help="Kubernetes namespace (overrides @namespace in pod URL)"
+    ),
+    k8s_container: str | None = typer.Option(
+        None, "--k8s-container", help="Container name for multi-container pods"
+    ),
     size: str | None = typer.Option(
         None,
         "--size",
@@ -163,6 +171,28 @@ def main(
             root_node = build_tree_docker(
                 docker_container,
                 docker_path,
+                exclude=frozenset(exclude),
+                depth=depth,
+                _progress=progress,
+            )
+        except (FileNotFoundError, OSError) as exc:
+            typer.echo(f"Error: {exc}", err=True)
+            raise typer.Exit(1) from exc
+        if progress[0] >= 100:
+            print("", file=sys.stderr)
+    elif is_pod_path(root):
+        pod_name, pod_ns, pod_path = parse_pod_path(root)
+        namespace = k8s_namespace or pod_ns
+        if header:
+            ns_label = f"@{namespace}" if namespace else ""
+            typer.echo(f"Scanning pod://{pod_name}{ns_label}:{pod_path} ...")
+        progress = [0]
+        try:
+            root_node = build_tree_pod(
+                pod_name,
+                pod_path,
+                namespace=namespace,
+                container=k8s_container,
                 exclude=frozenset(exclude),
                 depth=depth,
                 _progress=progress,

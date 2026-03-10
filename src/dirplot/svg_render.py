@@ -270,12 +270,16 @@ def _draw_node_svg(
         fill = _hex(rgba)
 
         display_size = node.original_size if node.original_size > 0 else node.size
+        dark = (max(0, rgba[0] - 0.24), max(0, rgba[1] - 0.24), max(0, rgba[2] - 0.24))
+        stroke = _hex((*dark, 1.0)) if w >= 3 and h >= 3 else "none"
         rect = drawsvg.Rectangle(
             x,
             y,
             w,
             h,
             fill=fill,
+            stroke=stroke,
+            stroke_width="1",
             class_="tile",
             data_name=node.name,
             data_size=str(display_size),

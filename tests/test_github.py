@@ -54,8 +54,8 @@ def tree(path: str) -> dict[str, Any]:
 @pytest.mark.parametrize(
     "s",
     [
-        "github:owner/repo",
-        "github:owner/repo@main",
+        "github://owner/repo",
+        "github://owner/repo@main",
         "https://github.com/owner/repo",
         "https://github.com/owner/repo/tree/main",
     ],
@@ -69,12 +69,12 @@ def test_is_not_github_path(s: str) -> None:
     assert not is_github_path(s)
 
 
-def test_parse_github_shorthand_no_branch() -> None:
-    assert parse_github_path("github:owner/repo") == ("owner", "repo", None)
+def test_parse_github_url_scheme_no_branch() -> None:
+    assert parse_github_path("github://owner/repo") == ("owner", "repo", None)
 
 
-def test_parse_github_shorthand_with_branch() -> None:
-    assert parse_github_path("github:owner/repo@dev") == ("owner", "repo", "dev")
+def test_parse_github_url_scheme_with_branch() -> None:
+    assert parse_github_path("github://owner/repo@dev") == ("owner", "repo", "dev")
 
 
 def test_parse_github_url_no_branch() -> None:

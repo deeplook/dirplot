@@ -157,6 +157,10 @@ def draw_node(
         draw.rectangle([x, y, x + w - 1, y + h - 1], fill=rgb)
         if cushion and img is not None:
             _apply_cushion(img, x, y, w, h)
+        # 1-px border so adjacent same-colored tiles always have a visible boundary
+        if w >= 3 and h >= 3:
+            dark = (max(0, rgb[0] - 60), max(0, rgb[1] - 60), max(0, rgb[2] - 60))
+            draw.rectangle([x, y, x + w - 1, y + h - 1], outline=dark)
         # Adaptive label: font size scales with tile size, capped by scale factor
         if w > 20 and h > 10:
             fsize = max(6, min(font_size + 2, w // 10))

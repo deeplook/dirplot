@@ -25,7 +25,7 @@
 - Save output to a PNG or SVG file with `--output`.
 - Exclude paths with `--exclude` (repeatable).
 - Works on macOS, Linux, and Windows; WSL2 fully supported.
-- Scan remote hosts over SSH (`pip install "dirplot[ssh]"`), AWS S3 buckets (`pip install "dirplot[s3]"`), any public/private GitHub repository, or **running Docker containers** — all without extra dependencies beyond the respective CLI/SDK. See [REMOTE-ACCESS.md](REMOTE-ACCESS.md).
+- Scan remote hosts over SSH (`pip install "dirplot[ssh]"`), AWS S3 buckets (`pip install "dirplot[s3]"`), any public/private GitHub repository, **running Docker containers**, or **Kubernetes pods** — all without extra dependencies beyond the respective CLI/SDK. See [EXAMPLES.md](docs/EXAMPLES.md).
 
 ## How It Works
 
@@ -150,20 +150,23 @@ dirplot map app.jar
 
 ## Remote Access
 
-dirplot can scan SSH hosts, AWS S3 buckets, GitHub repositories, and running Docker containers. See [REMOTE-ACCESS.md](docs/REMOTE-ACCESS.md) for full details.
+dirplot can scan SSH hosts, AWS S3 buckets, GitHub repositories, running Docker containers, and Kubernetes pods. See [EXAMPLES.md](docs/EXAMPLES.md) for full details.
 
 ```bash
 pip install "dirplot[ssh]"   # SSH via paramiko
 pip install "dirplot[s3]"    # AWS S3 via boto3
                              # GitHub: no extra dependency needed
                              # Docker: only the docker CLI required
+                             # Kubernetes: only kubectl required
 ```
 
 ```bash
 dirplot map ssh://alice@prod.example.com/var/www
 dirplot map s3://noaa-ghcn-pds --no-sign
-dirplot map github:pallets/flask
+dirplot map github://pallets/flask
 dirplot map docker://my-container:/app
+dirplot map pod://my-pod:/app
+dirplot map pod://my-pod@staging:/app
 ```
 
 ### GitHub authentication
@@ -174,11 +177,11 @@ Pass a token via the `--github-token` flag or the `GITHUB_TOKEN` environment var
 
 ```bash
 # via flag
-dirplot map github:my-org/private-repo --github-token ghp_…
+dirplot map github://my-org/private-repo --github-token ghp_…
 
 # via environment variable (also picked up automatically by the CLI)
 export GITHUB_TOKEN=ghp_…
-dirplot map github:my-org/private-repo
+dirplot map github://my-org/private-repo
 ```
 
 To create a token: GitHub → Settings → Developer settings → Personal access tokens → Generate new token (see [GitHub's guide](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens)). For read-only treemap access the `public_repo` scope (or no scope for public repos) is sufficient; add `repo` for private repositories.

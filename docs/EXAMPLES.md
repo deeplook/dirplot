@@ -1,8 +1,8 @@
-# Remote Access
+# Examples for Remote Access
 
 dirplot can scan directory trees on remote sources without copying files locally. Remote backends are optional dependencies — install only what you need.
 
-> **Warning:** Remote trees can contain hundreds of thousands of files. Every subdirectory requires a separate network round-trip, so a deep scan can take a long time and make a very large number of API calls. Use `--depth N` to limit how far down the tree dirplot recurses until you have a feel for the size of the target.
+> **Warning:** Remote trees can contain hundreds of thousands of files. Use `--depth N` to limit how far down the tree dirplot recurses until you have a feel for the size of the target.
 
 ---
 
@@ -88,18 +88,41 @@ Scan any GitHub repository using the [Git trees API](https://docs.github.com/en/
 ### Usage
 
 ```bash
-# Short form
-dirplot map github:owner/repo
+# github:// scheme
+dirplot map github://owner/repo
 
 # Specific branch, tag, or commit SHA
-dirplot map github:owner/repo@dev
+dirplot map github://owner/repo@dev
 
 # Full GitHub URL (also accepted)
 dirplot map https://github.com/owner/repo/tree/main
 
 # Save to file
-dirplot map github:pallets/flask --output flask.png --no-show
+dirplot map github://FastAPI/FastAPI --output fastapi.png --no-show
 ```
+
+<figure>
+  <img src="fastapi.png" alt="FastAPI repository treemap">
+  <figcaption><code>dirplot map github://FastAPI/FastAPI</code></figcaption>
+</figure>
+
+### Roundtrip example
+
+```bash
+dirplot map github://torvalds/linux --inline
+dirplot map github://python/cpython@main --inline
+dirplot map github://django/django --depth 2 --inline
+```
+
+<figure>
+  <img src="python.png" alt="CPython repository treemap">
+  <figcaption><code>dirplot map github://python/cpython</code></figcaption>
+</figure>
+
+<figure>
+  <img src="pypy.png" alt="PyPy repository treemap">
+  <figcaption><code>dirplot map github://pypy/pypy</code></figcaption>
+</figure>
 
 ### Authentication
 
@@ -144,6 +167,11 @@ root, branch = build_tree_github(
 print(f"Branch: {branch}, size: {root.size:,} bytes")
 buf = create_treemap(root, width_px=1920, height_px=1080)
 ```
+
+<figure>
+  <img src="flask.png" alt="Flask repository treemap">
+  <figcaption><code>dirplot map github://pallets/flask --legend</code></figcaption>
+</figure>
 
 ---
 
@@ -216,3 +244,154 @@ These buckets are publicly accessible with `--no-sign`:
 | `s3://noaa-goes16` | NOAA GOES-16 weather satellite imagery |
 | `s3://sentinel-s2-l1c` | Copernicus Sentinel-2 satellite data (eu-central-1) |
 | `s3://1000genomes` | 1000 Genomes Project |
+
+<figure>
+  <img src="s3.png" alt="NOAA GHCN S3 bucket treemap">
+  <figcaption><code>dirplot map s3://noaa-ghcn-pds --no-sign --depth 2</code></figcaption>
+</figure>
+
+---
+
+## Docker
+
+Scan a running Docker container's filesystem using `docker exec`. No extra dependency is required beyond the `docker` CLI being in `PATH`.
+
+### Usage
+
+```bash
+# docker://container/path — slash separator
+dirplot map docker://my-container/app
+
+# docker://container:/path — colon separator (both forms accepted)
+dirplot map docker://my-container:/app
+
+# Cap depth, save to file
+dirplot map docker://my-container:/usr --depth 3 --output container.png --no-show
+```
+
+### Roundtrip example
+
+```bash
+docker run -d --name pg-demo -e POSTGRES_PASSWORD=x postgres:17-alpine
+dirplot map docker://pg-demo:/usr --inline
+docker rm -f pg-demo
+```
+
+<figure>
+  <img src="docker.png" alt="Postgres container /usr treemap">
+  <figcaption><code>dirplot map docker://pg-demo:/usr --log</code></figcaption>
+</figure>
+
+### Requirements
+
+- `docker` CLI in `PATH`
+- The container must be running (`docker ps` should list it)
+- The container image must have a `find` binary (true for all common Linux base images)
+
+### Notes
+
+- Symlinks are skipped.
+- Dotfiles and dot-directories are skipped, consistent with local scanning behaviour.
+- `find` is first attempted with GNU find's `-printf` for efficiency; if that fails (BusyBox/Alpine images), a POSIX `sh` + `stat` fallback is used automatically.
+
+### Options
+
+| Flag | Default | Description |
+|---|---|---|
+| `--depth` | unlimited | Maximum recursion depth |
+| `--exclude` | — | Absolute path inside the container to skip (repeatable) |
+
+### Python API
+
+```python
+from dirplot.docker import build_tree_docker
+from dirplot.render import create_treemap
+
+root = build_tree_docker("my-container", "/app", depth=5)
+buf = create_treemap(root, width_px=1920, height_px=1080)
+```
+
+---
+
+## Kubernetes pod
+
+Scan a running Kubernetes pod's filesystem using `kubectl exec`. No extra dependency is required beyond `kubectl` being in `PATH` and configured to reach a cluster.
+
+### Usage
+
+```bash
+# Default namespace, slash separator
+dirplot map pod://my-pod/app
+
+# Default namespace, colon separator
+dirplot map pod://my-pod:/app
+
+# Explicit namespace via URL
+dirplot map pod://my-pod@staging:/app
+
+# Explicit namespace via flag (overrides @namespace in URL)
+dirplot map pod://my-pod:/app --k8s-namespace staging
+
+# Multi-container pod — pick a specific container
+dirplot map pod://my-pod:/app --k8s-container sidecar
+
+# Cap depth, save to file
+dirplot map pod://my-pod:/usr --depth 3 --output pod.png --no-show
+```
+
+### Roundtrip example (minikube)
+
+```bash
+minikube start
+
+kubectl run pg-demo --image=postgres:17-alpine --restart=Never \
+  --env POSTGRES_PASSWORD=x
+kubectl wait --for=condition=Ready pod/pg-demo --timeout=90s
+
+dirplot map pod://pg-demo/var/lib/postgresql --inline
+
+kubectl delete pod pg-demo --grace-period=0
+```
+
+<figure>
+  <img src="k8s.png" alt="Postgres pod /var treemap">
+  <figcaption><code>dirplot map pod://pg-demo/var/</code></figcaption>
+</figure>
+
+### Requirements
+
+- `kubectl` CLI in `PATH`, configured for a reachable cluster
+- The pod must be in `Running` state
+- The pod image must have a `find` binary (true for all common Linux base images)
+
+### Notes
+
+- Symlinks are skipped.
+- Dotfiles and dot-directories are skipped, consistent with local scanning behaviour.
+- Unlike Docker scanning, `-xdev` is intentionally omitted so that mounted volumes (emptyDir, PVC, etc.) within the scanned path are traversed — this is the common case in k8s where images declare `VOLUME` entries that k8s always mounts separately.
+- `find` is first attempted with GNU find's `-printf`; if that fails (BusyBox/Alpine images), a POSIX `sh` + `stat` fallback is used automatically.
+
+### Options
+
+| Flag | Default | Description |
+|---|---|---|
+| `--k8s-namespace` | current context default | Kubernetes namespace |
+| `--k8s-container` | pod default | Container name for multi-container pods |
+| `--depth` | unlimited | Maximum recursion depth |
+| `--exclude` | — | Absolute path inside the pod to skip (repeatable) |
+
+### Python API
+
+```python
+from dirplot.k8s import build_tree_pod
+from dirplot.render import create_treemap
+
+root = build_tree_pod(
+    "my-pod",
+    "/app",
+    namespace="staging",
+    container="main",
+    depth=5,
+)
+buf = create_treemap(root, width_px=1920, height_px=1080)
+```
