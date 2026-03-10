@@ -154,14 +154,18 @@ def main(
         raise typer.Exit(1)
     if is_github_path(root):
         gh_owner, gh_repo, gh_branch = parse_github_path(root)
-        root_node, resolved_branch = build_tree_github(
-            gh_owner,
-            gh_repo,
-            gh_branch,
-            token=github_token,
-            exclude=frozenset(exclude),
-            depth=depth,
-        )
+        try:
+            root_node, resolved_branch = build_tree_github(
+                gh_owner,
+                gh_repo,
+                gh_branch,
+                token=github_token,
+                exclude=frozenset(exclude),
+                depth=depth,
+            )
+        except (PermissionError, FileNotFoundError) as exc:
+            typer.echo(f"Error: {exc}", err=True)
+            raise typer.Exit(1) from exc
         if header:
             typer.echo(f"Scanning github:{gh_owner}/{gh_repo}@{resolved_branch} ...")
     elif is_s3_path(root):

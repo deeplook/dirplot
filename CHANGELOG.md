@@ -12,6 +12,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - SVG tooltips now show the original byte count when `--log` is active, not the
   log-transformed layout value. `Node.original_size` is populated by `apply_log_sizes`
   for both file and directory nodes and is used by the SVG renderer for `data-size`.
+- GitHub error messages are now clear and actionable:
+  - 401 explicitly says the token is invalid or expired.
+  - 403 distinguishes rate-limit exceeded (with the 60 vs 5,000 req/h figures and a
+    token hint) from a permissions failure on a private repository.
+  - 404 now also hints that a token is required for private repositories (GitHub returns
+    404, not 403, for private repos accessed without authentication).
+  - Errors are caught in the CLI and printed as a single `Error: …` line to stderr
+    instead of showing a Python traceback.
 
 ### Added
 
