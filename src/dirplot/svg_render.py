@@ -269,6 +269,7 @@ def _draw_node_svg(
         rgba = color_map.get(node.extension, (0.5, 0.5, 0.5, 1.0))
         fill = _hex(rgba)
 
+        display_size = node.original_size if node.original_size > 0 else node.size
         rect = drawsvg.Rectangle(
             x,
             y,
@@ -277,7 +278,7 @@ def _draw_node_svg(
             fill=fill,
             class_="tile",
             data_name=node.name,
-            data_size=str(node.size),
+            data_size=str(display_size),
             data_ext=node.extension,
             data_is_dir="0",
         )
@@ -343,6 +344,7 @@ def _draw_node_svg(
     if h > 2 + header_h:
         # Header background — also acts as the hover + tooltip target for the dir
         n_children = len(node.children)
+        display_size = node.original_size if node.original_size > 0 else node.size
         hdr = drawsvg.Rectangle(
             x + 2,
             y + 2,
@@ -351,7 +353,7 @@ def _draw_node_svg(
             fill="#1c1c2e",
             class_="dir-tile",
             data_name=node.name,
-            data_size=str(node.size),
+            data_size=str(display_size),
             data_is_dir="1",
             data_count=str(n_children),
             data_ext="",

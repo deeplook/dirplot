@@ -246,6 +246,32 @@ def test_data_attributes_on_file_tile(tmp_path: Path) -> None:
     assert 'data-is-dir="0"' in content
 
 
+def test_log_mode_tooltip_shows_original_size(tmp_path: Path) -> None:
+    """With --log, data-size must still show the original byte count, not the log value."""
+    from dirplot.scanner import apply_log_sizes
+
+    size = 100_000
+    (tmp_path / "big.py").write_bytes(b"x" * size)
+    root = build_tree(tmp_path)
+    apply_log_sizes(root)
+    # After log transform, node.size is a small integer (~11); original_size stays 100_000
+    buf = create_treemap_svg(root, width_px=400, height_px=300)
+    content = buf.read().decode("utf-8")
+    assert f'data-size="{size}"' in content, "tooltip must show original bytes, not log value"
+
+
+def test_log_mode_dir_tooltip_shows_original_size(sample_tree: Path) -> None:
+    """With --log, directory header data-size must show the real total, not the log sum."""
+    from dirplot.scanner import apply_log_sizes
+
+    root = build_tree(sample_tree)
+    real_total = root.size  # capture before log transform
+    apply_log_sizes(root)
+    buf = create_treemap_svg(root, width_px=400, height_px=300)
+    content = buf.read().decode("utf-8")
+    assert f'data-size="{real_total}"' in content, "dir tooltip must show original total bytes"
+
+
 def test_data_attributes_on_dir_tile(sample_tree: Path) -> None:
     """Directory header tiles must carry data-is-dir='1' and data-count."""
     root = build_tree(sample_tree)

@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- SVG tooltips now show the original byte count when `--log` is active, not the
+  log-transformed layout value. `Node.original_size` is populated by `apply_log_sizes`
+  for both file and directory nodes and is used by the SVG renderer for `data-size`.
+
 ### Added
 
 - SVG output format via `--format svg` or by saving to a `.svg`-suffixed path with `--output`.

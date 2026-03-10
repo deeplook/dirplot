@@ -15,6 +15,7 @@ class Node:
     is_dir: bool
     extension: str = ""
     children: list["Node"] = field(default_factory=list)
+    original_size: int = 0  # set by apply_log_sizes; 0 means size was never transformed
 
 
 def build_tree(
@@ -66,10 +67,16 @@ def build_tree(
 
 
 def apply_log_sizes(node: Node) -> None:
-    """Replace file sizes with their natural log in-place, then recompute directory totals."""
+    """Replace file sizes with their natural log in-place, then recompute directory totals.
+
+    The original byte count is preserved in ``node.original_size`` so that renderers
+    can display the real size rather than the log-transformed layout value.
+    """
     if not node.is_dir:
+        node.original_size = node.size
         node.size = max(1, round(math.log(max(1, node.size))))
         return
+    node.original_size = node.size  # save real total before recomputing
     for child in node.children:
         apply_log_sizes(child)
     node.size = sum(c.size for c in node.children)
