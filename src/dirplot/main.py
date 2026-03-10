@@ -10,6 +10,7 @@ import typer
 from dirplot import __version__
 from dirplot.archives import build_tree_archive, is_archive_path
 from dirplot.display import display_inline, display_window
+from dirplot.docker import build_tree_docker, is_docker_path, parse_docker_path
 from dirplot.github import build_tree_github, is_github_path, parse_github_path
 from dirplot.render import create_treemap
 from dirplot.s3 import build_tree_s3, is_s3_path, make_s3_client, parse_s3_path
@@ -61,7 +62,8 @@ def main(
         ...,
         help="Root to map: local directory, archive file (.zip .tar.gz .7z .rar …), "
         "ssh://user@host/path, s3://bucket/prefix, "
-        r"github:owner/repo\[@branch], or https://github.com/owner/repo\[/tree/branch]",
+        r"github:owner/repo\[@branch], https://github.com/owner/repo\[/tree/branch], "
+        "or docker://container:/path",
     ),
     version: bool = typer.Option(
         False,
@@ -152,7 +154,25 @@ def main(
         valid = ", ".join(sorted(plt.colormaps()))
         typer.echo(f"Unknown colormap '{colormap}'. Valid options:\n{valid}", err=True)
         raise typer.Exit(1)
-    if is_github_path(root):
+    if is_docker_path(root):
+        docker_container, docker_path = parse_docker_path(root)
+        if header:
+            typer.echo(f"Scanning docker://{docker_container}:{docker_path} ...")
+        progress = [0]
+        try:
+            root_node = build_tree_docker(
+                docker_container,
+                docker_path,
+                exclude=frozenset(exclude),
+                depth=depth,
+                _progress=progress,
+            )
+        except (FileNotFoundError, OSError) as exc:
+            typer.echo(f"Error: {exc}", err=True)
+            raise typer.Exit(1) from exc
+        if progress[0] >= 100:
+            print("", file=sys.stderr)
+    elif is_github_path(root):
         gh_owner, gh_repo, gh_branch = parse_github_path(root)
         try:
             root_node, resolved_branch = build_tree_github(

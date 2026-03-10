@@ -23,6 +23,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Docker container scanning via `docker://container:/path` syntax — uses `docker exec`
+  and `find` to build the tree without copying files out of the container. Works on any
+  running container that has a POSIX shell and `find` (GNU or BusyBox). No extra
+  dependency; only the `docker` CLI is required.
+  - Automatically detects BusyBox `find` (Alpine-based images) and falls back to a
+    portable `sh` + `stat` loop when GNU `-printf` is unavailable.
+  - Virtual filesystems (`/proc`, `/sys`, `/dev`) are skipped via `-xdev`.
+  - Supports `--exclude`, `--depth`, `--log`, and all other standard options.
+  - `Dockerfile` and `.dockerignore` added so the project itself can be used as a
+    scan target.
 - SVG output format via `--format svg` or by saving to a `.svg`-suffixed path with `--output`.
   The output is a fully self-contained, interactive SVG file:
   - **CSS hover highlight** — file tiles brighten and gain a soft glow; directory headers

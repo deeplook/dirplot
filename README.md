@@ -25,7 +25,7 @@
 - Save output to a PNG or SVG file with `--output`.
 - Exclude paths with `--exclude` (repeatable).
 - Works on macOS, Linux, and Windows; WSL2 fully supported.
-- Scan remote hosts over SSH (`pip install "dirplot[ssh]"`), AWS S3 buckets (`pip install "dirplot[s3]"`), or any public/private GitHub repository (no extra dependency). See [REMOTE-ACCESS.md](REMOTE-ACCESS.md).
+- Scan remote hosts over SSH (`pip install "dirplot[ssh]"`), AWS S3 buckets (`pip install "dirplot[s3]"`), any public/private GitHub repository, or **running Docker containers** — all without extra dependencies beyond the respective CLI/SDK. See [REMOTE-ACCESS.md](REMOTE-ACCESS.md).
 
 ## How It Works
 
@@ -150,18 +150,20 @@ dirplot map app.jar
 
 ## Remote Access
 
-dirplot can scan SSH hosts and AWS S3 buckets as well as local directories. See [REMOTE-ACCESS.md](docs/REMOTE-ACCESS.md) for full details.
+dirplot can scan SSH hosts, AWS S3 buckets, GitHub repositories, and running Docker containers. See [REMOTE-ACCESS.md](docs/REMOTE-ACCESS.md) for full details.
 
 ```bash
 pip install "dirplot[ssh]"   # SSH via paramiko
 pip install "dirplot[s3]"    # AWS S3 via boto3
                              # GitHub: no extra dependency needed
+                             # Docker: only the docker CLI required
 ```
 
 ```bash
 dirplot map ssh://alice@prod.example.com/var/www
 dirplot map s3://noaa-ghcn-pds --no-sign
 dirplot map github:pallets/flask
+dirplot map docker://my-container:/app
 ```
 
 ### GitHub authentication
