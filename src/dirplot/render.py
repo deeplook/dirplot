@@ -1,15 +1,34 @@
 """Treemap layout and PNG rendering."""
 
 import io
+import platform
+import sys
 from collections import defaultdict
+from datetime import datetime, timezone
+from importlib.metadata import version as _pkg_version
 from pathlib import Path
 
 import numpy as np
 import squarify
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont, PngImagePlugin
 
 from dirplot.colors import RGBAColor, assign_colors
 from dirplot.scanner import Node, collect_extensions, count_nodes
+
+DIRPLOT_URL = "https://github.com/deeplook/dirplot"
+
+
+def build_metadata() -> dict[str, str]:
+    """Return a dict of metadata fields to embed in PNG/SVG output."""
+    return {
+        "Date": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "Software": f"dirplot {_pkg_version('dirplot')}",
+        "URL": DIRPLOT_URL,
+        "Python": sys.version.split()[0],
+        "OS": f"{platform.system()} {platform.release()}",
+        "Command": " ".join(sys.argv),
+    }
+
 
 SWATCH_PX = 8  # legend colour swatch size in pixels
 LEG_PAD = 3  # legend internal padding in pixels
@@ -410,7 +429,11 @@ def create_treemap(
             idraw, ext_counts, color_map, width_px, height_px, corner, overlay_font, legend
         )
 
+    pnginfo = PngImagePlugin.PngInfo()
+    for key, value in build_metadata().items():
+        pnginfo.add_itxt(key, value)
+
     buf = io.BytesIO()
-    img.save(buf, format="PNG")
+    img.save(buf, format="PNG", pnginfo=pnginfo)
     buf.seek(0)
     return buf

@@ -7,7 +7,7 @@ import squarify
 from PIL import Image
 
 from dirplot.colors import assign_colors
-from dirplot.render import _label_color, create_treemap
+from dirplot.render import _label_color, build_metadata, create_treemap
 from dirplot.scanner import build_tree
 
 
@@ -149,3 +149,54 @@ def test_treemap_visual() -> None:
     assert out.exists()
     img = Image.open(out)
     assert img.size == (800, 500)
+
+
+# ---------------------------------------------------------------------------
+# Metadata tests
+# ---------------------------------------------------------------------------
+
+EXPECTED_METADATA_KEYS = {"Date", "Software", "URL", "Python", "OS", "Command"}
+
+
+def test_build_metadata_keys() -> None:
+    """build_metadata returns all expected keys."""
+    meta = build_metadata()
+    assert set(meta.keys()) == EXPECTED_METADATA_KEYS
+
+
+def test_build_metadata_values_nonempty() -> None:
+    """build_metadata values are all non-empty strings."""
+    for key, value in build_metadata().items():
+        assert isinstance(value, str) and value, f"metadata[{key!r}] is empty"
+
+
+def test_build_metadata_software_contains_version() -> None:
+    """Software field contains 'dirplot' and a version string."""
+    software = build_metadata()["Software"]
+    assert software.startswith("dirplot ")
+    version_part = software.split(" ", 1)[1]
+    assert all(c.isdigit() or c == "." for c in version_part)
+
+
+def test_build_metadata_url() -> None:
+    meta = build_metadata()
+    assert meta["URL"] == "https://github.com/deeplook/dirplot"
+
+
+def test_png_metadata_embedded() -> None:
+    """PNG output contains all expected metadata keys as iTXt chunks."""
+    example = Path(__file__).parent / "example"
+    root = build_tree(example)
+    buf = create_treemap(root, width_px=400, height_px=300)
+    info = Image.open(buf).info
+    for key in EXPECTED_METADATA_KEYS:
+        assert key in info, f"PNG missing metadata key {key!r}"
+
+
+def test_png_metadata_software_value() -> None:
+    """PNG Software metadata starts with 'dirplot'."""
+    example = Path(__file__).parent / "example"
+    root = build_tree(example)
+    buf = create_treemap(root, width_px=400, height_px=300)
+    info = Image.open(buf).info
+    assert info["Software"].startswith("dirplot ")
