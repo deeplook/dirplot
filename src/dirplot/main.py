@@ -2,6 +2,7 @@
 
 import sys
 import webbrowser
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -73,6 +74,55 @@ def termsize() -> None:
     cols, rows, width_px, height_px = get_terminal_size()
     typer.echo(f"Characters : {cols} cols × {rows} rows")
     typer.echo(f"Pixels     : {width_px} × {height_px}")
+
+
+@app.command(name="read-meta")
+def read_meta(
+    file: Path = typer.Argument(..., help="PNG or SVG file to read dirplot metadata from"),
+) -> None:
+    """Read dirplot metadata embedded in a PNG or SVG file."""
+    if not file.exists():
+        typer.echo(f"Error: file not found: {file}", err=True)
+        raise typer.Exit(1)
+
+    suffix = file.suffix.lower()
+
+    if suffix == ".png":
+        from PIL import Image
+
+        img = Image.open(file)
+        info = img.info
+        meta_keys = {"Date", "Software", "URL", "Python", "OS", "Command"}
+        found = {k: v for k, v in info.items() if k in meta_keys}
+        if not found:
+            typer.echo("No dirplot metadata found in PNG.", err=True)
+            raise typer.Exit(1)
+        for k, v in found.items():
+            typer.echo(f"{k}: {v}")
+
+    elif suffix == ".svg":
+        content = file.read_text(encoding="utf-8")
+        try:
+            root = ET.fromstring(content)
+        except ET.ParseError as exc:
+            typer.echo(f"Error parsing SVG: {exc}", err=True)
+            raise typer.Exit(1) from exc
+        found: dict[str, str] = {}
+        for desc in root.iter("{http://www.w3.org/1999/02/22-rdf-syntax-ns#}Description"):
+            for child in desc:
+                local = child.tag.split("}")[-1] if "}" in child.tag else child.tag
+                ns_uri = child.tag.split("}")[0].lstrip("{") if "}" in child.tag else ""
+                if ns_uri == "https://github.com/deeplook/dirplot#" and child.text:
+                    found[local] = child.text
+        if not found:
+            typer.echo("No dirplot metadata found in SVG.", err=True)
+            raise typer.Exit(1)
+        for k, v in found.items():
+            typer.echo(f"{k}: {v}")
+
+    else:
+        typer.echo(f"Unsupported file type: {suffix!r}. Expected .png or .svg", err=True)
+        raise typer.Exit(1)
 
 
 @app.command(name="map", epilog=_EPILOG)

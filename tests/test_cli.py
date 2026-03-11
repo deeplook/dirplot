@@ -108,6 +108,62 @@ def test_cli_termsize() -> None:
     assert "×" in result.output
 
 
+def test_read_meta_png(sample_tree: Path, tmp_path: Path) -> None:
+    output = tmp_path / "out.png"
+    runner.invoke(app, ["map", str(sample_tree), "--no-show", "--output", str(output)])
+    result = runner.invoke(app, ["read-meta", str(output)])
+    assert result.exit_code == 0
+    assert "Date:" in result.output
+    assert "Software:" in result.output
+    assert "dirplot" in result.output
+    assert "Command:" in result.output
+
+
+def test_read_meta_svg(sample_tree: Path, tmp_path: Path) -> None:
+    output = tmp_path / "out.svg"
+    runner.invoke(
+        app, ["map", str(sample_tree), "--no-show", "--output", str(output), "--format", "svg"]
+    )
+    result = runner.invoke(app, ["read-meta", str(output)])
+    assert result.exit_code == 0
+    assert "Date:" in result.output
+    assert "Software:" in result.output
+    assert "dirplot" in result.output
+    assert "Command:" in result.output
+
+
+def test_read_meta_missing_file() -> None:
+    result = runner.invoke(app, ["read-meta", "/nonexistent/file.png"])
+    assert result.exit_code == 1
+
+
+def test_read_meta_unsupported_type(tmp_path: Path) -> None:
+    f = tmp_path / "file.txt"
+    f.write_text("hello")
+    result = runner.invoke(app, ["read-meta", str(f)])
+    assert result.exit_code == 1
+    assert "Unsupported" in result.output
+
+
+def test_read_meta_png_no_metadata(tmp_path: Path) -> None:
+    from PIL import Image
+
+    img = Image.new("RGB", (10, 10))
+    p = tmp_path / "plain.png"
+    img.save(p, format="PNG")
+    result = runner.invoke(app, ["read-meta", str(p)])
+    assert result.exit_code == 1
+    assert "No dirplot metadata" in result.output
+
+
+def test_read_meta_svg_no_metadata(tmp_path: Path) -> None:
+    p = tmp_path / "plain.svg"
+    p.write_text('<svg xmlns="http://www.w3.org/2000/svg"><rect/></svg>')
+    result = runner.invoke(app, ["read-meta", str(p)])
+    assert result.exit_code == 1
+    assert "No dirplot metadata" in result.output
+
+
 def test_main_module() -> None:
     """__main__.py delegates to app."""
     from dirplot.__main__ import main
