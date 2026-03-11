@@ -25,7 +25,9 @@
 - Save output to a PNG or SVG file with `--output`.
 - Exclude paths with `--exclude` (repeatable).
 - Works on macOS, Linux, and Windows; WSL2 fully supported.
-- Scan remote hosts over SSH (`pip install "dirplot[ssh]"`), AWS S3 buckets (`pip install "dirplot[s3]"`), any public/private GitHub repository, **running Docker containers**, or **Kubernetes pods** — all without extra dependencies beyond the respective CLI/SDK. See [EXAMPLES.md](docs/EXAMPLES.md).
+- Scan remote hosts over SSH (`pip install "dirplot[ssh]"`), AWS S3 buckets (`pip install "dirplot[s3]"`), any public/private GitHub repository (including specific branch, tag, commit SHA, or subdirectory), **running Docker containers**, or **Kubernetes pods** — all without extra dependencies beyond the respective CLI/SDK. See [EXAMPLES.md](docs/EXAMPLES.md).
+- Optional **file-count legend** (`--legend`) — a corner overlay listing the top extensions by number of files, with coloured swatches and counts, automatically sized to fit the image.
+- **Wide archive support** — reads zip, tar (gz/bz2/xz/zst), 7z, rar, and via libarchive: iso, cpio, rpm, cab, lha/lzh, xar/pkg, a/ar, and all ZIP-based formats (jar, whl, apk, nupkg, vsix, ipa, …) as virtual directory trees without unpacking. Encrypted archives are handled gracefully: metadata-only reads work without a password for most formats; a password can be supplied with `--password` or entered interactively when needed.
 
 ## How It Works
 
@@ -92,6 +94,12 @@ dirplot map . --size 1920x1080 --output dirplot.png --no-show
 # Don't apply cushion shading — makes tiles look flat
 dirplot map . --no-cushion
 
+# Show a file-count legend (top 20 extensions by default)
+dirplot map . --legend
+
+# Show a file-count legend limited to 10 entries
+dirplot map . --legend 10
+
 # Save as an interactive SVG (hover highlight + floating tooltip)
 dirplot map . --output treemap.svg --no-show
 
@@ -107,7 +115,7 @@ dirplot map . --format svg --output treemap.svg --no-show
 | `--format` | `-f` | auto | Output format: `png` or `svg`. Auto-detected from `--output` extension |
 | `--show/--no-show` | | `--show` | Display the image after rendering |
 | `--inline` | | off | Display in terminal (protocol auto-detected; PNG only) |
-| `--legend/--no-legend` | | `--no-legend` | Show file-extension colour legend |
+| `--legend [N]` | | off | Show file-count legend; `N` sets max entries (default: 20) |
 | `--font-size` | `-s` | `12` | Directory label font size in pixels |
 | `--colormap` | `-c` | `tab20` | Matplotlib colormap for unknown extensions |
 | `--exclude` | `-e` | — | Path to exclude (repeatable) |
@@ -115,6 +123,7 @@ dirplot map . --format svg --output treemap.svg --no-show
 | `--header/--no-header` | | `--header` | Print info lines before rendering |
 | `--cushion/--no-cushion` | | `--cushion` | Apply van Wijk cushion shading for a raised 3-D look |
 | `--log/--no-log` | | `--no-log` | Use log of file sizes for layout, making small files more visible |
+| `--password` | | — | Password for encrypted archives; prompted interactively if not supplied and needed |
 | `--github-token` | | `$GITHUB_TOKEN` | GitHub personal access token for private repos or higher rate limits |
 
 ## Inline Display
@@ -140,7 +149,7 @@ The default mode (`--show`, no `--inline`) opens the PNG in the system viewer (`
 
 ## Archives
 
-dirplot can read local archive files (zip, tar, 7z, rar, and ZIP-based formats like jar, whl, apk) as treemap inputs without unpacking them. See [ARCHIVES.md](docs/ARCHIVES.md) for supported formats, dependencies, and RAR setup on macOS.
+dirplot can read local archive files without unpacking them — zip, tar (gz/bz2/xz/zst), 7z, rar, and many more via libarchive (iso, cpio, rpm, cab, lha, xar, and all ZIP-based formats like jar, whl, apk, nupkg, vsix, ipa). See [ARCHIVES.md](docs/ARCHIVES.md) for the full list, dependencies, and platform notes.
 
 ```bash
 dirplot map project.zip
@@ -164,6 +173,7 @@ pip install "dirplot[s3]"    # AWS S3 via boto3
 dirplot map ssh://alice@prod.example.com/var/www
 dirplot map s3://noaa-ghcn-pds --no-sign
 dirplot map github://pallets/flask
+dirplot map github://torvalds/linux@v6.12/Documentation
 dirplot map docker://my-container:/app
 dirplot map pod://my-pod:/app
 dirplot map pod://my-pod@staging:/app
@@ -187,6 +197,8 @@ dirplot map github://my-org/private-repo
 To create a token: GitHub → Settings → Developer settings → Personal access tokens → Generate new token (see [GitHub's guide](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens)). For read-only treemap access the `public_repo` scope (or no scope for public repos) is sufficient; add `repo` for private repositories.
 
 ## Python API
+
+> **Note:** The programmatic Python API is still evolving and may change between releases without notice. Pin a specific version if you depend on it. The CLI interface is stable.
 
 The public API is small — `build_tree`, `create_treemap`, `create_treemap_svg`, and the display helpers:
 

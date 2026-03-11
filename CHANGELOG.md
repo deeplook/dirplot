@@ -7,6 +7,57 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `github://` URI now accepts an optional subpath after the repository name, letting
+  you scan a subdirectory directly:
+  - `github://owner/repo/sub/path` — subpath on the default branch
+  - `github://owner/repo@ref/sub/path` — subpath on a specific branch, tag, or commit SHA
+  - `https://github.com/owner/repo/tree/branch/sub/path` — full GitHub URL form
+  - Tags and commit SHAs are supported wherever a branch ref was previously accepted
+    (e.g. `github://torvalds/linux@v6.12`), as the GitHub trees API accepts any git ref.
+- `--legend N` replaces the old boolean `--legend/--no-legend` flag. It now shows a
+  **file-count legend** — a sorted list of the top N extensions by number of files,
+  with a coloured swatch and the file count for each entry:
+  - Pass `--legend` alone to use the default of 20 entries.
+  - Pass `--legend 10` for a custom limit.
+  - Omit the flag entirely to show no legend.
+  - The number of rows is also capped automatically so the box never overflows the
+    image, based on available vertical space and the current `--font-size`.
+  - Extensions with the same count are sorted alphabetically as a tiebreaker.
+  - When the total number of extensions exceeds the limit, a `(+N more)` line is
+    appended at the bottom of the box.
+
+- Greatly expanded archive format support via the new `libarchive-c` core dependency
+  (wraps the system libarchive C library):
+  - **New formats**: `.iso`, `.cpio`, `.xar`, `.pkg`, `.dmg`, `.img`, `.rpm`, `.cab`,
+    `.lha`, `.lzh`, `.a`, `.ar`, `.tar.zst`, `.tzst`
+  - **New ZIP aliases**: `.nupkg` (NuGet), `.vsix` (VS Code extension), `.ipa` (iOS app),
+    `.aab` (Android App Bundle)
+  - `.tar.zst` / `.tzst` routed through libarchive for consistent behaviour across all
+    supported Python versions (stdlib `tarfile` only gained zstd support in 3.12).
+  - `libarchive-c>=5.0` added as a core dependency alongside `py7zr` and `rarfile`.
+    Requires the system libarchive library:
+    `brew install libarchive` / `apt install libarchive-dev`.
+  - See [ARCHIVES.md](docs/ARCHIVES.md) for the full format table, platform notes, and
+    intentionally unsupported formats (`.deb`, UDIF `.dmg`).
+- Encrypted archive handling:
+  - `--password` CLI option passes a passphrase upfront.
+  - If an archive turns out to be encrypted and no password was given, dirplot prompts
+    interactively (`Password:` hidden-input prompt) and retries — no need to re-run with a flag.
+  - A wrong password exits cleanly with `Error: incorrect password.`
+  - `PasswordRequired` exception exported from `dirplot.archives` for programmatic use.
+  - **Encryption behaviour by format** (since dirplot reads metadata only, never extracts):
+    - ZIP and 7z: central directory / file list is unencrypted by default → readable without
+      a password even for encrypted archives.
+    - RAR with header encryption (`-hp`): listing is hidden without password;
+      wrong password raises `PasswordRequired`.
+
+### Fixed
+
+- `--version` moved back to the top-level `dirplot` command (was accidentally scoped
+  to `dirplot map` after the CLI was restructured into subcommands).
+
 ## [0.3.0] - 2026-03-10
 
 ### Added
@@ -22,33 +73,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     the scanned path are traversed — the common case in k8s where images declare
     `VOLUME` entries that are always mounted on a separate filesystem.
   - Automatically falls back to a portable `sh` + `stat` loop on BusyBox/Alpine pods.
-- `github://owner/repo[@branch]` URI scheme for GitHub repository scanning. The old
-  `github:owner/repo` shorthand has been removed.
-- File tiles now have a 1-px dark outline (60/255 below fill colour per channel) so
-  adjacent same-coloured tiles — e.g. a directory full of extension-less files — are
-  always visually distinct rather than blending into a single flat block.
-
-### Changed
-
-- `docs/REMOTE-ACCESS.md` renamed to `docs/EXAMPLES.md`; Docker and Kubernetes pod
-  sections added; images with captions added for all remote backends.
-
-### Fixed
-
-- SVG tooltips now show the original byte count when `--log` is active, not the
-  log-transformed layout value. `Node.original_size` is populated by `apply_log_sizes`
-  for both file and directory nodes and is used by the SVG renderer for `data-size`.
-- GitHub error messages are now clear and actionable:
-  - 401 explicitly says the token is invalid or expired.
-  - 403 distinguishes rate-limit exceeded (with the 60 vs 5,000 req/h figures and a
-    token hint) from a permissions failure on a private repository.
-  - 404 now also hints that a token is required for private repositories (GitHub returns
-    404, not 403, for private repos accessed without authentication).
-  - Errors are caught in the CLI and printed as a single `Error: …` line to stderr
-    instead of showing a Python traceback.
-
-### Added
-
 - Docker container scanning via `docker://container:/path` syntax — uses `docker exec`
   and `find` to build the tree without copying files out of the container. Works on any
   running container that has a POSIX shell and `find` (GNU or BusyBox). No extra
@@ -70,7 +94,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     overlay (`gradientUnits="objectBoundingBox"`), defined once and shared across all tiles.
     Matches the ×1.20 highlight / ×0.80 shadow range of the PNG renderer.
     Disabled with `--no-cushion`.
-- `--format png|svg` CLI option; format is also auto-detected from the `--output` file extension.
+- `--format png|svg` CLI option; format is also auto-detected from the `--output` file
+   extension.
 - `create_treemap_svg()` added to the public Python API (`from dirplot import create_treemap_svg`).
 - `drawsvg>=2.4` added as a core dependency.
 - Rename the treemap command to `map` (dirplot map <root>).
@@ -81,6 +106,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Support for local archive files, .zip, tgz, .tar.xz, .rar, .7z, etc.
 - Include example archives for 17 different extentions for testing.
 - Comprehensive documentation.
+- `github://owner/repo[@branch]` URI scheme for GitHub repository scanning. The old
+  `github:owner/repo` shorthand has been removed.
+- File tiles now have a 1-px dark outline (60/255 below fill colour per channel) so
+  adjacent same-coloured tiles — e.g. a directory full of extension-less files — are
+  always visually distinct rather than blending into a single flat block.
+
+### Changed
+
+- `docs/REMOTE-ACCESS.md` renamed to `docs/EXAMPLES.md`; Docker and Kubernetes pod
+  sections added; images with captions added for all remote backends.
+
+### Fixed
+
+- SVG tooltips now show the original byte count when `--log` is active, not the
+  log-transformed layout value. `Node.original_size` is populated by `apply_log_sizes`
+  for both file and directory nodes and is used by the SVG renderer for `data-size`.
+- GitHub error messages are now clear and actionable.
 
 ## [0.2.0] - 2026-03-09
 
