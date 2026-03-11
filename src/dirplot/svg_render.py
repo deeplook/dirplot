@@ -8,7 +8,7 @@ import drawsvg
 import squarify
 
 from dirplot.colors import RGBAColor, assign_colors
-from dirplot.render import _human_bytes
+from dirplot.render import _human_bytes, build_metadata
 from dirplot.scanner import Node, collect_extensions, count_nodes
 
 _CHAR_ASPECT = 0.6  # approximate width/height ratio for monospace font
@@ -565,6 +565,23 @@ def create_treemap_svg(
     color_map = assign_colors(exts, colormap)
 
     d: drawsvg.Drawing = drawsvg.Drawing(width_px, height_px)
+
+    # 0. Metadata
+    meta_fields = "".join(
+        f"    <dirplot:{k}>{html.escape(v)}</dirplot:{k}>\n" for k, v in build_metadata().items()
+    )
+    d.append(
+        drawsvg.Raw(
+            "<metadata>\n"
+            '  <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"'
+            ' xmlns:dirplot="https://github.com/deeplook/dirplot#">\n'
+            "    <rdf:Description>\n"
+            f"{meta_fields}"
+            "    </rdf:Description>\n"
+            "  </rdf:RDF>\n"
+            "</metadata>\n"
+        )
+    )
 
     # 1. CSS hover effects
     d.append_css(_HOVER_CSS)

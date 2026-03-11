@@ -400,3 +400,52 @@ def test_cushion_no_cushion_same_structure(sample_tree: Path) -> None:
     count_on = buf_on.read().decode().count("<rect")
     count_off = buf_off.read().decode().count("<rect")
     assert count_on > count_off
+
+
+# ---------------------------------------------------------------------------
+# Metadata tests
+# ---------------------------------------------------------------------------
+
+EXPECTED_METADATA_KEYS = {"Date", "Software", "URL", "Python", "OS", "Command"}
+
+
+def test_svg_has_metadata_element(sample_tree: Path) -> None:
+    """SVG output contains a <metadata> block."""
+    root = build_tree(sample_tree)
+    svg = create_treemap_svg(root, width_px=400, height_px=300).read().decode()
+    assert "<metadata>" in svg
+    assert "</metadata>" in svg
+
+
+def test_svg_metadata_has_all_keys(sample_tree: Path) -> None:
+    """SVG metadata block contains all expected dirplot: fields."""
+    root = build_tree(sample_tree)
+    svg = create_treemap_svg(root, width_px=400, height_px=300).read().decode()
+    for key in EXPECTED_METADATA_KEYS:
+        assert f"<dirplot:{key}>" in svg, f"SVG missing metadata field {key!r}"
+
+
+def test_svg_metadata_software_value(sample_tree: Path) -> None:
+    """SVG Software metadata starts with 'dirplot'."""
+    import re
+
+    root = build_tree(sample_tree)
+    svg = create_treemap_svg(root, width_px=400, height_px=300).read().decode()
+    match = re.search(r"<dirplot:Software>([^<]+)</dirplot:Software>", svg)
+    assert match and match.group(1).startswith("dirplot ")
+
+
+def test_svg_metadata_url(sample_tree: Path) -> None:
+    """SVG URL metadata points to the dirplot GitHub repo."""
+    root = build_tree(sample_tree)
+    svg = create_treemap_svg(root, width_px=400, height_px=300).read().decode()
+    assert "<dirplot:URL>https://github.com/deeplook/dirplot</dirplot:URL>" in svg
+
+
+def test_svg_metadata_well_formed(sample_tree: Path) -> None:
+    """SVG output with metadata is well-formed XML."""
+    import xml.etree.ElementTree as ET
+
+    root = build_tree(sample_tree)
+    svg = create_treemap_svg(root, width_px=400, height_px=300).read().decode()
+    ET.fromstring(svg)  # raises if not well-formed
