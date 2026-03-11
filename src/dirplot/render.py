@@ -9,7 +9,7 @@ import squarify
 from PIL import Image, ImageDraw, ImageFont
 
 from dirplot.colors import RGBAColor, assign_colors
-from dirplot.scanner import Node, collect_extensions
+from dirplot.scanner import Node, collect_extensions, count_nodes
 
 SWATCH_PX = 8  # legend colour swatch size in pixels
 LEG_PAD = 3  # legend internal padding in pixels
@@ -32,6 +32,15 @@ def _font(size: int, bold: bool = False, italic: bool = False) -> ImageFont.Free
     else:
         path = _FONT_REGULAR
     return ImageFont.truetype(str(path), size=size)
+
+
+def _human_bytes(n: int) -> str:
+    """Return a human-readable byte count: '4.0 MB', '1.2 GB', etc."""
+    for unit in ("B", "KB", "MB", "GB", "TB"):
+        if abs(n) < 1024 or unit == "TB":
+            return f"{n:.1f} {unit}" if unit != "B" else f"{n} B"
+        n /= 1024  # type: ignore[assignment]
+    return f"{n:.1f} TB"  # unreachable but satisfies type checkers
 
 
 def _label_color(rgb: tuple[int, int, int]) -> tuple[int, int, int]:
@@ -136,6 +145,7 @@ def draw_node(
     font_size: int = 12,
     cushion: bool = True,
     img: Image.Image | None = None,
+    root_label: str | None = None,
 ) -> None:
     """Recursively draw *node* and its children into *draw*.
 
@@ -146,7 +156,8 @@ def draw_node(
         w, h: Width and height in pixels.
         color_map: Extension → RGBA colour mapping.
         font: Font for directory name labels.
-        scale: Global font scale factor.
+        root_label: When set, overrides the directory header label for this
+            (root) node only; children always use their own name.
     """
     if w < 2 or h < 2:
         return
@@ -184,7 +195,7 @@ def draw_node(
     # Header label — height driven by the font size
     header_h = font.size + 4
     if h > 2 + header_h:
-        label = _truncate(node.name, draw, font, w - 8)
+        label = _truncate(root_label if root_label is not None else node.name, draw, font, w - 8)
         draw.text(
             (x + w // 2, y + 2 + header_h // 2),
             label,
@@ -370,7 +381,26 @@ def create_treemap(
     idraw = ImageDraw.Draw(img)
     font = _font(font_size, bold=True)
 
-    draw_node(idraw, root_node, 0, 0, width_px, height_px, color_map, font, font_size, cushion, img)
+    n_files, n_dirs = count_nodes(root_node)
+    total_bytes = root_node.original_size if root_node.original_size > 0 else root_node.size
+    root_label = (
+        f"{root_node.name} \u2014 {n_files:,} files, {n_dirs:,} dirs,"
+        f" {_human_bytes(total_bytes)} ({total_bytes:,} bytes)"
+    )
+    draw_node(
+        idraw,
+        root_node,
+        0,
+        0,
+        width_px,
+        height_px,
+        color_map,
+        font,
+        font_size,
+        cushion,
+        img,
+        root_label=root_label,
+    )
 
     if legend is not None:
         overlay_font = _font(max(6, font_size - 2))
