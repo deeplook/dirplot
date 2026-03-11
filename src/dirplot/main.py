@@ -243,7 +243,11 @@ def main(
         bucket, prefix = parse_s3_path(root)
         if header:
             typer.echo(f"Scanning {root} ...")
-        s3 = make_s3_client(profile=aws_profile, no_sign=no_sign)
+        try:
+            s3 = make_s3_client(profile=aws_profile, no_sign=no_sign)
+        except ImportError as exc:
+            typer.echo(f"Error: {exc}", err=True)
+            raise typer.Exit(1) from exc
         progress = [0]
         root_node = build_tree_s3(
             s3,
@@ -259,7 +263,11 @@ def main(
         ssh_user, ssh_host, remote_path = parse_ssh_path(root)
         if header:
             typer.echo(f"Scanning {root} ...")
-        client = connect(ssh_host, ssh_user, ssh_key=ssh_key, ssh_password=ssh_password)
+        try:
+            client = connect(ssh_host, ssh_user, ssh_key=ssh_key, ssh_password=ssh_password)
+        except ImportError as exc:
+            typer.echo(f"Error: {exc}", err=True)
+            raise typer.Exit(1) from exc
         sftp = client.open_sftp()
         progress = [0]
         try:
