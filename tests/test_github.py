@@ -70,15 +70,15 @@ def test_is_not_github_path(s: str) -> None:
 
 
 def test_parse_github_url_scheme_no_branch() -> None:
-    assert parse_github_path("github://owner/repo") == ("owner", "repo", None)
+    assert parse_github_path("github://owner/repo") == ("owner", "repo", None, "")
 
 
 def test_parse_github_url_scheme_with_branch() -> None:
-    assert parse_github_path("github://owner/repo@dev") == ("owner", "repo", "dev")
+    assert parse_github_path("github://owner/repo@dev") == ("owner", "repo", "dev", "")
 
 
 def test_parse_github_url_no_branch() -> None:
-    assert parse_github_path("https://github.com/owner/repo") == ("owner", "repo", None)
+    assert parse_github_path("https://github.com/owner/repo") == ("owner", "repo", None, "")
 
 
 def test_parse_github_url_with_branch() -> None:
@@ -86,6 +86,29 @@ def test_parse_github_url_with_branch() -> None:
         "owner",
         "repo",
         "feature-x",
+        "",
+    )
+
+
+def test_parse_github_url_scheme_with_subpath() -> None:
+    assert parse_github_path("github://owner/repo/sub/path") == ("owner", "repo", None, "sub/path")
+
+
+def test_parse_github_url_scheme_with_ref_and_subpath() -> None:
+    assert parse_github_path("github://owner/repo@v1.0/sub/path") == (
+        "owner",
+        "repo",
+        "v1.0",
+        "sub/path",
+    )
+
+
+def test_parse_github_url_with_branch_and_subpath() -> None:
+    assert parse_github_path("https://github.com/owner/repo/tree/main/src/foo") == (
+        "owner",
+        "repo",
+        "main",
+        "src/foo",
     )
 
 

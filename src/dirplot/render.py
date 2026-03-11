@@ -224,6 +224,19 @@ def draw_node(
         draw_node(draw, child, rx, ry, rw - 1, rh - 1, color_map, font, font_size, cushion, img)
 
 
+def _collect_ext_counts(node: Node) -> dict[str, int]:
+    counts: dict[str, int] = defaultdict(int)
+
+    def _walk(n: Node) -> None:
+        if not n.is_dir:
+            counts[n.extension] += 1
+        for c in n.children:
+            _walk(c)
+
+    _walk(node)
+    return dict(counts)
+
+
 def _best_corner(root_node: Node, width_px: int, height_px: int) -> str:
     """Return the corner string for the largest top-level tile."""
     positive = [c for c in root_node.children if c.size > 0]
@@ -253,54 +266,79 @@ def _best_corner(root_node: Node, width_px: int, height_px: int) -> str:
 
 def _draw_legend(
     draw: ImageDraw.ImageDraw,
-    ext_sizes: dict[str, int],
+    ext_counts: dict[str, int],
     color_map: dict[str, RGBAColor],
     width_px: int,
     height_px: int,
     corner: str,
     font: ImageFont.FreeTypeFont,
+    max_rows: int = 20,
 ) -> None:
-    top = sorted(ext_sizes, key=lambda e: ext_sizes[e], reverse=True)[:12]
-    if not top:
-        return
-
-    ncols = 2
-    col_entries = [top[i::ncols] for i in range(ncols)]
-    n_rows = max(len(c) for c in col_entries)
+    margin = 4
     bb = draw.textbbox((0, 0), "Ag", font=font)
     text_h = bb[3] - bb[1]
     row_h = max(SWATCH_PX, text_h) + LEG_PAD
-    col_w = max(_text_w(draw, ext, font) + SWATCH_PX + LEG_PAD * 2 for ext in top)
-    box_w = ncols * col_w + LEG_PAD
+    rows_that_fit = max(1, (height_px - 2 * margin - LEG_PAD * 2 - row_h) // row_h)
+    limit = min(max_rows, rows_that_fit)
+
+    ranked = sorted(ext_counts, key=lambda e: (-ext_counts[e], e))
+    top = ranked[:limit]
+    n_more = len(ranked) - limit
+    if not top:
+        return
+
+    more_label = f"(+{n_more})" if n_more > 0 else ""
+
+    label_w = max(_text_w(draw, ext, font) for ext in top)
+    if more_label:
+        label_w = max(label_w, _text_w(draw, more_label, font))
+    count_w = max(_text_w(draw, str(ext_counts[e]), font) for e in top)
+    box_w = SWATCH_PX + LEG_PAD + label_w + LEG_PAD + count_w + LEG_PAD * 2
+    n_rows = len(top) + (1 if more_label else 0)
     box_h = n_rows * row_h + LEG_PAD * 2
 
-    margin = 4
     bx = (width_px - box_w - margin) if "right" in corner else margin
     by = (height_px - box_h - margin) if "lower" in corner else margin
 
     draw.rectangle([bx, by, bx + box_w - 1, by + box_h - 1], fill=(20, 20, 36))
     draw.rectangle([bx, by, bx + box_w - 1, by + box_h - 1], outline=(80, 80, 80), width=1)
 
-    for ci, col in enumerate(col_entries):
-        for ri, ext in enumerate(col):
-            rgba = color_map.get(ext, (0.5, 0.5, 0.5, 1.0))
-            rgb = (int(rgba[0] * 255), int(rgba[1] * 255), int(rgba[2] * 255))
-            ex = bx + LEG_PAD + ci * col_w
-            row_mid = by + LEG_PAD + ri * row_h + (row_h - LEG_PAD) // 2
-            sy = row_mid - SWATCH_PX // 2
-            draw.rectangle(
-                [ex, sy, ex + SWATCH_PX - 1, sy + SWATCH_PX - 1],
-                fill=rgb,
-                outline=(255, 255, 255),
-                width=1,
-            )
-            draw.text(
-                (ex + SWATCH_PX + LEG_PAD, row_mid),
-                ext,
-                fill=(220, 220, 220),
-                font=font,
-                anchor="lm",
-            )
+    for ri, ext in enumerate(top):
+        rgba = color_map.get(ext, (0.5, 0.5, 0.5, 1.0))
+        rgb = (int(rgba[0] * 255), int(rgba[1] * 255), int(rgba[2] * 255))
+        ex = bx + LEG_PAD
+        row_mid = by + LEG_PAD + ri * row_h + (row_h - LEG_PAD) // 2
+        sy = row_mid - SWATCH_PX // 2
+        draw.rectangle(
+            [ex, sy, ex + SWATCH_PX - 1, sy + SWATCH_PX - 1],
+            fill=rgb,
+            outline=(255, 255, 255),
+            width=1,
+        )
+        draw.text(
+            (ex + SWATCH_PX + LEG_PAD, row_mid),
+            ext,
+            fill=(220, 220, 220),
+            font=font,
+            anchor="lm",
+        )
+        draw.text(
+            (bx + box_w - LEG_PAD, row_mid),
+            str(ext_counts[ext]),
+            fill=(160, 160, 160),
+            font=font,
+            anchor="rm",
+        )
+
+    if more_label:
+        row_mid = by + LEG_PAD + len(top) * row_h + (row_h - LEG_PAD) // 2
+        draw.text(
+            (bx + LEG_PAD + SWATCH_PX + LEG_PAD, row_mid),
+            more_label,
+            fill=(120, 120, 120),
+            font=font,
+            anchor="lm",
+        )
 
 
 def create_treemap(
@@ -309,7 +347,7 @@ def create_treemap(
     height_px: int,
     font_size: int = 12,
     colormap: str = "tab20",
-    legend: bool = False,
+    legend: int | None = None,
     cushion: bool = True,
 ) -> io.BytesIO:
     """Render a nested squarified treemap and return it as a PNG in a BytesIO buffer.
@@ -320,7 +358,7 @@ def create_treemap(
         height_px: Output image height in pixels.
         font_size: Directory label font size in pixels.
         colormap: Matplotlib colormap name for file-extension colours.
-        legend: Whether to draw an extension colour legend.
+        legend: Max entries in the file-count legend, or None to disable.
 
     Returns:
         BytesIO containing the rendered PNG, seeked to position 0.
@@ -334,19 +372,13 @@ def create_treemap(
 
     draw_node(idraw, root_node, 0, 0, width_px, height_px, color_map, font, font_size, cushion, img)
 
-    if legend:
-        ext_sizes: dict[str, int] = defaultdict(int)
-
-        def _sum(node: Node) -> None:
-            if not node.is_dir:
-                ext_sizes[node.extension] += node.size
-            for c in node.children:
-                _sum(c)
-
-        _sum(root_node)
+    if legend is not None:
+        overlay_font = _font(max(6, font_size - 2))
         corner = _best_corner(root_node, width_px, height_px)
-        leg_font = _font(max(6, font_size - 2))
-        _draw_legend(idraw, ext_sizes, color_map, width_px, height_px, corner, leg_font)
+        ext_counts = _collect_ext_counts(root_node)
+        _draw_legend(
+            idraw, ext_counts, color_map, width_px, height_px, corner, overlay_font, legend
+        )
 
     buf = io.BytesIO()
     img.save(buf, format="PNG")

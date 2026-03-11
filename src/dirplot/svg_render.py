@@ -418,62 +418,105 @@ def _draw_node_svg(
 
 def _draw_legend_svg(
     d: drawsvg.Drawing,
-    ext_sizes: dict[str, int],
+    ext_counts: dict[str, int],
     color_map: dict[str, RGBAColor],
     width_px: int,
     height_px: int,
     font_size: int,
+    corner: str,
+    max_rows: int = 20,
 ) -> None:
-    top = sorted(ext_sizes, key=lambda e: ext_sizes[e], reverse=True)[:12]
+    margin = 4
+    char_w = font_size * _CHAR_ASPECT
+    row_h = max(SWATCH_PX, font_size) + LEG_PAD
+    rows_that_fit = max(1, (height_px - 2 * margin - LEG_PAD * 2 - row_h) // row_h)
+    limit = min(max_rows, rows_that_fit)
+
+    ranked = sorted(ext_counts, key=lambda e: (-ext_counts[e], e))
+    top = ranked[:limit]
+    n_more = len(ranked) - limit
     if not top:
         return
 
-    ncols = 2
-    col_entries = [top[i::ncols] for i in range(ncols)]
-    n_rows = max(len(c) for c in col_entries)
-    row_h = max(SWATCH_PX, font_size) + LEG_PAD
-    char_w = font_size * _CHAR_ASPECT
-    col_w = max(len(ext) * char_w + SWATCH_PX + LEG_PAD * 2 for ext in top)
-    box_w = ncols * col_w + LEG_PAD
+    more_label = f"(+{n_more})" if n_more > 0 else ""
+
+    label_w = max(len(ext) * char_w for ext in top)
+    if more_label:
+        label_w = max(label_w, len(more_label) * char_w)
+    count_w = max(len(str(ext_counts[e])) * char_w for e in top)
+    box_w = SWATCH_PX + LEG_PAD + label_w + LEG_PAD + count_w + LEG_PAD * 2
+    n_rows = len(top) + (1 if more_label else 0)
     box_h = n_rows * row_h + LEG_PAD * 2
 
-    margin = 4
-    bx = width_px - box_w - margin
-    by = height_px - box_h - margin
+    bx = (width_px - box_w - margin) if "right" in corner else margin
+    by = (height_px - box_h - margin) if "lower" in corner else margin
 
     d.append(drawsvg.Rectangle(bx, by, box_w, box_h, fill="#141424"))
     d.append(drawsvg.Rectangle(bx, by, box_w, box_h, fill="none", stroke="#505050", stroke_width=1))
 
-    for ci, col in enumerate(col_entries):
-        for ri, ext in enumerate(col):
-            rgba = color_map.get(ext, (0.5, 0.5, 0.5, 1.0))
-            fill = _hex(rgba)
-            ex = bx + LEG_PAD + ci * col_w
-            row_mid = by + LEG_PAD + ri * row_h + (row_h - LEG_PAD) / 2
-            sy = row_mid - SWATCH_PX / 2
-            d.append(
-                drawsvg.Rectangle(
-                    ex,
-                    sy,
-                    SWATCH_PX,
-                    SWATCH_PX,
-                    fill=fill,
-                    stroke="white",
-                    stroke_width=1,
-                )
+    for ri, ext in enumerate(top):
+        rgba = color_map.get(ext, (0.5, 0.5, 0.5, 1.0))
+        fill = _hex(rgba)
+        ex = bx + LEG_PAD
+        row_mid = by + LEG_PAD + ri * row_h + (row_h - LEG_PAD) / 2
+        sy = row_mid - SWATCH_PX / 2
+        d.append(
+            drawsvg.Rectangle(
+                ex, sy, SWATCH_PX, SWATCH_PX, fill=fill, stroke="white", stroke_width=1
             )
-            d.append(
-                drawsvg.Text(
-                    ext,
-                    font_size,
-                    ex + SWATCH_PX + LEG_PAD,
-                    row_mid,
-                    text_anchor="start",
-                    dominant_baseline="middle",
-                    fill="#dcdcdc",
-                    font_family=_FONT_FAMILY,
-                )
+        )
+        d.append(
+            drawsvg.Text(
+                ext,
+                font_size,
+                ex + SWATCH_PX + LEG_PAD,
+                row_mid,
+                text_anchor="start",
+                dominant_baseline="middle",
+                fill="#dcdcdc",
+                font_family=_FONT_FAMILY,
             )
+        )
+        d.append(
+            drawsvg.Text(
+                str(ext_counts[ext]),
+                font_size,
+                bx + box_w - LEG_PAD,
+                row_mid,
+                text_anchor="end",
+                dominant_baseline="middle",
+                fill="#a0a0a0",
+                font_family=_FONT_FAMILY,
+            )
+        )
+
+    if more_label:
+        row_mid = by + LEG_PAD + len(top) * row_h + (row_h - LEG_PAD) / 2
+        d.append(
+            drawsvg.Text(
+                more_label,
+                font_size,
+                bx + LEG_PAD + SWATCH_PX + LEG_PAD,
+                row_mid,
+                text_anchor="start",
+                dominant_baseline="middle",
+                fill="#787878",
+                font_family=_FONT_FAMILY,
+            )
+        )
+
+
+def _collect_ext_counts(node: Node) -> dict[str, int]:
+    counts: dict[str, int] = defaultdict(int)
+
+    def _walk(n: Node) -> None:
+        if not n.is_dir:
+            counts[n.extension] += 1
+        for c in n.children:
+            _walk(c)
+
+    _walk(node)
+    return dict(counts)
 
 
 # ---------------------------------------------------------------------------
@@ -487,7 +530,7 @@ def create_treemap_svg(
     height_px: int,
     font_size: int = 12,
     colormap: str = "tab20",
-    legend: bool = False,
+    legend: int | None = None,
     cushion: bool = True,
 ) -> io.BytesIO:
     """Render a nested squarified treemap and return it as SVG in a BytesIO buffer.
@@ -536,23 +579,17 @@ def create_treemap_svg(
     _draw_node_svg(d, root_node, 0, 0, width_px, height_px, color_map, font_size, cushion_grad)
 
     # 5. Optional legend
-    if legend:
-        ext_sizes: dict[str, int] = defaultdict(int)
-
-        def _sum(node: Node) -> None:
-            if not node.is_dir:
-                ext_sizes[node.extension] += node.size
-            for c in node.children:
-                _sum(c)
-
-        _sum(root_node)
-        leg_font = max(6, font_size - 2)
-        _draw_legend_svg(d, ext_sizes, color_map, width_px, height_px, leg_font)
+    if legend is not None:
+        overlay_font = max(6, font_size - 2)
+        ext_counts = _collect_ext_counts(root_node)
+        _draw_legend_svg(
+            d, ext_counts, color_map, width_px, height_px, overlay_font, "lower-right", legend
+        )
 
     # 6. Floating tooltip element — must be last so it renders above all tiles
     _append_tooltip_element(d, font_size)
 
-    # 7. Tooltip JavaScript
+    # 8. Tooltip JavaScript
     d.append_javascript(_TOOLTIP_JS)
 
     svg_content = d.as_svg()

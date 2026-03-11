@@ -10,6 +10,14 @@ from dirplot.main import app
 runner = CliRunner()
 
 
+def test_version_flag() -> None:
+    from dirplot import __version__
+
+    result = runner.invoke(app, ["--version"])
+    assert result.exit_code == 0
+    assert __version__ in result.output
+
+
 def test_cli_invalid_path() -> None:
     result = runner.invoke(app, ["map", "/nonexistent/__dirplot_test__", "--no-show"])
     assert result.exit_code == 1
