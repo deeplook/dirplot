@@ -19,32 +19,46 @@ def is_github_path(s: str) -> bool:
     return s.startswith("github://") or "github.com/" in s
 
 
-def parse_github_path(s: str) -> tuple[str, str, str | None]:
-    """Parse a GitHub reference into *(owner, repo, branch_or_None)*.
+def parse_github_path(s: str) -> tuple[str, str, str | None, str]:
+    """Parse a GitHub reference into *(owner, repo, ref_or_None, subpath)*.
+
+    The ref may be a branch name, tag, or commit SHA — all are passed directly
+    to the GitHub trees API which accepts any git ref.
 
     Accepted formats::
 
         github://owner/repo
-        github://owner/repo@branch
+        github://owner/repo@ref
+        github://owner/repo/sub/path
+        github://owner/repo@ref/sub/path
         https://github.com/owner/repo
-        https://github.com/owner/repo/tree/branch
+        https://github.com/owner/repo/tree/ref
+        https://github.com/owner/repo/tree/ref/sub/path
     """
     if s.startswith("github://"):
         rest = s[len("github://") :]
-        branch: str | None
-        if "@" in rest:
-            repo_part, branch = rest.rsplit("@", 1)
+        parts = rest.split("/")
+        owner = parts[0]
+        repo_seg = parts[1] if len(parts) > 1 else ""
+        ref: str | None
+        if "@" in repo_seg:
+            repo, ref = repo_seg.split("@", 1)
         else:
-            repo_part, branch = rest, None
-        owner, repo = repo_part.split("/", 1)
-        return owner, repo.rstrip("/"), branch
+            repo, ref = repo_seg, None
+        subpath = "/".join(parts[2:])
+        return owner, repo, ref, subpath
 
-    # URL form: https://github.com/owner/repo[/tree/branch]
+    # URL form: https://github.com/owner/repo[/tree/ref[/subpath]]
     parts = s.split("github.com/", 1)[1].strip("/").split("/")
     owner = parts[0]
     repo = parts[1]
-    branch = parts[3] if len(parts) > 3 and parts[2] == "tree" else None
-    return owner, repo, branch
+    if len(parts) > 3 and parts[2] == "tree":
+        ref = parts[3]
+        subpath = "/".join(parts[4:])
+    else:
+        ref = None
+        subpath = ""
+    return owner, repo, ref, subpath
 
 
 def _api_get(url: str, token: str | None) -> Any:
@@ -91,13 +105,14 @@ def _default_branch(owner: str, repo: str, token: str | None) -> str:
 def build_tree_github(
     owner: str,
     repo: str,
-    branch: str | None = None,
+    ref: str | None = None,
     *,
     token: str | None = None,
     exclude: frozenset[str] = frozenset(),
     depth: int | None = None,
+    subpath: str = "",
 ) -> tuple[Node, str]:
-    """Fetch a GitHub repository tree and return *(root_node, resolved_branch)*.
+    """Fetch a GitHub repository tree and return *(root_node, resolved_ref)*.
 
     Uses ``GET /repos/{owner}/{repo}/git/trees/{ref}?recursive=1`` — a single
     API call that returns the complete file tree with sizes for all blobs.
@@ -105,14 +120,15 @@ def build_tree_github(
     Args:
         owner: GitHub username or organisation.
         repo: Repository name.
-        branch: Branch, tag, or commit SHA. Defaults to the repo's default branch.
+        ref: Branch, tag, or commit SHA. Defaults to the repo's default branch.
         token: GitHub personal access token. Falls back to ``GITHUB_TOKEN`` env var.
             Public repos work without a token but are rate-limited (60 req/h).
         exclude: Set of paths (relative to repo root) to skip.
         depth: Maximum recursion depth. ``None`` means unlimited.
+        subpath: Optional subdirectory within the repo to use as the tree root.
     """
     token = token or os.environ.get("GITHUB_TOKEN")
-    resolved = branch or _default_branch(owner, repo, token)
+    resolved = ref or _default_branch(owner, repo, token)
 
     data = _api_get(
         f"https://api.github.com/repos/{owner}/{repo}/git/trees/{resolved}?recursive=1",
@@ -126,7 +142,7 @@ def build_tree_github(
             file=sys.stderr,
         )
 
-    node = _items_to_tree(data["tree"], repo, exclude, depth)
+    node = _items_to_tree(data["tree"], repo, exclude, depth, subpath)
     return node, resolved
 
 
@@ -135,8 +151,26 @@ def _items_to_tree(
     repo: str,
     exclude: frozenset[str],
     depth: int | None,
+    subpath: str = "",
 ) -> Node:
     """Build a Node tree from the flat list returned by the GitHub trees API."""
+    prefix = subpath.strip("/")
+    if prefix:
+        root_name = PurePosixPath(prefix).name
+        filtered: list[dict[str, Any]] = []
+        for item in items:
+            p = item["path"]
+            if p == prefix:
+                continue  # the directory itself — not a child
+            if p.startswith(prefix + "/"):
+                item = dict(item, path=p[len(prefix) + 1 :])
+                filtered.append(item)
+        if not filtered:
+            raise FileNotFoundError(f"Subpath '{prefix}' not found in repository '{repo}'.")
+        items = filtered
+    else:
+        root_name = repo
+
     by_parent: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for item in items:
         p = PurePosixPath(item["path"])
@@ -146,9 +180,9 @@ def _items_to_tree(
         item["_name"] = p.name
         by_parent[parent].append(item)
 
-    def recurse(prefix: str, name: str, current_depth: int | None) -> Node:
+    def recurse(rel_prefix: str, name: str, current_depth: int | None) -> Node:
         children: list[Node] = []
-        for item in sorted(by_parent.get(prefix, []), key=lambda i: i["_name"]):
+        for item in sorted(by_parent.get(rel_prefix, []), key=lambda i: i["_name"]):
             if item["_name"].startswith("."):
                 continue
             if item["path"] in exclude:
@@ -182,11 +216,11 @@ def _items_to_tree(
         total = sum(c.size for c in children) or 1
         return Node(
             name=name,
-            path=Path(prefix) if prefix else Path(repo),
+            path=Path(rel_prefix) if rel_prefix else Path(root_name),
             size=total,
             is_dir=True,
             extension="",
             children=children,
         )
 
-    return recurse("", repo, depth)
+    return recurse("", root_name, depth)
