@@ -1,5 +1,6 @@
 """Treemap layout and SVG rendering using drawsvg."""
 
+import html
 import io
 from collections import defaultdict
 
@@ -283,9 +284,9 @@ def _draw_node_svg(
             stroke=stroke,
             stroke_width="1",
             class_="tile",
-            data_name=node.name,
+            data_name=html.escape(node.name),
             data_size=str(display_size),
-            data_ext=node.extension,
+            data_ext=html.escape(node.extension),
             data_is_dir="0",
         )
         d.append(rect)
@@ -358,7 +359,7 @@ def _draw_node_svg(
             header_h,
             fill="#1c1c2e",
             class_="dir-tile",
-            data_name=node.name,
+            data_name=html.escape(node.name),
             data_size=str(display_size),
             data_is_dir="1",
             data_count=str(n_children),
