@@ -7,7 +7,8 @@ import drawsvg
 import squarify
 
 from dirplot.colors import RGBAColor, assign_colors
-from dirplot.scanner import Node, collect_extensions
+from dirplot.render import _human_bytes
+from dirplot.scanner import Node, collect_extensions, count_nodes
 
 _CHAR_ASPECT = 0.6  # approximate width/height ratio for monospace font
 _FONT_FAMILY = "JetBrains Mono, Consolas, monospace"
@@ -260,6 +261,7 @@ def _draw_node_svg(
     color_map: dict[str, RGBAColor],
     font_size: int = 12,
     cushion_grad: drawsvg.LinearGradient | None = None,
+    root_label: str | None = None,
 ) -> None:
     """Recursively draw *node* and its children into *d*."""
     if w < 2 or h < 2:
@@ -364,7 +366,7 @@ def _draw_node_svg(
         )
         d.append(hdr)
 
-        label = _truncate(node.name, font_size, w - 8)
+        label = _truncate(root_label if root_label is not None else node.name, font_size, w - 8)
         hclip = drawsvg.ClipPath()
         hclip.append(drawsvg.Rectangle(x + 2, y + 2, w - 4, header_h))
         d.append(hclip)
@@ -576,7 +578,24 @@ def create_treemap_svg(
         d.append(cushion_grad)
 
     # 4. Treemap tiles
-    _draw_node_svg(d, root_node, 0, 0, width_px, height_px, color_map, font_size, cushion_grad)
+    n_files, n_dirs = count_nodes(root_node)
+    total_bytes = root_node.original_size if root_node.original_size > 0 else root_node.size
+    root_label = (
+        f"{root_node.name} \u2014 {n_files:,} files, {n_dirs:,} dirs,"
+        f" {_human_bytes(total_bytes)} ({total_bytes:,} bytes)"
+    )
+    _draw_node_svg(
+        d,
+        root_node,
+        0,
+        0,
+        width_px,
+        height_px,
+        color_map,
+        font_size,
+        cushion_grad,
+        root_label=root_label,
+    )
 
     # 5. Optional legend
     if legend is not None:

@@ -82,6 +82,24 @@ def apply_log_sizes(node: Node) -> None:
     node.size = sum(c.size for c in node.children)
 
 
+def count_nodes(node: Node) -> tuple[int, int]:
+    """Return *(n_files, n_dirs)* for the subtree rooted at *node*.
+
+    *node* itself is not counted — only its descendants.
+    """
+    files = 0
+    dirs = 0
+    for child in node.children:
+        if child.is_dir:
+            dirs += 1
+            cf, cd = count_nodes(child)
+            files += cf
+            dirs += cd
+        else:
+            files += 1
+    return files, dirs
+
+
 def collect_extensions(node: Node) -> list[str]:
     """Return a flat list of file extensions under *node*."""
     if not node.is_dir:
