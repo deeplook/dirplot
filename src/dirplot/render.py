@@ -289,7 +289,7 @@ def _draw_legend(
     bb = draw.textbbox((0, 0), "Ag", font=font)
     text_h = bb[3] - bb[1]
     row_h = max(SWATCH_PX, text_h) + LEG_PAD
-    rows_that_fit = max(1, (height_px - 2 * margin - LEG_PAD * 2 - row_h) // row_h)
+    rows_that_fit = max(1, int((height_px - 2 * margin - LEG_PAD * 2 - row_h) // row_h))
     limit = min(max_rows, rows_that_fit)
 
     ranked = sorted(ext_counts, key=lambda e: (-ext_counts[e], e))
