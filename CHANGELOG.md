@@ -28,6 +28,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - When the total number of extensions exceeds the limit, a `(+N more)` line is
     appended at the bottom of the box.
 
+- The root tile header now includes a summary of the scanned tree after an em-dash
+  separator: `myproject — 124 files, 18 dirs, 4.0 MB (4,231,680 bytes)`.
+  Applies to both PNG and SVG output. The label is truncated with `…` when the tile
+  is too narrow to fit the full string.
+
 - Greatly expanded archive format support via the new `libarchive-c` core dependency
   (wraps the system libarchive C library):
   - **New formats**: `.iso`, `.cpio`, `.xar`, `.pkg`, `.dmg`, `.img`, `.rpm`, `.cab`,
