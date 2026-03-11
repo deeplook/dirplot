@@ -1,4 +1,4 @@
-"""Archive file scanning (zip, tar, 7z, rar) as virtual directory trees."""
+"""Archive file scanning (zip, tar, 7z, rar, libarchive) as virtual directory trees."""
 
 from __future__ import annotations
 
@@ -16,6 +16,7 @@ ARCHIVE_SUFFIXES = frozenset(
         ".tgz",
         ".tbz2",
         ".txz",
+        ".tzst",
         ".7z",
         ".rar",
         # ZIP-based formats
@@ -26,9 +27,26 @@ ARCHIVE_SUFFIXES = frozenset(
         ".apk",
         ".epub",
         ".xpi",
+        ".nupkg",
+        ".vsix",
+        ".ipa",
+        ".aab",
+        # libarchive-handled formats
+        ".dmg",
+        ".pkg",
+        ".img",
+        ".iso",
+        ".xar",
+        ".cpio",
+        ".rpm",
+        ".cab",
+        ".lha",
+        ".lzh",
+        ".a",
+        ".ar",
     }
 )
-COMPOUND_SUFFIXES = frozenset({".tar.gz", ".tar.bz2", ".tar.xz"})
+COMPOUND_SUFFIXES = frozenset({".tar.gz", ".tar.bz2", ".tar.xz", ".tar.zst"})
 
 
 def is_archive_path(s: str) -> bool:
@@ -45,14 +63,52 @@ def _archive_type(path: Path) -> str:
     ):
         return "tar"
     if any(
-        name.endswith(s) for s in (".zip", ".jar", ".war", ".ear", ".whl", ".apk", ".epub", ".xpi")
+        name.endswith(s)
+        for s in (
+            ".zip",
+            ".jar",
+            ".war",
+            ".ear",
+            ".whl",
+            ".apk",
+            ".epub",
+            ".xpi",
+            ".nupkg",
+            ".vsix",
+            ".ipa",
+            ".aab",
+        )
     ):
         return "zip"
     if name.endswith(".7z"):
         return "7z"
     if name.endswith(".rar"):
         return "rar"
+    if any(
+        name.endswith(s)
+        for s in (
+            ".dmg",
+            ".pkg",
+            ".img",
+            ".iso",
+            ".xar",
+            ".cpio",
+            ".rpm",
+            ".cab",
+            ".lha",
+            ".lzh",
+            ".a",
+            ".ar",
+            ".tar.zst",
+            ".tzst",
+        )
+    ):
+        return "libarchive"
     raise ValueError(f"Unsupported archive: {path.name}")
+
+
+class PasswordRequired(Exception):
+    """Raised when an archive is encrypted and no password has been supplied."""
 
 
 def _root_name(path: Path) -> str:
@@ -64,15 +120,27 @@ def _root_name(path: Path) -> str:
     return path.stem
 
 
-def _read_zip(path: Path) -> list[tuple[str, int, bool]]:
-    """Return (member_path, size, is_dir) tuples for a zip archive."""
+def _read_zip(path: Path, password: str | None = None) -> list[tuple[str, int, bool]]:
+    """Return (member_path, size, is_dir) tuples for a zip archive.
+
+    ZIP central-directory metadata (names, sizes) is stored unencrypted even in
+    password-protected archives, so a password is rarely needed here.  It is
+    accepted for completeness and forwarded to ZipFile.setpassword().
+    """
     entries: list[tuple[str, int, bool]] = []
-    with zipfile.ZipFile(path) as zf:
-        for info in zf.infolist():
-            is_dir = info.filename.endswith("/")
-            member_path = info.filename.rstrip("/")
-            size = info.file_size
-            entries.append((member_path, size, is_dir))
+    try:
+        with zipfile.ZipFile(path) as zf:
+            if password is not None:
+                zf.setpassword(password.encode())
+            for info in zf.infolist():
+                is_dir = info.filename.endswith("/")
+                member_path = info.filename.rstrip("/")
+                size = info.file_size
+                entries.append((member_path, size, is_dir))
+    except RuntimeError as exc:
+        if "encrypted" in str(exc).lower() or "password" in str(exc).lower():
+            raise PasswordRequired(path.name) from exc
+        raise
     return entries
 
 
@@ -95,31 +163,91 @@ def _read_tar(path: Path) -> list[tuple[str, int, bool]]:
     return entries
 
 
-def _read_rar(path: Path) -> list[tuple[str, int, bool]]:
+def _read_rar(path: Path, password: str | None = None) -> list[tuple[str, int, bool]]:
     """Return (member_path, size, is_dir) tuples for a RAR archive."""
     import rarfile
 
     entries: list[tuple[str, int, bool]] = []
-    with rarfile.RarFile(path) as rf:
-        for info in rf.infolist():
-            is_dir = info.is_dir()
-            member_path = info.filename.rstrip("/")
-            size = info.file_size
-            entries.append((member_path, size, is_dir))
+    try:
+        with rarfile.RarFile(path) as rf:
+            if password is not None:
+                rf.setpassword(password)
+            for info in rf.infolist():
+                is_dir = info.is_dir()
+                member_path = info.filename.rstrip("/")
+                size = info.file_size
+                entries.append((member_path, size, is_dir))
+    except (rarfile.PasswordRequired, rarfile.RarWrongPassword) as exc:
+        raise PasswordRequired(path.name) from exc
     return entries
 
 
-def _read_7z(path: Path) -> list[tuple[str, int, bool]]:
+def _read_libarchive(path: Path, password: str | None = None) -> list[tuple[str, int, bool]]:
+    """Return (member_path, size, is_dir) tuples using the libarchive-c package.
+
+    Handles formats not covered by stdlib or bundled libraries: .iso, .cpio,
+    .xar, .pkg, .dmg, .img, .rpm, .cab, .lha/.lzh, .a/.ar, .tar.zst/.tzst,
+    and any other format that the installed system libarchive supports.
+
+    Raises:
+        ImportError: if ``libarchive-c`` is not installed.
+        PasswordRequired: if the archive is encrypted and no password was given.
+        OSError: if the archive cannot be opened (unsupported format, corrupted).
+    """
+    try:
+        import libarchive
+    except ImportError as exc:
+        raise ImportError(
+            f"libarchive-c is required to read {path.suffix} archives. "
+            "Install it with: pip install libarchive-c\n"
+            "(The system libarchive library must also be present: "
+            "brew install libarchive  or  apt install libarchive-dev)"
+        ) from exc
+
+    entries: list[tuple[str, int, bool]] = []
+    try:
+        with libarchive.file_reader(str(path), passphrase=password) as archive:
+            for entry in archive:
+                if entry.issym or entry.islnk:
+                    continue
+                member_path = entry.pathname.rstrip("/")
+                # Skip root-directory placeholders ('.', '', '/')
+                if not member_path or member_path == ".":
+                    continue
+                # Strip leading './'
+                while member_path.startswith("./"):
+                    member_path = member_path[2:]
+                if not member_path:
+                    continue
+                is_dir = entry.isdir
+                size = entry.size or 0
+                entries.append((member_path, size, is_dir))
+    except Exception as exc:
+        msg = str(exc).lower()
+        if "passphrase" in msg or "password" in msg or "encrypted" in msg:
+            raise PasswordRequired(path.name) from exc
+        raise OSError(
+            f"Cannot open {path.name}: {exc}\n"
+            "The file format may not be supported by the installed libarchive, "
+            "or the archive may be encrypted/corrupted."
+        ) from exc
+    return entries
+
+
+def _read_7z(path: Path, password: str | None = None) -> list[tuple[str, int, bool]]:
     """Return (member_path, size, is_dir) tuples for a 7z archive."""
     import py7zr
 
     entries: list[tuple[str, int, bool]] = []
-    with py7zr.SevenZipFile(path, mode="r") as sz:
-        for info in sz.list():
-            member_path = info.filename.rstrip("/")
-            is_dir = info.is_directory
-            size = info.uncompressed or 0
-            entries.append((member_path, size, is_dir))
+    try:
+        with py7zr.SevenZipFile(path, mode="r", password=password) as sz:
+            for info in sz.list():
+                member_path = info.filename.rstrip("/")
+                is_dir = info.is_directory
+                size = info.uncompressed or 0
+                entries.append((member_path, size, is_dir))
+    except py7zr.exceptions.PasswordRequired as exc:
+        raise PasswordRequired(path.name) from exc
     return entries
 
 
@@ -203,6 +331,7 @@ def build_tree_archive(
     *,
     exclude: frozenset[str] = frozenset(),
     depth: int | None = None,
+    password: str | None = None,
 ) -> Node:
     """Read an archive file and return a Node tree of its contents.
 
@@ -210,16 +339,21 @@ def build_tree_archive(
         path: Path to the archive file.
         exclude: Set of member names or paths to skip.
         depth: Maximum recursion depth. ``None`` means unlimited.
+        password: Passphrase for encrypted archives. When ``None`` and the
+            archive is encrypted, ``PasswordRequired`` is raised so the caller
+            can prompt the user and retry.
     """
     kind = _archive_type(path)
     if kind == "zip":
-        entries = _read_zip(path)
+        entries = _read_zip(path, password)
     elif kind == "tar":
         entries = _read_tar(path)
     elif kind == "7z":
-        entries = _read_7z(path)
+        entries = _read_7z(path, password)
+    elif kind == "libarchive":
+        entries = _read_libarchive(path, password)
     else:
-        entries = _read_rar(path)
+        entries = _read_rar(path, password)
 
     root_name = _root_name(path)
     return _entries_to_tree(entries, root_name, exclude, depth)

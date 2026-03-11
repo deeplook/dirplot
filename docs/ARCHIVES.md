@@ -21,14 +21,34 @@ dirplot map backup.7z --exclude node_modules
 | `.apk` | ZIP (Android package) | `zipfile` (stdlib) |
 | `.epub` | ZIP (eBook) | `zipfile` (stdlib) |
 | `.xpi` | ZIP (browser extension) | `zipfile` (stdlib) |
+| `.nupkg` | ZIP (NuGet package) | `zipfile` (stdlib) |
+| `.vsix` | ZIP (VS Code extension) | `zipfile` (stdlib) |
+| `.ipa` | ZIP (iOS app package) | `zipfile` (stdlib) |
+| `.aab` | ZIP (Android App Bundle) | `zipfile` (stdlib) |
 | `.tar`, `.tar.gz`, `.tgz` | TAR | `tarfile` (stdlib) |
 | `.tar.bz2`, `.tbz2` | TAR | `tarfile` (stdlib) |
 | `.tar.xz`, `.txz` | TAR | `tarfile` (stdlib) |
 | `.7z` | 7-Zip | `py7zr` (bundled) |
 | `.rar` | RAR | `rarfile` (bundled) |
+| `.tar.zst`, `.tzst` | TAR + Zstandard | `libarchive-c` (bundled) |
+| `.iso` | ISO 9660 disc image | `libarchive-c` (bundled) |
+| `.cpio` | CPIO archive | `libarchive-c` (bundled) |
+| `.xar` | XAR / macOS package | `libarchive-c` (bundled) |
+| `.pkg` | macOS installer package (XAR) | `libarchive-c` (bundled) |
+| `.dmg` | macOS disk image | `libarchive-c` (bundled) |
+| `.img` | Raw/FAT disk image | `libarchive-c` (bundled) |
+| `.rpm` | RPM package (Red Hat / Fedora / SUSE) | `libarchive-c` (bundled) |
+| `.cab` | Microsoft Cabinet (Windows installers/drivers) | `libarchive-c` (bundled) |
+| `.lha`, `.lzh` | LHA/LZH (legacy, common in Japanese software) | `libarchive-c` (bundled) |
+| `.a`, `.ar` | Unix static library / generic `ar` archive | `libarchive-c` (bundled) |
 
-ZIP and all its synonyms (`.jar`, `.whl`, etc.) are read with the same stdlib
-`zipfile` module — the format is identical, only the extension differs.
+ZIP and all its synonyms (`.jar`, `.whl`, `.nupkg`, etc.) are read with the
+same stdlib `zipfile` module — the format is identical, only the extension
+differs.
+
+`.tar.zst` and `.tzst` are routed through libarchive rather than stdlib
+`tarfile`, which only gained zstd support in Python 3.12. This ensures
+consistent behaviour across all supported Python versions (3.10+).
 
 Symlinks inside TAR archives are silently skipped. Dotfiles (members whose
 filename starts with `.`) are skipped in all formats, consistent with the
@@ -36,12 +56,32 @@ behaviour of local and remote directory scans.
 
 ## Python dependencies
 
-`py7zr` and `rarfile` are regular dependencies — no extra install flag is
-needed:
+`py7zr`, `rarfile`, and `libarchive-c` are regular dependencies — no extra
+install flag is needed:
 
 ```bash
-pip install dirplot        # py7zr and rarfile included
+pip install dirplot        # py7zr, rarfile, and libarchive-c included
 ```
+
+`libarchive-c` is a thin Python binding to the system **libarchive** C
+library.  The library itself must be installed separately:
+
+```bash
+# macOS
+brew install libarchive
+
+# Debian / Ubuntu
+sudo apt install libarchive-dev
+
+# Fedora / RHEL
+sudo dnf install libarchive-devel
+```
+
+On macOS the Homebrew-installed libarchive includes support for reading Apple
+disk images (`.dmg`), ISO 9660 (`.iso`), XAR/PKG (`.xar`, `.pkg`), CPIO
+(`.cpio`), and raw disk images (`.img`).  Support for individual formats may
+vary across Linux distributions depending on how their libarchive package was
+compiled.
 
 ## RAR: system tool requirement
 
@@ -95,6 +135,25 @@ skipped automatically if the `rar` CLI is not found.
 The pytest `sample_archives` session fixture in `tests/conftest.py` regenerates
 the same files into a temporary directory at test-session start, so running the
 script is not required for CI or for running the test suite locally.
+
+## Intentionally unsupported formats
+
+**`.deb` (Debian/Ubuntu packages)** — a `.deb` file is an `ar` archive whose
+members are `debian-binary`, `control.tar.*`, and `data.tar.*`.  libarchive
+sees only those three `ar` members, not the actual file tree inside
+`data.tar.*`.  Showing three opaque tarball blobs is not useful, so `.deb` is
+not registered as a supported input.  To inspect the contents, extract the
+`data.tar.*` member first:
+
+```bash
+ar x package.deb data.tar.gz
+dirplot map data.tar.gz
+```
+
+**macOS UDIF disk images (`.dmg`)** — most modern macOS disk images use the
+proprietary UDIF format, which is not supported by the open-source libarchive.
+dirplot will report a clear error if the format is unrecognised.  Plain
+HFS+/FAT images without UDIF wrapping may still be readable.
 
 ## Behaviour notes
 

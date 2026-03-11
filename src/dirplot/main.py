@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import typer
 
 from dirplot import __version__
-from dirplot.archives import build_tree_archive, is_archive_path
+from dirplot.archives import PasswordRequired, build_tree_archive, is_archive_path
 from dirplot.display import display_inline, display_window
 from dirplot.docker import build_tree_docker, is_docker_path, parse_docker_path
 from dirplot.github import build_tree_github, is_github_path, parse_github_path
@@ -32,13 +32,30 @@ def _version_callback(value: bool) -> None:
         raise typer.Exit()
 
 
+@app.callback(invoke_without_command=True)
+def _app_callback(
+    ctx: typer.Context,
+    version: bool = typer.Option(
+        False,
+        "--version",
+        "-V",
+        callback=_version_callback,
+        is_eager=True,
+        help="Show version and exit",
+    ),
+) -> None:
+    if ctx.invoked_subcommand is None:
+        typer.echo(ctx.get_help())
+        raise typer.Exit()
+
+
 _EPILOG = (
     "[bold]Examples[/bold]\n\n"
     "  dirplot map .  [dim]# open in system viewer[/dim]\n\n"
     "  dirplot map . --no-show --output treemap.png  [dim]# save to file[/dim]\n\n"
     "  dirplot map github://owner/repo  [dim]# map a GitHub repo[/dim]\n\n"
     "  dirplot map . --inline  [dim]# render inline (iTerm2 / Kitty / Ghostty)[/dim]\n\n"
-    "  dirplot map . --legend  [dim]# show extension colour legend[/dim]\n\n"
+    "  dirplot map . --legend 20  [dim]# show file-count legend (top 20)[/dim]\n\n"
     "  dirplot map . --exclude .venv --exclude .git  [dim]# skip paths[/dim]\n\n"
     "  dirplot map . --colormap Set2 --font-size 14  [dim]# custom colours and label size[/dim]\n\n"
     "  dirplot map . --size 1920x1080 --no-show --output out.png  [dim]# fixed resolution[/dim]\n\n"
@@ -62,18 +79,10 @@ def termsize() -> None:
 def main(
     root: str = typer.Argument(
         ...,
-        help="Root to map: local directory, archive file (.zip .tar.gz .7z .rar …), "
+        help="Root to map: local directory, archive file (.zip .tar.gz .7z .rar .dmg .pkg .iso …), "
         "ssh://user@host/path, s3://bucket/prefix, "
         r"github://owner/repo\[@branch], https://github.com/owner/repo\[/tree/branch], "
         r"docker://container:/path, or pod://pod-name\[@namespace]/path",
-    ),
-    version: bool = typer.Option(
-        False,
-        "--version",
-        "-V",
-        callback=_version_callback,
-        is_eager=True,
-        help="Show version and exit",
     ),
     output: Path | None = typer.Option(
         None, "--output", "-o", help="Output path (optional). Use .svg extension for SVG output."
@@ -91,7 +100,12 @@ def main(
         "--inline",
         help="Show in terminal (auto-detects iTerm2/Kitty protocol) instead of a separate window",
     ),
-    legend: bool = typer.Option(False, "--legend/--no-legend", help="Show extension legend"),
+    legend: int | None = typer.Option(
+        None,
+        "--legend",
+        help="Show file-count legend; value sets max entries shown (default: 20)",
+        metavar="N",
+    ),
     font_size: int = typer.Option(
         12, "--font-size", "-s", help="Directory label font size in pixels (default: 12)"
     ),
@@ -156,6 +170,11 @@ def main(
         "--log/--no-log",
         help="Use log of file sizes for layout, making small files more visible.",
     ),
+    password: str | None = typer.Option(
+        None,
+        "--password",
+        help="Password for encrypted archives. Prompted interactively if not supplied and needed.",
+    ),
 ) -> None:
     """Create a nested treemap bitmap for a directory tree."""
     if colormap not in plt.colormaps():
@@ -203,21 +222,23 @@ def main(
         if progress[0] >= 100:
             print("", file=sys.stderr)
     elif is_github_path(root):
-        gh_owner, gh_repo, gh_branch = parse_github_path(root)
+        gh_owner, gh_repo, gh_ref, gh_subpath = parse_github_path(root)
         try:
-            root_node, resolved_branch = build_tree_github(
+            root_node, resolved_ref = build_tree_github(
                 gh_owner,
                 gh_repo,
-                gh_branch,
+                gh_ref,
                 token=github_token,
                 exclude=frozenset(exclude),
                 depth=depth,
+                subpath=gh_subpath,
             )
         except (PermissionError, FileNotFoundError) as exc:
             typer.echo(f"Error: {exc}", err=True)
             raise typer.Exit(1) from exc
         if header:
-            typer.echo(f"Scanning github:{gh_owner}/{gh_repo}@{resolved_branch} ...")
+            subpath_label = f"/{gh_subpath}" if gh_subpath else ""
+            typer.echo(f"Scanning github:{gh_owner}/{gh_repo}@{resolved_ref}{subpath_label} ...")
     elif is_s3_path(root):
         bucket, prefix = parse_s3_path(root)
         if header:
@@ -264,7 +285,25 @@ def main(
             raise typer.Exit(1)
         if header:
             typer.echo(f"Reading archive {root} ...")
-        root_node = build_tree_archive(archive_path, exclude=frozenset(exclude), depth=depth)
+        try:
+            root_node = build_tree_archive(
+                archive_path, exclude=frozenset(exclude), depth=depth, password=password
+            )
+        except PasswordRequired as exc:
+            if password is not None:
+                typer.echo("Error: incorrect password.", err=True)
+                raise typer.Exit(1) from exc
+            pw = typer.prompt("Password", hide_input=True)
+            try:
+                root_node = build_tree_archive(
+                    archive_path, exclude=frozenset(exclude), depth=depth, password=pw
+                )
+            except PasswordRequired as exc2:
+                typer.echo("Error: incorrect password.", err=True)
+                raise typer.Exit(1) from exc2
+        except (OSError, RuntimeError) as exc:
+            typer.echo(f"Error: {exc}", err=True)
+            raise typer.Exit(1) from exc
     else:
         root_path = Path(root)
         if not root_path.exists():

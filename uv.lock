@@ -759,10 +759,11 @@ wheels = [
 
 [[package]]
 name = "dirplot"
-version = "0.3.0"
+version = "0.3.1"
 source = { editable = "." }
 dependencies = [
     { name = "drawsvg" },
+    { name = "libarchive-c" },
     { name = "matplotlib" },
     { name = "pillow" },
     { name = "py7zr" },
@@ -779,6 +780,9 @@ dev = [
     { name = "pytest-cov" },
     { name = "ruff" },
 ]
+libarchive = [
+    { name = "libarchive-c" },
+]
 s3 = [
     { name = "boto3" },
 ]
@@ -790,6 +794,8 @@ ssh = [
 requires-dist = [
     { name = "boto3", marker = "extra == 's3'", specifier = ">=1.26" },
     { name = "drawsvg", specifier = ">=2.4.1" },
+    { name = "libarchive-c", specifier = ">=5.0" },
+    { name = "libarchive-c", marker = "extra == 'libarchive'", specifier = ">=5.3" },
     { name = "matplotlib", specifier = ">=3.7" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.10" },
     { name = "paramiko", marker = "extra == 'ssh'", specifier = ">=3.0" },
@@ -803,7 +809,7 @@ requires-dist = [
     { name = "squarify", specifier = ">=0.4" },
     { name = "typer", specifier = ">=0.9" },
 ]
-provides-extras = ["ssh", "s3", "dev"]
+provides-extras = ["ssh", "s3", "dev", "libarchive"]
 
 [[package]]
 name = "distlib"
@@ -1110,6 +1116,15 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/33/01/a8ea7c5ea32a9b45ceeaee051a04c8ed4320f5add3c51bfa20879b765b70/kiwisolver-1.4.9-pp311-pypy311_pp73-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:85b5352f94e490c028926ea567fc569c52ec79ce131dadb968d3853e809518c2", size = 80281, upload-time = "2025-08-10T21:27:45.369Z" },
     { url = "https://files.pythonhosted.org/packages/da/e3/dbd2ecdce306f1d07a1aaf324817ee993aab7aee9db47ceac757deabafbe/kiwisolver-1.4.9-pp311-pypy311_pp73-manylinux_2_24_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:464415881e4801295659462c49461a24fb107c140de781d55518c4b80cb6790f", size = 78009, upload-time = "2025-08-10T21:27:46.376Z" },
     { url = "https://files.pythonhosted.org/packages/da/e9/0d4add7873a73e462aeb45c036a2dead2562b825aa46ba326727b3f31016/kiwisolver-1.4.9-pp311-pypy311_pp73-win_amd64.whl", hash = "sha256:fb940820c63a9590d31d88b815e7a3aa5915cad3ce735ab45f0c730b39547de1", size = 73929, upload-time = "2025-08-10T21:27:48.236Z" },
+]
+
+[[package]]
+name = "libarchive-c"
+version = "5.3"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/26/23/e72434d5457c24113e0c22605cbf7dd806a2561294a335047f5aa8ddc1ca/libarchive_c-5.3.tar.gz", hash = "sha256:5ddb42f1a245c927e7686545da77159859d5d4c6d00163c59daff4df314dae82", size = 54349, upload-time = "2025-05-22T08:08:04.604Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/88/3f/ff00c588ebd7eae46a9d6223389f5ae28a3af4b6d975c0f2a6d86b1342b9/libarchive_c-5.3-py3-none-any.whl", hash = "sha256:651550a6ec39266b78f81414140a1e04776c935e72dfc70f1d7c8e0a3672ffba", size = 17035, upload-time = "2025-05-22T08:08:03.045Z" },
 ]
 
 [[package]]

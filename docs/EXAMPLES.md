@@ -64,6 +64,8 @@ dirplot map ssh://prod/var/www   # resolves using the config block above
 
 ### Python API
 
+> **Note:** The programmatic Python API is still evolving and may change between releases without notice. Pin a specific version if you depend on it. The CLI interface is stable.
+
 ```python
 from dirplot.ssh import connect, build_tree_ssh
 from dirplot.render import create_treemap
@@ -125,6 +127,8 @@ boto3's standard credential chain is used automatically — no extra configurati
 | `--exclude` | — | Full `s3://bucket/key` URI to skip (repeatable) |
 
 ### Python API
+
+> **Note:** The programmatic Python API is still evolving and may change between releases without notice. Pin a specific version if you depend on it. The CLI interface is stable.
 
 ```python
 from dirplot.s3 import make_s3_client, build_tree_s3
@@ -225,6 +229,8 @@ Tokens are resolved in this order:
 
 ### Python API
 
+> **Note:** The programmatic Python API is still evolving and may change between releases without notice. Pin a specific version if you depend on it. The CLI interface is stable.
+
 ```python
 from dirplot.github import build_tree_github
 from dirplot.render import create_treemap
@@ -293,6 +299,8 @@ docker rm -f pg-demo
 | `--exclude` | — | Absolute path inside the container to skip (repeatable) |
 
 ### Python API
+
+> **Note:** The programmatic Python API is still evolving and may change between releases without notice. Pin a specific version if you depend on it. The CLI interface is stable.
 
 ```python
 from dirplot.docker import build_tree_docker
@@ -369,6 +377,8 @@ kubectl delete pod pg-demo --grace-period=0
 | `--exclude` | — | Absolute path inside the pod to skip (repeatable) |
 
 ### Python API
+
+> **Note:** The programmatic Python API is still evolving and may change between releases without notice. Pin a specific version if you depend on it. The CLI interface is stable.
 
 ```python
 from dirplot.k8s import build_tree_pod

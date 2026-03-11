@@ -11,7 +11,8 @@ from pathlib import Path
 
 import pytest
 
-from dirplot.archives import build_tree_archive, is_archive_path
+from dirplot.archives import PasswordRequired, build_tree_archive, is_archive_path
+from tests.conftest import ENCRYPTED_PASSWORD
 
 # ---------------------------------------------------------------------------
 # is_archive_path
@@ -39,6 +40,27 @@ from dirplot.archives import build_tree_archive, is_archive_path
         "foo.epub",
         "foo.xpi",
         "FOO.ZIP",  # case-insensitive
+        # more ZIP aliases
+        "foo.nupkg",
+        "foo.vsix",
+        "foo.ipa",
+        "foo.aab",
+        # tar.zst
+        "foo.tar.zst",
+        "foo.tzst",
+        # libarchive-handled formats
+        "foo.dmg",
+        "foo.pkg",
+        "foo.img",
+        "foo.iso",
+        "foo.xar",
+        "foo.cpio",
+        "foo.rpm",
+        "foo.cab",
+        "foo.lha",
+        "foo.lzh",
+        "foo.a",
+        "foo.ar",
     ],
 )
 def test_is_archive_path_true(name: str) -> None:
@@ -311,6 +333,10 @@ _ALL_EXTENSIONS = [
     ".apk",
     ".epub",
     ".xpi",
+    ".nupkg",
+    ".vsix",
+    ".ipa",
+    ".aab",
     ".tar",
     ".tar.gz",
     ".tgz",
@@ -360,8 +386,16 @@ def _tree_repr(node: _Node) -> tuple[str, int, tuple[object, ...]]:
 
 
 def test_all_formats_same_content(sample_archives: dict[str, Path]) -> None:
-    """Every archive in sample_archives must produce an identical node tree."""
-    reprs = {ext: _tree_repr(build_tree_archive(path)) for ext, path in sample_archives.items()}
+    """Every archive in sample_archives must produce an identical node tree.
+
+    `.a` / `.ar` archives are intentionally excluded: the `ar` format is flat
+    (no directory hierarchy), so the tree structure necessarily differs.
+    """
+    reprs = {
+        ext: _tree_repr(build_tree_archive(path))
+        for ext, path in sample_archives.items()
+        if ext not in (".a", ".ar")
+    }
     reference_ext, reference = next(iter(reprs.items()))
     for ext, rep in reprs.items():
         assert rep == reference, (
@@ -369,3 +403,188 @@ def test_all_formats_same_content(sample_archives: dict[str, Path]) -> None:
             f"  {ext}: size={rep[1]}, top-level={[c[0] for c in rep[2]]}\n"
             f"  {reference_ext}: size={reference[1]}, top-level={[c[0] for c in reference[2]]}"
         )
+
+
+# ---------------------------------------------------------------------------
+# libarchive tests (.cpio, .iso) – skipped if bsdtar CLI is not available
+# ---------------------------------------------------------------------------
+
+bsdtar_cli = shutil.which("bsdtar")
+skip_no_bsdtar = pytest.mark.skipif(bsdtar_cli is None, reason="bsdtar CLI not installed")
+
+
+def _make_cpio(tmp_path: Path, members: list[tuple[str, bytes]]) -> Path:
+    """Create a cpio archive at tmp_path/test.cpio using bsdtar and return the path."""
+    assert bsdtar_cli is not None
+    src = tmp_path / "_src_cpio"
+    src.mkdir()
+    for name, data in members:
+        dest = src / name
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        dest.write_bytes(data)
+    archive = tmp_path / "test.cpio"
+    subprocess.run(
+        [bsdtar_cli, "-cf", str(archive), "--format", "cpio"] + [name for name, _ in members],
+        cwd=str(src),
+        check=True,
+        capture_output=True,
+    )
+    return archive
+
+
+def _make_iso(tmp_path: Path, members: list[tuple[str, bytes]]) -> Path:
+    """Create an ISO 9660 archive at tmp_path/test.iso using bsdtar and return the path."""
+    assert bsdtar_cli is not None
+    src = tmp_path / "_src_iso"
+    src.mkdir()
+    for name, data in members:
+        dest = src / name
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        dest.write_bytes(data)
+    archive = tmp_path / "test.iso"
+    subprocess.run(
+        [bsdtar_cli, "-cf", str(archive), "--format", "iso9660", "-C", str(src), "."],
+        check=True,
+        capture_output=True,
+    )
+    return archive
+
+
+@skip_no_bsdtar
+def test_cpio_flat(tmp_path: Path) -> None:
+    archive = _make_cpio(tmp_path, [("a.txt", b"hello"), ("b.py", b"world!")])
+    node = build_tree_archive(archive)
+    names = {c.name for c in node.children}
+    assert "a.txt" in names
+    assert "b.py" in names
+
+
+@skip_no_bsdtar
+def test_cpio_nested(tmp_path: Path) -> None:
+    archive = _make_cpio(tmp_path, [("src/foo.py", b"x" * 100), ("README.md", b"z" * 50)])
+    node = build_tree_archive(archive)
+    child_names = {c.name for c in node.children}
+    assert "src" in child_names
+    assert "README.md" in child_names
+
+
+@skip_no_bsdtar
+def test_cpio_root_name(tmp_path: Path) -> None:
+    archive = _make_cpio(tmp_path, [("a.txt", b"hi")])
+    node = build_tree_archive(archive)
+    assert node.name == "test"
+
+
+@skip_no_bsdtar
+def test_iso_flat(tmp_path: Path) -> None:
+    archive = _make_iso(tmp_path, [("a.txt", b"hello"), ("b.py", b"world!")])
+    node = build_tree_archive(archive)
+    names = {c.name for c in node.children}
+    assert "a.txt" in names
+    assert "b.py" in names
+
+
+@skip_no_bsdtar
+def test_iso_nested(tmp_path: Path) -> None:
+    archive = _make_iso(tmp_path, [("src/foo.py", b"x" * 100), ("README.md", b"z" * 50)])
+    node = build_tree_archive(archive)
+    child_names = {c.name for c in node.children}
+    assert "src" in child_names
+    assert "README.md" in child_names
+
+
+@skip_no_bsdtar
+def test_iso_root_name(tmp_path: Path) -> None:
+    archive = _make_iso(tmp_path, [("a.txt", b"hi")])
+    node = build_tree_archive(archive)
+    assert node.name == "test"
+
+
+def test_libarchive_missing_raises(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Ensure a clear ImportError is raised when libarchive-c is not installed."""
+    import builtins
+
+    real_import = builtins.__import__
+
+    def mock_import(name: str, *args: object, **kwargs: object) -> object:
+        if name == "libarchive":
+            raise ImportError("No module named 'libarchive'")
+        return real_import(name, *args, **kwargs)
+
+    # Create a dummy .cpio so _archive_type returns "libarchive"
+    dummy = tmp_path / "dummy.cpio"
+    dummy.write_bytes(b"")
+
+    monkeypatch.setattr(builtins, "__import__", mock_import)
+    with pytest.raises(ImportError, match="libarchive-c is required"):
+        build_tree_archive(dummy)
+
+
+# ---------------------------------------------------------------------------
+# Encrypted archive tests
+# ---------------------------------------------------------------------------
+
+
+def test_7z_encrypted_metadata_readable_without_password(
+    encrypted_archives: dict[str, Path],
+) -> None:
+    """py7zr does not encrypt archive headers by default — only file content is
+    encrypted.  Our reader calls ``sz.list()`` only (never extracts), so the
+    file listing is accessible without a password.
+    """
+    node = build_tree_archive(encrypted_archives[".7z"])
+    assert {c.name for c in node.children} >= {"README.md", "docs", "src"}
+
+
+def test_7z_encrypted_with_password(encrypted_archives: dict[str, Path]) -> None:
+    node = build_tree_archive(encrypted_archives[".7z"], password=ENCRYPTED_PASSWORD)
+    assert {c.name for c in node.children} >= {"README.md", "docs", "src"}
+
+
+def test_zip_encrypted_metadata_readable_without_password(
+    encrypted_archives: dict[str, Path],
+) -> None:
+    """Standard ZIP encryption covers only file data, not the central directory.
+
+    Our reader only touches metadata (names + uncompressed sizes), so an
+    encrypted ZIP is fully usable even without a password.
+    """
+    if ".zip" not in encrypted_archives:
+        pytest.skip("encrypted zip fixture unavailable (zip CLI not found)")
+    node = build_tree_archive(encrypted_archives[".zip"])
+    assert {c.name for c in node.children} >= {"README.md", "docs", "src"}
+
+
+def test_zip_encrypted_with_password(encrypted_archives: dict[str, Path]) -> None:
+    if ".zip" not in encrypted_archives:
+        pytest.skip("encrypted zip fixture unavailable (zip CLI not found)")
+    node = build_tree_archive(encrypted_archives[".zip"], password=ENCRYPTED_PASSWORD)
+    assert {c.name for c in node.children} >= {"README.md", "docs", "src"}
+
+
+def test_rar_encrypted_no_password_hides_entries(
+    encrypted_archives: dict[str, Path],
+) -> None:
+    """RAR with header encryption (-hp) and no password: rarfile opens the
+    archive but returns an empty listing — the tree root has no children.
+    No exception is raised; the archive appears empty.
+    """
+    if ".rar" not in encrypted_archives:
+        pytest.skip("encrypted rar fixture unavailable (rar CLI not found)")
+    node = build_tree_archive(encrypted_archives[".rar"])
+    assert node.children == []
+
+
+def test_rar_encrypted_correct_password(encrypted_archives: dict[str, Path]) -> None:
+    if ".rar" not in encrypted_archives:
+        pytest.skip("encrypted rar fixture unavailable (rar CLI not found)")
+    node = build_tree_archive(encrypted_archives[".rar"], password=ENCRYPTED_PASSWORD)
+    assert {c.name for c in node.children} >= {"README.md", "docs", "src"}
+
+
+def test_rar_encrypted_wrong_password_raises(encrypted_archives: dict[str, Path]) -> None:
+    """A wrong password on a header-encrypted RAR raises ``PasswordRequired``."""
+    if ".rar" not in encrypted_archives:
+        pytest.skip("encrypted rar fixture unavailable (rar CLI not found)")
+    with pytest.raises(PasswordRequired):
+        build_tree_archive(encrypted_archives[".rar"], password="wrong")
