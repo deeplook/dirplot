@@ -4,7 +4,13 @@ from pathlib import Path
 
 import pytest
 
-from dirplot.scanner import Node, build_tree, collect_extensions
+from dirplot.scanner import (
+    Node,
+    build_tree,
+    build_tree_multi,
+    collect_extensions,
+    prune_to_subtrees,
+)
 
 
 def test_build_tree_structure(sample_tree: Path) -> None:
@@ -138,3 +144,88 @@ def test_single_file_node() -> None:
 def test_collect_extensions_empty_dir(tmp_path: Path) -> None:
     root = build_tree(tmp_path)
     assert collect_extensions(root) == []
+
+
+def test_prune_to_subtrees_basic(tmp_path: Path) -> None:
+    (tmp_path / "bar").mkdir()
+    (tmp_path / "baz").mkdir()
+    (tmp_path / "qux").mkdir()
+    (tmp_path / "bar" / "a.py").write_bytes(b"x" * 10)
+    (tmp_path / "baz" / "b.py").write_bytes(b"x" * 20)
+    (tmp_path / "qux" / "c.py").write_bytes(b"x" * 99)
+
+    root = build_tree(tmp_path)
+    pruned = prune_to_subtrees(root, {"bar", "baz"})
+    assert {c.name for c in pruned.children} == {"bar", "baz"}
+    assert pruned.size == 30
+
+
+def test_prune_to_subtrees_unknown_name_ignored(tmp_path: Path) -> None:
+    (tmp_path / "bar").mkdir()
+    (tmp_path / "bar" / "a.py").write_bytes(b"x" * 10)
+
+    root = build_tree(tmp_path)
+    pruned = prune_to_subtrees(root, {"bar", "nonexistent"})
+    assert {c.name for c in pruned.children} == {"bar"}
+
+
+def test_prune_to_subtrees_nested_path(tmp_path: Path) -> None:
+    (tmp_path / "src" / "dirplot" / "fonts").mkdir(parents=True)
+    (tmp_path / "src" / "dirplot" / "fonts" / "f.ttf").write_bytes(b"x" * 10)
+    (tmp_path / "src" / "dirplot" / "other.py").write_bytes(b"x" * 5)
+    (tmp_path / "src" / "sibling.py").write_bytes(b"x" * 3)
+    (tmp_path / "tests").mkdir()
+    (tmp_path / "tests" / "t.py").write_bytes(b"x" * 7)
+
+    root = build_tree(tmp_path)
+    pruned = prune_to_subtrees(root, {"src/dirplot/fonts", "tests"})
+
+    assert {c.name for c in pruned.children} == {"src", "tests"}
+    src = next(c for c in pruned.children if c.name == "src")
+    assert {c.name for c in src.children} == {"dirplot"}
+    dirplot = src.children[0]
+    assert {c.name for c in dirplot.children} == {"fonts"}
+    assert pruned.size == 17  # 10 (font) + 7 (test)
+
+
+def test_prune_to_subtrees_empty_result(tmp_path: Path) -> None:
+    (tmp_path / "bar").mkdir()
+
+    root = build_tree(tmp_path)
+    pruned = prune_to_subtrees(root, {"nonexistent"})
+    assert pruned.children == []
+    assert pruned.size == 0
+
+
+def test_build_tree_multi_two_siblings(tmp_path: Path) -> None:
+    (tmp_path / "bar").mkdir()
+    (tmp_path / "baz").mkdir()
+    (tmp_path / "qux").mkdir()
+    (tmp_path / "bar" / "a.py").write_bytes(b"x" * 10)
+    (tmp_path / "baz" / "b.py").write_bytes(b"x" * 20)
+    (tmp_path / "qux" / "c.py").write_bytes(b"x" * 99)  # must be excluded
+
+    root = build_tree_multi([tmp_path / "bar", tmp_path / "baz"])
+    assert root.path == tmp_path
+    assert {c.name for c in root.children} == {"bar", "baz"}
+    assert root.size == 30
+
+
+def test_build_tree_multi_nested_intermediate(tmp_path: Path) -> None:
+    (tmp_path / "a" / "x").mkdir(parents=True)
+    (tmp_path / "a" / "y").mkdir()
+    (tmp_path / "a" / "z").mkdir()  # sibling, must be excluded
+    (tmp_path / "a" / "x" / "f.txt").write_bytes(b"x" * 5)
+    (tmp_path / "a" / "y" / "g.txt").write_bytes(b"x" * 7)
+    (tmp_path / "a" / "z" / "h.txt").write_bytes(b"x" * 3)
+
+    root = build_tree_multi([tmp_path / "a" / "x", tmp_path / "a" / "y"])
+    assert root.path.resolve() == (tmp_path / "a").resolve()
+    assert {c.name for c in root.children} == {"x", "y"}
+
+
+def test_build_tree_multi_single_delegates(tmp_path: Path) -> None:
+    (tmp_path / "file.py").write_bytes(b"x" * 10)
+    root = build_tree_multi([tmp_path])
+    assert root.path == tmp_path
+    assert len(root.children) == 1

@@ -16,7 +16,13 @@ from dirplot.github import build_tree_github, is_github_path, parse_github_path
 from dirplot.k8s import build_tree_pod, is_pod_path, parse_pod_path
 from dirplot.render import create_treemap
 from dirplot.s3 import build_tree_s3, is_s3_path, make_s3_client, parse_s3_path
-from dirplot.scanner import apply_log_sizes, build_tree, collect_extensions
+from dirplot.scanner import (
+    apply_log_sizes,
+    build_tree,
+    build_tree_multi,
+    collect_extensions,
+    prune_to_subtrees,
+)
 from dirplot.ssh import build_tree_ssh, connect, is_ssh_path, parse_ssh_path
 from dirplot.svg_render import create_treemap_svg
 from dirplot.terminal import get_terminal_pixel_size, get_terminal_size
@@ -64,7 +70,9 @@ _EPILOG = (
     "  dirplot map . --no-cushion  [dim]# makes tiles look flat[/dim]\n\n"
     "  dirplot map archive.zip  [dim]# map a zip archive without unpacking[/dim]\n\n"
     "  dirplot map release.tar.gz --depth 2  [dim]# limit depth into a tarball[/dim]\n\n"
-    "  dirplot map app.jar --exclude META-INF  [dim]# skip a member directory[/dim]"
+    "  dirplot map app.jar --exclude META-INF  [dim]# skip a member directory[/dim]\n\n"
+    "  dirplot map src tests  [dim]# map two subtrees under their common parent[/dim]\n\n"
+    "  dirplot map . --subtree src --subtree tests  [dim]# same result, explicit root[/dim]"
 )
 
 
@@ -127,10 +135,10 @@ def read_meta(
 
 @app.command(name="map", epilog=_EPILOG)
 def main(
-    root: str = typer.Argument(
+    roots: list[str] = typer.Argument(
         ...,
-        help="Root to map: local directory, archive file (.zip .tar.gz .7z .rar .dmg .pkg .iso …), "
-        "ssh://user@host/path, s3://bucket/prefix, "
+        help="Root(s) to map: one or more local directories (multiple → shows only those "
+        "subtrees under their common parent), archive file, ssh://…, s3://…, "
         r"github://owner/repo\[@branch], https://github.com/owner/repo\[/tree/branch], "
         r"docker://container:/path, or pod://pod-name\[@namespace]/path",
     ),
@@ -157,7 +165,7 @@ def main(
         metavar="N",
     ),
     font_size: int = typer.Option(
-        12, "--font-size", "-s", help="Directory label font size in pixels (default: 12)"
+        12, "--font-size", help="Directory label font size in pixels (default: 12)"
     ),
     colormap: str = typer.Option(
         "tab20",
@@ -177,6 +185,15 @@ def main(
         ),
     ),
     exclude: list[str] = typer.Option([], "--exclude", "-e", help="Paths to exclude (repeatable)"),
+    subtrees: list[str] = typer.Option(
+        [],
+        "--subtree",
+        "-s",
+        help=(
+            "Show only this named direct child of the root (repeatable). "
+            "Allowlist complement to --exclude: use when it is easier to name what you want."
+        ),
+    ),
     ssh_key: str | None = typer.Option(
         None, "--ssh-key", help="SSH private key file (default: ~/.ssh/id_rsa)"
     ),
@@ -227,11 +244,52 @@ def main(
     ),
 ) -> None:
     """Create a nested treemap bitmap for a directory tree."""
+    if not roots:
+        typer.echo("Error: at least one path is required.", err=True)
+        raise typer.Exit(1)
+    root = roots[0]  # alias used by all single-root branches below
+
     if colormap not in plt.colormaps():
         valid = ", ".join(sorted(plt.colormaps()))
         typer.echo(f"Unknown colormap '{colormap}'. Valid options:\n{valid}", err=True)
         raise typer.Exit(1)
-    if is_docker_path(root):
+
+    if len(roots) > 1:
+        for r in roots:
+            if any(
+                f(r)
+                for f in (
+                    is_docker_path,
+                    is_pod_path,
+                    is_github_path,
+                    is_s3_path,
+                    is_ssh_path,
+                    is_archive_path,
+                )
+            ):
+                typer.echo(
+                    f"Multiple roots are only supported for local directories, got: {r}",
+                    err=True,
+                )
+                raise typer.Exit(1)
+        root_paths: list[Path] = []
+        for r in roots:
+            rp = Path(r)
+            if not rp.exists():
+                typer.echo(f"Path does not exist: {r}", err=True)
+                raise typer.Exit(1)
+            if not rp.is_dir():
+                typer.echo(f"Not a directory: {r}", err=True)
+                raise typer.Exit(1)
+            root_paths.append(rp.resolve())
+        excluded = frozenset(Path(e).resolve() for e in exclude)
+        if header:
+            import os
+
+            common_str = os.path.commonpath([str(p) for p in root_paths])
+            typer.echo(f"Scanning {len(roots)} paths under {common_str} ...")
+        root_node = build_tree_multi(root_paths, excluded, depth)
+    elif is_docker_path(root):
         docker_container, docker_path = parse_docker_path(root)
         if header:
             typer.echo(f"Scanning docker://{docker_container}:{docker_path} ...")
@@ -375,6 +433,9 @@ def main(
         if header:
             typer.echo(f"Scanning {root} ...")
         root_node = build_tree(root_path.resolve(), excluded, depth)
+
+    if subtrees:
+        root_node = prune_to_subtrees(root_node, set(subtrees))
 
     if log:
         apply_log_sizes(root_node)
