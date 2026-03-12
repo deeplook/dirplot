@@ -17,6 +17,7 @@ from dirplot.k8s import build_tree_pod, is_pod_path, parse_pod_path
 from dirplot.render import create_treemap
 from dirplot.s3 import build_tree_s3, is_s3_path, make_s3_client, parse_s3_path
 from dirplot.scanner import (
+    Node,
     apply_log_sizes,
     build_tree,
     build_tree_multi,
@@ -426,13 +427,30 @@ def main(
             typer.echo(f"Path does not exist: {root}", err=True)
             raise typer.Exit(1)
         if not root_path.is_dir():
-            typer.echo(f"Not a directory: {root}", err=True)
-            raise typer.Exit(1)
-
-        excluded = frozenset(Path(e).resolve() for e in exclude)
-        if header:
-            typer.echo(f"Scanning {root} ...")
-        root_node = build_tree(root_path.resolve(), excluded, depth)
+            if not root_path.is_file():
+                typer.echo(f"Not a file or directory: {root}", err=True)
+                raise typer.Exit(1)
+            rp = root_path.resolve()
+            try:
+                file_size = max(1, rp.stat().st_size)
+            except OSError:
+                file_size = 1
+            ext = rp.suffix.lower() if rp.suffix else "(no ext)"
+            file_node = Node(name=rp.name, path=rp, size=file_size, is_dir=False, extension=ext)
+            root_node = Node(
+                name=rp.parent.name,
+                path=rp.parent,
+                size=file_size,
+                is_dir=True,
+                children=[file_node],
+            )
+            if header:
+                typer.echo(f"Scanning {root} ...")
+        else:
+            excluded = frozenset(Path(e).resolve() for e in exclude)
+            if header:
+                typer.echo(f"Scanning {root} ...")
+            root_node = build_tree(root_path.resolve(), excluded, depth)
 
     if subtrees:
         root_node = prune_to_subtrees(root_node, set(subtrees))
@@ -441,7 +459,8 @@ def main(
         apply_log_sizes(root_node)
     total_files = len(collect_extensions(root_node))
     if header:
-        typer.echo(f"Found {total_files:,} files, total size: {root_node.size:,} bytes")
+        _f = "file" if total_files == 1 else "files"
+        typer.echo(f"Found {total_files:,} {_f}, total size: {root_node.size:,} bytes")
 
     if size is not None:
         try:
