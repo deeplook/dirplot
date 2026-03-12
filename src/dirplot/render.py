@@ -26,7 +26,7 @@ def build_metadata() -> dict[str, str]:
         "URL": DIRPLOT_URL,
         "Python": sys.version.split()[0],
         "OS": f"{platform.system()} {platform.release()}",
-        "Command": " ".join(sys.argv),
+        "Command": " ".join([Path(sys.argv[0]).name, *sys.argv[1:]]),
     }
 
 
