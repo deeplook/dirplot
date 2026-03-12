@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Multiple local roots**: `dirplot map bar baz` accepts two or more local directory
+  paths. dirplot finds their common parent, scans each path independently, and assembles
+  a synthetic wrapper tree that contains only the requested subtrees — siblings are
+  excluded entirely.
+- **`--subtree` / `-s`** option (repeatable) — an allowlist complement to `--exclude`:
+  after scanning the root, keep only the named direct children. Supports nested paths
+  such as `--subtree src/dirplot/fonts`, which produces a synthetic `src → dirplot`
+  chain containing only the `fonts` subtree. Useful when it is easier to name what you
+  want than to enumerate what you don't.
+
+### Changed
+
+- `-s` short alias reassigned from `--font-size` to `--subtree`. `--font-size` still
+  works as before; it just no longer has a single-letter alias.
+
 ## [0.3.1] - 2026-03-11
 
 ### Added

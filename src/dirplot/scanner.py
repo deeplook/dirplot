@@ -66,6 +66,88 @@ def build_tree(
     return Node(name=root.name, path=root, size=total, is_dir=True, children=children)
 
 
+def prune_to_subtrees(node: Node, paths: set[str]) -> Node:
+    """Return *node* keeping only the subtrees at *paths* (relative to *node*).
+
+    Paths may be multi-level (e.g. ``"src/dirplot/fonts"``).  Intermediate
+    nodes are kept as synthetic wrappers containing only the requested chain.
+    If a path targets a node directly (e.g. ``"src"``), its full subtree is kept.
+    Unknown paths are silently ignored.  The root's size is recalculated.
+    """
+    # Group paths by their first component → remainder (empty string = keep whole subtree)
+    groups: dict[str, set[str]] = {}
+    for p in paths:
+        parts = Path(p).parts
+        if not parts:
+            continue
+        first = parts[0]
+        rest = str(Path(*parts[1:])) if len(parts) > 1 else ""
+        groups.setdefault(first, set()).add(rest)
+
+    kept: list[Node] = []
+    for child in node.children:
+        if child.name not in groups:
+            continue
+        sub_paths = groups[child.name]
+        if "" in sub_paths or not child.is_dir:
+            kept.append(child)
+        else:
+            kept.append(prune_to_subtrees(child, sub_paths))
+
+    return Node(
+        name=node.name,
+        path=node.path,
+        size=sum(c.size for c in kept),
+        is_dir=True,
+        children=kept,
+    )
+
+
+def build_tree_multi(
+    roots: list[Path],
+    exclude: frozenset[Path] = frozenset(),
+    depth: int | None = None,
+) -> Node:
+    """Scan each path in *roots* independently, then wrap them under their common parent.
+
+    Intermediate directories between the common parent and each root are
+    represented as synthetic (empty-except-for-the-chain) nodes — they are
+    not scanned for other contents.
+    """
+    import os
+
+    resolved = [r.resolve() for r in roots]
+
+    if len(resolved) == 1:
+        return build_tree(resolved[0], exclude, depth)
+
+    common = Path(os.path.commonpath([str(r) for r in resolved]))
+
+    # Scan each target independently
+    scanned: list[tuple[Path, Node]] = [(r, build_tree(r, exclude, depth)) for r in resolved]
+
+    def _combine(parent: Path, targets: list[tuple[Path, Node]]) -> Node:
+        """Build a synthetic Node for *parent* containing exactly the given *targets*."""
+        groups: dict[Path, list[tuple[Path, Node]]] = {}
+        for tpath, tnode in targets:
+            direct = parent / tpath.relative_to(parent).parts[0]
+            groups.setdefault(direct, []).append((tpath, tnode))
+
+        children: list[Node] = []
+        for child_path, child_targets in sorted(groups.items(), key=lambda kv: kv[0].name):
+            if len(child_targets) == 1 and child_targets[0][0] == child_path:
+                # Direct child IS the scanned target
+                children.append(child_targets[0][1])
+            else:
+                # Need a synthetic intermediate node
+                children.append(_combine(child_path, child_targets))
+
+        total = sum(c.size for c in children)
+        return Node(name=parent.name, path=parent, size=total, is_dir=True, children=children)
+
+    return _combine(common, scanned)
+
+
 def apply_log_sizes(node: Node) -> None:
     """Replace file sizes with their natural log in-place, then recompute directory totals.
 

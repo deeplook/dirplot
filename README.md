@@ -23,7 +23,8 @@
 - **SVG output** (`--format svg` or `--output file.svg`) produces a fully self-contained interactive file: CSS hover highlight, a JavaScript floating tooltip panel, and cushion shading via a gradient — no external dependencies.
 - Display via system image viewer or inline in the terminal (iTerm2 and Kitty protocols, auto-detected).
 - Save output to a PNG or SVG file with `--output`.
-- Exclude paths with `--exclude` (repeatable).
+- Exclude paths with `--exclude` (repeatable), or focus on specific subtrees with `--subtree` / `-s` (allowlist complement, supports nested paths like `src/dirplot/fonts`).
+- Pass multiple local paths (`dirplot map src tests`) to scan each independently and display them under their common parent, ignoring all other siblings.
 - Works on macOS, Linux, and Windows; WSL2 fully supported.
 - Scan remote hosts over SSH (`pip install "dirplot[ssh]"`), AWS S3 buckets (`pip install "dirplot[s3]"`), any public/private GitHub repository (including specific branch, tag, commit SHA, or subdirectory), **running Docker containers**, or **Kubernetes pods** — all without extra dependencies beyond the respective CLI/SDK. See [EXAMPLES.md](docs/EXAMPLES.md).
 - Optional **file-count legend** (`--legend`) — a corner overlay listing the top extensions by number of files, with coloured swatches and counts, automatically sized to fit the image.
@@ -85,6 +86,13 @@ dirplot map . --inline
 # Exclude directories
 dirplot map . --exclude .venv --exclude .git
 
+# Map two specific subtrees under their common parent
+dirplot map src tests
+
+# Focus on named subtrees of a root (allowlist; supports nested paths)
+dirplot map . --subtree src --subtree tests
+dirplot map . --subtree src/dirplot/fonts
+
 # Use a different colormap and larger directory labels
 dirplot map . --colormap Set2 --font-size 18
 
@@ -116,9 +124,10 @@ dirplot map . --format svg --output treemap.svg --no-show
 | `--show/--no-show` | | `--show` | Display the image after rendering |
 | `--inline` | | off | Display in terminal (protocol auto-detected; PNG only) |
 | `--legend [N]` | | off | Show file-count legend; `N` sets max entries (default: 20) |
-| `--font-size` | `-s` | `12` | Directory label font size in pixels |
+| `--font-size` | | `12` | Directory label font size in pixels |
 | `--colormap` | `-c` | `tab20` | Matplotlib colormap for unknown extensions |
 | `--exclude` | `-e` | — | Path to exclude (repeatable) |
+| `--subtree` | `-s` | — | Show only this subtree of the root (repeatable); supports nested paths like `src/dirplot/fonts` |
 | `--size` | | terminal size | Output dimensions as `WIDTHxHEIGHT` (e.g. `1920x1080`) |
 | `--header/--no-header` | | `--header` | Print info lines before rendering |
 | `--cushion/--no-cushion` | | `--cushion` | Apply van Wijk cushion shading for a raised 3-D look |
