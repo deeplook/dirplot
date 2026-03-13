@@ -90,18 +90,30 @@ def _fit_font(
     if max_h < 6 or max_w < 4:
         ffont = _font(6)
         return ffont, _wrap(name, draw, ffont, max_w)
+    # Step 1: estimate fsize from single-line measurement at max_size
     ffont = _font(max_size)
     bb = draw.textbbox((0, 0), name, font=ffont)
     tw, th = bb[2] - bb[0], bb[3] - bb[1]
     n_lines = max(1, math.ceil(tw / max_w))
     fsize = max(6, min(max_size, int(max_h / n_lines * max_size / max(th, 1))))
-    ffont = _font(fsize)
-    return ffont, _wrap(name, draw, ffont, max_w)
+    # Steps 2-3: wrap and measure actual height; correct up to twice if still overflowing
+    for _ in range(2):
+        ffont = _font(fsize)
+        label = _wrap(name, draw, ffont, max_w)
+        bb = draw.textbbox((0, 0), label, font=ffont, spacing=0)
+        actual_h = bb[3] - bb[1]
+        if actual_h <= max_h or actual_h == 0:
+            return ffont, label
+        fsize = max(6, int(fsize * max_h / actual_h))
+    # Text can't fit even at minimum size — skip the label to avoid overflow
+    return _font(fsize), ""
 
 
 def _wrap(name: str, draw: ImageDraw.ImageDraw, font: ImageFont.FreeTypeFont, max_w: int) -> str:
     """Wrap *name* into lines that each fit within *max_w* pixels."""
-    if max_w < 4 or _text_w(draw, name, font) <= max_w:
+    if max_w < 4:
+        return ""
+    if _text_w(draw, name, font) <= max_w:
         return name
     delimiters = "._ -"
     lines: list[str] = []
@@ -133,7 +145,9 @@ def _truncate(
     name: str, draw: ImageDraw.ImageDraw, font: ImageFont.FreeTypeFont, max_w: int
 ) -> str:
     """Truncate *name* with an ellipsis so it fits within *max_w* pixels on one line."""
-    if max_w < 4 or _text_w(draw, name, font) <= max_w:
+    if max_w < 4:
+        return ""
+    if _text_w(draw, name, font) <= max_w:
         return name
     ellipsis = "…"
     lo, hi = 0, len(name)
@@ -231,6 +245,7 @@ def draw_node(
                     font=ffont,
                     anchor="mm",
                     align="center",
+                    spacing=0,
                 )
                 rotated = tmp.rotate(90, expand=True)
                 img.paste(rotated, (x, y), mask=rotated)
@@ -244,6 +259,7 @@ def draw_node(
                     font=ffont,
                     anchor="mm",
                     align="center",
+                    spacing=0,
                 )
         return
 
