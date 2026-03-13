@@ -343,6 +343,7 @@ def main(
         typer.echo(f"Unknown colormap '{colormap}'. Valid options:\n{valid}", err=True)
         raise typer.Exit(1)
 
+    t_scan_start = time.monotonic()
     if len(roots) > 1:
         for r in roots:
             if any(
@@ -543,12 +544,15 @@ def main(
     if subtrees:
         root_node = prune_to_subtrees(root_node, set(subtrees))
 
+    t_scan = time.monotonic() - t_scan_start
     if log:
         apply_log_sizes(root_node)
     total_files = len(collect_extensions(root_node))
     if header:
         _f = "file" if total_files == 1 else "files"
-        typer.echo(f"Found {total_files:,} {_f}, total size: {root_node.size:,} bytes")
+        typer.echo(
+            f"Found {total_files:,} {_f}, total size: {root_node.size:,} bytes  [{t_scan:.1f}s]"
+        )
 
     if size is not None:
         try:
@@ -580,17 +584,19 @@ def main(
     else:
         use_svg = False
 
+    t_render_start = time.monotonic()
     if use_svg:
         buf = create_treemap_svg(
             root_node, width_px, height_px, font_size, colormap, legend, cushion
         )
     else:
         buf = create_treemap(root_node, width_px, height_px, font_size, colormap, legend, cushion)
+    t_render = time.monotonic() - t_render_start
 
     if output is not None:
         output.write_bytes(buf.read())
         if header:
-            typer.echo(f"Saved dirplot to {output}")
+            typer.echo(f"Saved dirplot to {output}  [{t_render:.1f}s]")
         buf.seek(0)
 
     if show:
