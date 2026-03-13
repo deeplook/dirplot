@@ -193,17 +193,34 @@ def draw_node(
             draw.rectangle([x, y, x + w - 1, y + h - 1], outline=dark)
         # Adaptive label: font size scales with tile size, capped by scale factor
         if w > 20 and h > 10:
-            fsize = max(6, min(font_size + 2, w // 10))
-            ffont = _font(fsize)
-            label = _wrap(node.name, draw, ffont, w - 4)
-            draw.text(
-                (x + w // 2, y + h // 2),
-                label,
-                fill=_label_color(rgb),
-                font=ffont,
-                anchor="mm",
-                align="center",
-            )
+            if h >= w * 2 and img is not None:
+                # Tall, narrow tile — rotate label 90° CCW so it runs along the height
+                fsize = max(6, min(font_size + 2, w // 10))
+                ffont = _font(fsize)
+                label = _wrap(node.name, draw, ffont, h - 4)
+                tmp = Image.new("RGBA", (h, w), (0, 0, 0, 0))
+                ImageDraw.Draw(tmp).text(
+                    (h // 2, w // 2),
+                    label,
+                    fill=_label_color(rgb),
+                    font=ffont,
+                    anchor="mm",
+                    align="center",
+                )
+                rotated = tmp.rotate(90, expand=True)
+                img.paste(rotated, (x, y), mask=rotated)
+            else:
+                fsize = max(6, min(font_size + 2, w // 10))
+                ffont = _font(fsize)
+                label = _wrap(node.name, draw, ffont, w - 4)
+                draw.text(
+                    (x + w // 2, y + h // 2),
+                    label,
+                    fill=_label_color(rgb),
+                    font=ffont,
+                    anchor="mm",
+                    align="center",
+                )
         return
 
     # Directory: 1-px white outer border + 1-px black inner border
