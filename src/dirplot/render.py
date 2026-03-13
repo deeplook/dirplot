@@ -1,6 +1,7 @@
 """Treemap layout and PNG rendering."""
 
 import io
+import math
 import platform
 import sys
 from collections import defaultdict
@@ -71,6 +72,31 @@ def _label_color(rgb: tuple[int, int, int]) -> tuple[int, int, int]:
 def _text_w(draw: ImageDraw.ImageDraw, text: str, font: ImageFont.FreeTypeFont) -> int:
     bb = draw.textbbox((0, 0), text, font=font)
     return int(bb[2] - bb[0])
+
+
+def _fit_font(
+    name: str,
+    draw: ImageDraw.ImageDraw,
+    max_size: int,
+    max_w: int,
+    max_h: int,
+) -> tuple[ImageFont.FreeTypeFont, str]:
+    """Return (font, wrapped_label) at the largest size ≤ max_size where the
+    wrapped text fits within max_w × max_h pixels.
+
+    Uses one textbbox measurement at max_size to estimate n_lines after
+    wrapping, then calculates the required font size directly — no loop.
+    """
+    if max_h < 6 or max_w < 4:
+        ffont = _font(6)
+        return ffont, _wrap(name, draw, ffont, max_w)
+    ffont = _font(max_size)
+    bb = draw.textbbox((0, 0), name, font=ffont)
+    tw, th = bb[2] - bb[0], bb[3] - bb[1]
+    n_lines = max(1, math.ceil(tw / max_w))
+    fsize = max(6, min(max_size, int(max_h / n_lines * max_size / max(th, 1))))
+    ffont = _font(fsize)
+    return ffont, _wrap(name, draw, ffont, max_w)
 
 
 def _wrap(name: str, draw: ImageDraw.ImageDraw, font: ImageFont.FreeTypeFont, max_w: int) -> str:
@@ -191,13 +217,12 @@ def draw_node(
         if w >= 3 and h >= 3:
             dark = (max(0, rgb[0] - 60), max(0, rgb[1] - 60), max(0, rgb[2] - 60))
             draw.rectangle([x, y, x + w - 1, y + h - 1], outline=dark)
-        # Adaptive label: font size scales with tile size, capped by scale factor
+        # Adaptive label: largest font that fits the tile without overflow
         if w > 20 and h > 10:
             if h >= w * 2 and img is not None:
                 # Tall, narrow tile — rotate label 90° CCW so it runs along the height
-                fsize = max(6, min(font_size + 2, w // 10))
-                ffont = _font(fsize)
-                label = _wrap(node.name, draw, ffont, h - 4)
+                # available text-run = h-4, constraining dim = w-4
+                ffont, label = _fit_font(node.name, draw, font_size + 2, h - 4, w - 4)
                 tmp = Image.new("RGBA", (h, w), (0, 0, 0, 0))
                 ImageDraw.Draw(tmp).text(
                     (h // 2, w // 2),
@@ -210,9 +235,8 @@ def draw_node(
                 rotated = tmp.rotate(90, expand=True)
                 img.paste(rotated, (x, y), mask=rotated)
             else:
-                fsize = max(6, min(font_size + 2, w // 10))
-                ffont = _font(fsize)
-                label = _wrap(node.name, draw, ffont, w - 4)
+                # Horizontal label: available text-run = w-4, constraining dim = h-4
+                ffont, label = _fit_font(node.name, draw, font_size + 2, w - 4, h - 4)
                 draw.text(
                     (x + w // 2, y + h // 2),
                     label,
