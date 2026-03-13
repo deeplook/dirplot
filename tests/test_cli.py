@@ -24,12 +24,11 @@ def test_cli_invalid_path() -> None:
     assert "does not exist" in result.output
 
 
-def test_cli_not_a_directory(tmp_path: Path) -> None:
+def test_cli_single_file(tmp_path: Path) -> None:
     f = tmp_path / "file.txt"
     f.write_text("hello")
     result = runner.invoke(app, ["map", str(f), "--no-show"])
-    assert result.exit_code == 1
-    assert "Not a directory" in result.output
+    assert result.exit_code == 0
 
 
 def test_cli_bad_colormap(sample_tree: Path) -> None:

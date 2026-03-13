@@ -9,7 +9,7 @@ try:
     from watchdog.events import FileSystemEvent, FileSystemEventHandler
     from watchdog.observers import Observer
 except ImportError:
-    Observer = None  # type: ignore[assignment,misc]
+    Observer = None  # type: ignore[assignment]
 
 from dirplot.render import create_treemap
 from dirplot.scanner import apply_log_sizes, build_tree
@@ -142,7 +142,9 @@ class TreemapEventHandler(FileSystemEventHandler):
     def _log_event(self, verb: str, event: FileSystemEvent) -> None:
         src = event.src_path
         dest = getattr(event, "dest_path", None)
-        msg = f"{verb}: {src}" if not dest else f"{verb}: {src} → {dest}"
+        src_s = src.decode() if isinstance(src, bytes) else src
+        dest_s = dest.decode() if isinstance(dest, bytes) else dest
+        msg = f"{verb}: {src_s}" if not dest_s else f"{verb}: {src_s} → {dest_s}"
         print(msg, file=sys.stderr)
 
     def on_created(self, event: FileSystemEvent) -> None:
