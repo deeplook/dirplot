@@ -1,5 +1,5 @@
 uv run dirplot map --size 800x400 --no-show --output docs/fastapi.png github://FastAPI/FastAPI
-uv run dirplot map --size 800x400 --no-show --legend --output docs/flask.png github://pallets/flask
+uv run dirplot map --size 800x400 --no-show --output docs/flask.png github://pallets/flask --legend
 uv run dirplot map --size 800x400 --no-show --output docs/python.png github://python/cpython
 uv run dirplot map --size 800x400 --no-show --output docs/pypy.png github://pypy/pypy
 
