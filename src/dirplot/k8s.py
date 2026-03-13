@@ -165,6 +165,16 @@ def build_tree_pod(
     result = _run_find(kubectl, pod_name, namespace, container, remote_path, depth)
     if result.returncode != 0:
         err = result.stderr.strip()
+        if (
+            result.returncode == 126
+            or "executable file not found" in err
+            or "not found in $PATH" in err
+        ):
+            raise OSError(
+                f"No shell or 'find' utility in pod {pod_name!r} — the container is likely "
+                "distroless (scratch/distroless image with no OS tools). "
+                "dirplot requires a POSIX 'find' binary inside the container."
+            )
         raise OSError(f"find failed in pod {pod_name!r} at {remote_path!r}: {err}")
 
     entries: list[tuple[str, int, bool]] = []
