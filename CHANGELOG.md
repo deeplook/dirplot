@@ -7,17 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-03-13
+
 ### Added
 
-- **Multiple local roots**: `dirplot map bar baz` accepts two or more local directory
-  paths. dirplot finds their common parent, scans each path independently, and assembles
-  a synthetic wrapper tree that contains only the requested subtrees — siblings are
-  excluded entirely.
-- **`--subtree` / `-s`** option (repeatable) — an allowlist complement to `--exclude`:
-  after scanning the root, keep only the named direct children. Supports nested paths
-  such as `--subtree src/dirplot/fonts`, which produces a synthetic `src → dirplot`
-  chain containing only the `fonts` subtree. Useful when it is easier to name what you
-  want than to enumerate what you don't.
+- **`dirplot watch`** subcommand — watches a directory and regenerates the treemap
+  on every file-system change using watchdog (FSEvents on macOS, inotify on Linux,
+  kqueue on BSD). Requires `watchdog`, now a core dependency.
+  ```bash
+  dirplot watch . --output treemap.png
+  dirplot watch . --output treemap.png --animate   # APNG, one frame per change
+  ```
+- **Vertical file labels**: file tiles that are at least twice as tall as wide now
+  display their label rotated 90° CCW, letting the text span the full tile height
+  instead of being squeezed into the narrow width.
+- **Scan and render timing** shown in header output:
+  `Found 1,414 files … [2.3s]` and `Saved dirplot to out.png  [0.4s]`.
+- **Multiple local roots**: `dirplot map src tests` accepts two or more local
+  directory paths, finds their common parent, and shows only those subtrees.
+- **`--subtree` / `-s`** option (repeatable) — allowlist complement to `--exclude`:
+  keep only the named direct children of the root after scanning. Supports nested
+  paths such as `--subtree src/dirplot/fonts`.
+
+### Fixed
+
+- `--exclude` on pod and Docker backends now prunes entire subtrees — previously only
+  the exact path was matched, so all children leaked through.
+- Clearer error for distroless pods: exit code 126 from `kubectl exec` now surfaces as
+  an actionable message explaining that the container has no shell or `find` utility.
+- Adaptive file-label font size is now computed with a single `textbbox` measurement
+  (one call per tile) instead of stepping down one pixel at a time — eliminates an
+  O(font_size × n_tiles) bottleneck that caused near-blocking on large trees such as
+  `.venv` directories.
 
 ### Changed
 

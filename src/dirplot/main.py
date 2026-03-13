@@ -204,17 +204,17 @@ def read_meta(
         except ET.ParseError as exc:
             typer.echo(f"Error parsing SVG: {exc}", err=True)
             raise typer.Exit(1) from exc
-        found: dict[str, str] = {}
+        svg_meta: dict[str, str] = {}
         for desc in root.iter("{http://www.w3.org/1999/02/22-rdf-syntax-ns#}Description"):
             for child in desc:
                 local = child.tag.split("}")[-1] if "}" in child.tag else child.tag
                 ns_uri = child.tag.split("}")[0].lstrip("{") if "}" in child.tag else ""
                 if ns_uri == "https://github.com/deeplook/dirplot#" and child.text:
-                    found[local] = child.text
-        if not found:
+                    svg_meta[local] = child.text
+        if not svg_meta:
             typer.echo("No dirplot metadata found in SVG.", err=True)
             raise typer.Exit(1)
-        for k, v in found.items():
+        for k, v in svg_meta.items():
             typer.echo(f"{k}: {v}")
 
     else:
