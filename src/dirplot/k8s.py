@@ -189,7 +189,7 @@ def build_tree_pod(
         if name.startswith("."):
             continue
         abs_path = remote_path.rstrip("/") + "/" + rel_path
-        if abs_path in exclude:
+        if abs_path in exclude or any(abs_path.startswith(ex.rstrip("/") + "/") for ex in exclude):
             continue
         try:
             size = int(size_str)
