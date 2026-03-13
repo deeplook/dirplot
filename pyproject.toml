@@ -39,6 +39,7 @@ dependencies = [
     "rarfile>=4.0",
     "squarify>=0.4",
     "typer>=0.9",
+    "watchdog>=6.0.0",
 ]
 
 [project.scripts]

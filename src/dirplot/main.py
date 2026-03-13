@@ -1,6 +1,7 @@
 """CLI entry point."""
 
 import sys
+import time
 import webbrowser
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -83,6 +84,93 @@ def termsize() -> None:
     cols, rows, width_px, height_px = get_terminal_size()
     typer.echo(f"Characters : {cols} cols × {rows} rows")
     typer.echo(f"Pixels     : {width_px} × {height_px}")
+
+
+@app.command(name="watch")
+def watch_cmd(
+    path: Path = typer.Argument(..., help="Directory to watch"),
+    output: Path = typer.Option(..., "--output", "-o", help="Output file (.png or .svg)"),
+    exclude: list[str] = typer.Option([], "--exclude", "-e", help="Paths to exclude (repeatable)"),
+    font_size: int = typer.Option(12, "--font-size", help="Directory label font size in pixels"),
+    colormap: str = typer.Option("tab20", "--colormap", "-c", help="Matplotlib colormap"),
+    size: str | None = typer.Option(
+        None, "--size", help="Output size as WIDTHxHEIGHT", metavar="WIDTHxHEIGHT"
+    ),
+    cushion: bool = typer.Option(
+        True, "--cushion/--no-cushion", help="Apply van Wijk cushion shading"
+    ),
+    animate: bool = typer.Option(
+        False,
+        "--animate/--no-animate",
+        help="Build an animated PNG (APNG) by appending each new frame",
+    ),
+    log: bool = typer.Option(
+        False,
+        "--log/--no-log",
+        help="Use log of file sizes for layout, making small files more visible",
+    ),
+) -> None:
+    """Watch a directory and regenerate the treemap on every file change."""
+    from dirplot.watch import TreemapEventHandler
+
+    try:
+        from watchdog.observers import Observer
+    except ImportError:
+        typer.echo("Error: watchdog is required. Run: pip install watchdog", err=True)
+        raise typer.Exit(1) from None
+
+    if not path.exists() or not path.is_dir():
+        typer.echo(f"Error: not a directory: {path}", err=True)
+        raise typer.Exit(1)
+
+    if animate and output.suffix.lower() == ".svg":
+        typer.echo("Error: --animate requires a PNG output file.", err=True)
+        raise typer.Exit(1)
+
+    if size is not None:
+        try:
+            w_str, h_str = size.lower().split("x", 1)
+            width_px, height_px = int(w_str), int(h_str)
+        except ValueError:
+            typer.echo(f"Invalid --size '{size}'. Expected WIDTHxHEIGHT.", err=True)
+            raise typer.Exit(1) from None
+    else:
+        term_w, term_h, row_px = get_terminal_pixel_size()
+        width_px = term_w + 1
+        height_px = term_h - 3 * row_px
+
+    excluded = frozenset(Path(e).resolve() for e in exclude)
+    root = path.resolve()
+
+    handler = TreemapEventHandler(
+        root,
+        output,
+        exclude=excluded,
+        width_px=width_px,
+        height_px=height_px,
+        font_size=font_size,
+        colormap=colormap,
+        cushion=cushion,
+        animate=animate,
+        log=log,
+    )
+
+    # Generate an initial treemap immediately
+    handler._regenerate()
+
+    observer = Observer()
+    observer.schedule(handler, str(root), recursive=True)
+    observer.start()
+    typer.echo(f"Watching {root} → {output}  (Ctrl-C to stop)")
+
+    try:
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        observer.stop()
+        observer.join()
 
 
 @app.command(name="read-meta")
