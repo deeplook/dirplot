@@ -233,16 +233,25 @@ def draw_node(
             draw.rectangle([x, y, x + w - 1, y + h - 1], outline=dark)
         # Adaptive label: largest font that fits the tile without overflow
         if w > 20 and h > 10:
+            # Try horizontal first
+            ffont_h, label_h = _fit_font(node.name, draw, font_size + 2, w - 4, h - 4)
+            # For tall narrow tiles, also try vertical; prefer whichever wraps less
+            use_vertical = False
             if h >= w * 2 and img is not None:
+                ffont_v, label_v = _fit_font(node.name, draw, font_size + 2, h - 4, w - 4)
+                if label_v:
+                    h_lines = label_h.count("\n") + 1 if label_h else 999
+                    v_lines = label_v.count("\n") + 1
+                    if v_lines < h_lines or (v_lines == h_lines and ffont_v.size > ffont_h.size):
+                        use_vertical = True
+            if use_vertical:
                 # Tall, narrow tile — rotate label 90° CCW so it runs along the height
-                # available text-run = h-4, constraining dim = w-4
-                ffont, label = _fit_font(node.name, draw, font_size + 2, h - 4, w - 4)
                 tmp = Image.new("RGBA", (h, w), (0, 0, 0, 0))
                 ImageDraw.Draw(tmp).text(
                     (h // 2, w // 2),
-                    label,
+                    label_v,
                     fill=_label_color(rgb),
-                    font=ffont,
+                    font=ffont_v,
                     anchor="mm",
                     align="center",
                     spacing=0,
@@ -251,12 +260,11 @@ def draw_node(
                 img.paste(rotated, (x, y), mask=rotated)
             else:
                 # Horizontal label: available text-run = w-4, constraining dim = h-4
-                ffont, label = _fit_font(node.name, draw, font_size + 2, w - 4, h - 4)
                 draw.text(
                     (x + w // 2, y + h // 2),
-                    label,
+                    label_h,
                     fill=_label_color(rgb),
-                    font=ffont,
+                    font=ffont_h,
                     anchor="mm",
                     align="center",
                     spacing=0,
