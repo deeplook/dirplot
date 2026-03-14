@@ -24,6 +24,7 @@ from dirplot.scanner import (
     build_tree,
     build_tree_multi,
     collect_extensions,
+    max_depth,
     prune_to_subtrees,
 )
 from dirplot.ssh import build_tree_ssh, connect, is_ssh_path, parse_ssh_path
@@ -569,6 +570,8 @@ def main(
     if subtrees:
         root_node = prune_to_subtrees(root_node, set(subtrees))
 
+    tree_depth = max_depth(root_node)
+
     if breadcrumbs:
         root_node = apply_breadcrumbs(root_node)
 
@@ -615,10 +618,12 @@ def main(
     t_render_start = time.monotonic()
     if use_svg:
         buf = create_treemap_svg(
-            root_node, width_px, height_px, font_size, colormap, legend, cushion
+            root_node, width_px, height_px, font_size, colormap, legend, cushion, tree_depth
         )
     else:
-        buf = create_treemap(root_node, width_px, height_px, font_size, colormap, legend, cushion)
+        buf = create_treemap(
+            root_node, width_px, height_px, font_size, colormap, legend, cushion, tree_depth
+        )
     t_render = time.monotonic() - t_render_start
 
     if output is not None:

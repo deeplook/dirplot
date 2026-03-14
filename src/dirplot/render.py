@@ -14,7 +14,7 @@ import squarify
 from PIL import Image, ImageDraw, ImageFont, PngImagePlugin
 
 from dirplot.colors import RGBAColor, assign_colors
-from dirplot.scanner import Node, collect_extensions, count_nodes
+from dirplot.scanner import Node, collect_extensions, count_nodes, max_depth
 
 DIRPLOT_URL = "https://github.com/deeplook/dirplot"
 
@@ -467,6 +467,7 @@ def create_treemap(
     colormap: str = "tab20",
     legend: int | None = None,
     cushion: bool = True,
+    tree_depth: int | None = None,
 ) -> io.BytesIO:
     """Render a nested squarified treemap and return it as a PNG in a BytesIO buffer.
 
@@ -490,9 +491,10 @@ def create_treemap(
 
     n_files, n_dirs = count_nodes(root_node)
     total_bytes = root_node.original_size if root_node.original_size > 0 else root_node.size
+    depth = tree_depth if tree_depth is not None else max_depth(root_node)
     root_label = (
         f"{root_node.name} \u2014 {n_files:,} files, {n_dirs:,} dirs,"
-        f" {_human_bytes(total_bytes)} ({total_bytes:,} bytes)"
+        f" {_human_bytes(total_bytes)} ({total_bytes:,} bytes), depth: {depth}"
     )
     draw_node(
         idraw,
