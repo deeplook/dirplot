@@ -28,6 +28,8 @@
 - Works on macOS, Linux, and Windows; WSL2 fully supported.
 - Scan remote hosts over SSH (`pip install "dirplot[ssh]"`), AWS S3 buckets (`pip install "dirplot[s3]"`), any public/private GitHub repository (including specific branch, tag, commit SHA, or subdirectory), **running Docker containers**, or **Kubernetes pods** — all without extra dependencies beyond the respective CLI/SDK. See [EXAMPLES.md](docs/EXAMPLES.md).
 - Optional **file-count legend** (`--legend`) — a corner overlay listing the top extensions by number of files, with coloured swatches and counts, automatically sized to fit the image.
+- **Breadcrumbs mode** (on by default) — single-child directory chains are collapsed into one tile with a `foo / bar / baz` header label. Middle segments are replaced with `…` when the tile is too narrow. Disable with `-B` / `--no-breadcrumbs`.
+- **Tree depth** shown in the root tile header alongside the file count and total size (e.g. `myproject — 124 files, 18 dirs, 4.0 MB (…), depth: 6`).
 - **Wide archive support** — reads zip, tar (gz/bz2/xz/zst), 7z, rar, and via libarchive: iso, cpio, rpm, cab, lha/lzh, xar/pkg, a/ar, and all ZIP-based formats (jar, whl, apk, nupkg, vsix, ipa, …) as virtual directory trees without unpacking. Encrypted archives are handled gracefully: metadata-only reads work without a password for most formats; a password can be supplied with `--password` or entered interactively when needed.
 
 ## How It Works
@@ -108,6 +110,9 @@ dirplot map . --legend
 # Show a file-count legend limited to 10 entries
 dirplot map . --legend 10
 
+# Disable breadcrumbs (show full nested hierarchy instead of collapsed chains)
+dirplot map . -B
+
 # Save as an interactive SVG (hover highlight + floating tooltip)
 dirplot map . --output treemap.svg --no-show
 
@@ -132,6 +137,7 @@ dirplot map . --format svg --output treemap.svg --no-show
 | `--header/--no-header` | | `--header` | Print info lines before rendering |
 | `--cushion/--no-cushion` | | `--cushion` | Apply van Wijk cushion shading for a raised 3-D look |
 | `--log/--no-log` | | `--no-log` | Use log of file sizes for layout, making small files more visible |
+| `--breadcrumbs/--no-breadcrumbs` | `-b`/`-B` | `--breadcrumbs` | Collapse single-child directory chains into `foo / bar / baz` labels |
 | `--password` | | — | Password for encrypted archives; prompted interactively if not supplied and needed |
 | `--github-token` | | `$GITHUB_TOKEN` | GitHub personal access token for private repos or higher rate limits |
 
