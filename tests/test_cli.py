@@ -163,6 +163,27 @@ def test_read_meta_svg_no_metadata(tmp_path: Path) -> None:
     assert "No dirplot metadata" in result.output
 
 
+def test_read_meta_multiple_files(sample_tree: Path, tmp_path: Path) -> None:
+    out1 = tmp_path / "out1.png"
+    out2 = tmp_path / "out2.png"
+    runner.invoke(app, ["map", str(sample_tree), "--no-show", "--output", str(out1)])
+    runner.invoke(app, ["map", str(sample_tree), "--no-show", "--output", str(out2)])
+    result = runner.invoke(app, ["read-meta", str(out1), str(out2)])
+    assert result.exit_code == 0
+    assert f"==> {out1} <==" in result.output
+    assert f"==> {out2} <==" in result.output
+    assert result.output.count("Date:") == 2
+
+
+def test_read_meta_multiple_files_partial_error(sample_tree: Path, tmp_path: Path) -> None:
+    out1 = tmp_path / "out1.png"
+    runner.invoke(app, ["map", str(sample_tree), "--no-show", "--output", str(out1)])
+    result = runner.invoke(app, ["read-meta", str(out1), "/nonexistent/file.png"])
+    assert result.exit_code == 1
+    assert "Date:" in result.output
+    assert "file not found" in result.output
+
+
 def test_main_module() -> None:
     """__main__.py delegates to app."""
     from dirplot.__main__ import main
