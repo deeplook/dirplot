@@ -208,6 +208,16 @@ def apply_breadcrumbs(node: Node) -> Node:
     return node
 
 
+def max_depth(node: Node) -> int:
+    """Return the maximum depth of the tree rooted at *node*.
+
+    A leaf node (no children) has depth 0.
+    """
+    if not node.children:
+        return 0
+    return 1 + max(max_depth(c) for c in node.children)
+
+
 def collect_extensions(node: Node) -> list[str]:
     """Return a flat list of file extensions under *node*."""
     if not node.is_dir:
