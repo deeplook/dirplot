@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.3] - 2026-03-14
+
+### Added
+
+- **Breadcrumbs mode** (`--breadcrumbs/--no-breadcrumbs`, `-b/-B`, on by default): directories
+  that form a single-child chain (one subdirectory, no files) are collapsed into a single tile
+  whose header shows the full path separated by ` / ` (e.g. `src / dirplot / fonts`). When the
+  label is too wide, middle segments are replaced with `…` (`src / … / fonts`). The root tile
+  is never collapsed. Disable with `-B` or `--no-breadcrumbs`.
+- **Tree depth in root label**: the root tile header now includes `depth: N` alongside the
+  file, directory, and size summary (e.g. `myproject — 124 files, 18 dirs, 4.0 MB (…), depth: 6`).
+  The depth reflects the original tree structure and is invariant to whether breadcrumbs mode
+  is active.
+
 ## [0.3.2] - 2026-03-13
 
 ### Added
