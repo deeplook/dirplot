@@ -175,50 +175,65 @@ def watch_cmd(
 
 @app.command(name="read-meta")
 def read_meta(
-    file: Path = typer.Argument(..., help="PNG or SVG file to read dirplot metadata from"),
+    files: list[Path] = typer.Argument(
+        ..., help="PNG or SVG file(s) to read dirplot metadata from"
+    ),
 ) -> None:
-    """Read dirplot metadata embedded in a PNG or SVG file."""
-    if not file.exists():
-        typer.echo(f"Error: file not found: {file}", err=True)
-        raise typer.Exit(1)
+    """Read dirplot metadata embedded in one or more PNG or SVG files."""
+    any_error = False
 
-    suffix = file.suffix.lower()
+    for file in files:
+        if len(files) > 1:
+            typer.echo(f"==> {file} <==")
 
-    if suffix == ".png":
-        from PIL import Image
+        if not file.exists():
+            typer.echo(f"Error: file not found: {file}", err=True)
+            any_error = True
+            continue
 
-        img = Image.open(file)
-        info = img.info
-        meta_keys = {"Date", "Software", "URL", "Python", "OS", "Command"}
-        found = {k: v for k, v in info.items() if k in meta_keys}
-        if not found:
-            typer.echo("No dirplot metadata found in PNG.", err=True)
-            raise typer.Exit(1)
-        for k, v in found.items():
-            typer.echo(f"{k}: {v}")
+        suffix = file.suffix.lower()
 
-    elif suffix == ".svg":
-        content = file.read_text(encoding="utf-8")
-        try:
-            root = ET.fromstring(content)
-        except ET.ParseError as exc:
-            typer.echo(f"Error parsing SVG: {exc}", err=True)
-            raise typer.Exit(1) from exc
-        svg_meta: dict[str, str] = {}
-        for desc in root.iter("{http://www.w3.org/1999/02/22-rdf-syntax-ns#}Description"):
-            for child in desc:
-                local = child.tag.split("}")[-1] if "}" in child.tag else child.tag
-                ns_uri = child.tag.split("}")[0].lstrip("{") if "}" in child.tag else ""
-                if ns_uri == "https://github.com/deeplook/dirplot#" and child.text:
-                    svg_meta[local] = child.text
-        if not svg_meta:
-            typer.echo("No dirplot metadata found in SVG.", err=True)
-            raise typer.Exit(1)
-        for k, v in svg_meta.items():
-            typer.echo(f"{k}: {v}")
+        if suffix == ".png":
+            from PIL import Image
 
-    else:
-        typer.echo(f"Unsupported file type: {suffix!r}. Expected .png or .svg", err=True)
+            img = Image.open(file)
+            info = img.info
+            meta_keys = {"Date", "Software", "URL", "Python", "OS", "Command"}
+            found = {k: v for k, v in info.items() if k in meta_keys}
+            if not found:
+                typer.echo("No dirplot metadata found in PNG.", err=True)
+                any_error = True
+                continue
+            for k, v in found.items():
+                typer.echo(f"{k}: {v}")
+
+        elif suffix == ".svg":
+            content = file.read_text(encoding="utf-8")
+            try:
+                root = ET.fromstring(content)
+            except ET.ParseError as exc:
+                typer.echo(f"Error parsing SVG: {exc}", err=True)
+                any_error = True
+                continue
+            svg_meta: dict[str, str] = {}
+            for desc in root.iter("{http://www.w3.org/1999/02/22-rdf-syntax-ns#}Description"):
+                for child in desc:
+                    local = child.tag.split("}")[-1] if "}" in child.tag else child.tag
+                    ns_uri = child.tag.split("}")[0].lstrip("{") if "}" in child.tag else ""
+                    if ns_uri == "https://github.com/deeplook/dirplot#" and child.text:
+                        svg_meta[local] = child.text
+            if not svg_meta:
+                typer.echo("No dirplot metadata found in SVG.", err=True)
+                any_error = True
+                continue
+            for k, v in svg_meta.items():
+                typer.echo(f"{k}: {v}")
+
+        else:
+            typer.echo(f"Unsupported file type: {suffix!r}. Expected .png or .svg", err=True)
+            any_error = True
+
+    if any_error:
         raise typer.Exit(1)
 
 
