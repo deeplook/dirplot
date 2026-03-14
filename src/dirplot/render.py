@@ -160,6 +160,26 @@ def _truncate(
     return name[:lo] + ellipsis
 
 
+def _truncate_breadcrumb(
+    name: str, draw: ImageDraw.ImageDraw, font: ImageFont.FreeTypeFont, max_w: int
+) -> str:
+    """Truncate a breadcrumb label (`` / ``-separated parts) to fit *max_w* pixels.
+
+    Tries the full label first, then collapses middle segments to ``…``, and
+    finally falls back to ``_truncate`` for plain names or when even the
+    ``first / … / last`` form is too long.
+    """
+    parts = name.split(" / ")
+    if len(parts) <= 1:
+        return _truncate(name, draw, font, max_w)
+    if _text_w(draw, name, font) <= max_w:
+        return name
+    candidate = parts[0] + " / … / " + parts[-1]
+    if _text_w(draw, candidate, font) <= max_w:
+        return candidate
+    return _truncate(candidate, draw, font, max_w)
+
+
 def _apply_cushion(img: Image.Image, x: int, y: int, w: int, h: int) -> None:
     """Apply van Wijk-style quadratic cushion shading to a tile in-place."""
     if w < 4 or h < 4:
@@ -257,6 +277,7 @@ def draw_node(
                     spacing=0,
                 )
                 rotated = tmp.rotate(90, expand=True)
+                assert img is not None
                 img.paste(rotated, (x, y), mask=rotated)
             else:
                 # Horizontal label: available text-run = w-4, constraining dim = h-4
@@ -279,7 +300,9 @@ def draw_node(
     # Header label — height driven by the font size
     header_h = font.size + 4
     if h > 2 + header_h:
-        label = _truncate(root_label if root_label is not None else node.name, draw, font, w - 8)
+        label = _truncate_breadcrumb(
+            root_label if root_label is not None else node.name, draw, font, w - 8
+        )
         draw.text(
             (x + w // 2, y + 2 + header_h // 2),
             label,

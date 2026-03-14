@@ -19,6 +19,7 @@ from dirplot.render import create_treemap
 from dirplot.s3 import build_tree_s3, is_s3_path, make_s3_client, parse_s3_path
 from dirplot.scanner import (
     Node,
+    apply_breadcrumbs,
     apply_log_sizes,
     build_tree,
     build_tree_multi,
@@ -346,6 +347,15 @@ def main(
         "--password",
         help="Password for encrypted archives. Prompted interactively if not supplied and needed.",
     ),
+    breadcrumbs: bool = typer.Option(
+        True,
+        "--breadcrumbs/--no-breadcrumbs",
+        "-b/-B",
+        help=(
+            "Collapse single-subdirectory chains into breadcrumb labels"
+            " (e.g. foo / bar / baz). Default: on."
+        ),
+    ),
 ) -> None:
     """Create a nested treemap bitmap for a directory tree."""
     if not roots:
@@ -558,6 +568,9 @@ def main(
 
     if subtrees:
         root_node = prune_to_subtrees(root_node, set(subtrees))
+
+    if breadcrumbs:
+        root_node = apply_breadcrumbs(root_node)
 
     t_scan = time.monotonic() - t_scan_start
     if log:
