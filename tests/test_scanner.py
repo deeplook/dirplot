@@ -6,6 +6,7 @@ import pytest
 
 from dirplot.scanner import (
     Node,
+    apply_breadcrumbs,
     build_tree,
     build_tree_multi,
     collect_extensions,
@@ -229,3 +230,80 @@ def test_build_tree_multi_single_delegates(tmp_path: Path) -> None:
     root = build_tree_multi([tmp_path])
     assert root.path == tmp_path
     assert len(root.children) == 1
+
+
+# ---------------------------------------------------------------------------
+# apply_breadcrumbs
+# ---------------------------------------------------------------------------
+
+
+def _make_dir(name: str, children: list[Node] | None = None) -> Node:
+    return Node(name=name, path=Path(name), size=1, is_dir=True, children=children or [])
+
+
+def _make_file(name: str) -> Node:
+    return Node(name=name, path=Path(name), size=1, is_dir=False, extension=".txt")
+
+
+def test_breadcrumbs_collapses_chain() -> None:
+    # root → a → b → c → [file.txt]; root is never collapsed, but a/b/c merge
+    file_node = _make_file("file.txt")
+    c = _make_dir("c", [file_node])
+    b = _make_dir("b", [c])
+    a = _make_dir("a", [b])
+    root = _make_dir("root", [a])
+
+    result = apply_breadcrumbs(root)
+
+    assert result.name == "root"  # root itself is never collapsed
+    assert len(result.children) == 1
+    merged = result.children[0]
+    assert merged.name == "a / b / c"
+    assert len(merged.children) == 1
+    assert merged.children[0].name == "file.txt"
+
+
+def test_breadcrumbs_no_collapse_with_files() -> None:
+    # root → a → [file.txt, subdir]  — a has file child, must not collapse
+    file_node = _make_file("file.txt")
+    subdir = _make_dir("subdir", [_make_file("inner.txt")])
+    a = _make_dir("a", [file_node, subdir])
+    root = _make_dir("root", [a])
+
+    result = apply_breadcrumbs(root)
+
+    assert result.name == "root"
+    child = result.children[0]
+    assert child.name == "a"
+    assert {c.name for c in child.children} == {"file.txt", "subdir"}
+
+
+def test_breadcrumbs_no_collapse_multi_children() -> None:
+    # root → a → [dir1, dir2]  — a has two dir children, must not collapse
+    dir1 = _make_dir("dir1", [_make_file("x.txt")])
+    dir2 = _make_dir("dir2", [_make_file("y.txt")])
+    a = _make_dir("a", [dir1, dir2])
+    root = _make_dir("root", [a])
+
+    result = apply_breadcrumbs(root)
+
+    assert result.name == "root"
+    child = result.children[0]
+    assert child.name == "a"
+    assert {c.name for c in child.children} == {"dir1", "dir2"}
+
+
+def test_breadcrumbs_partial_chain() -> None:
+    # root → a → b → [dir1, dir2]  — b has two children, so a/b merges but stops there
+    dir1 = _make_dir("dir1", [_make_file("x.txt")])
+    dir2 = _make_dir("dir2", [_make_file("y.txt")])
+    b = _make_dir("b", [dir1, dir2])
+    a = _make_dir("a", [b])
+    root = _make_dir("root", [a])
+
+    result = apply_breadcrumbs(root)
+
+    assert result.name == "root"
+    child = result.children[0]
+    assert child.name == "a / b"
+    assert {c.name for c in child.children} == {"dir1", "dir2"}

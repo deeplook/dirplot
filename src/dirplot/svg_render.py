@@ -247,6 +247,25 @@ def _truncate(name: str, font_size: int, max_w: float) -> str:
     return name[: max(0, max_chars - 1)] + "\u2026"
 
 
+def _truncate_breadcrumb_svg(name: str, font_size: int, max_w: float) -> str:
+    """Truncate a breadcrumb label (`` / ``-separated parts) to fit *max_w*.
+
+    Tries the full label first, then collapses middle segments to ``…``, and
+    finally falls back to ``_truncate`` for plain names or when even the
+    ``first / … / last`` form is too long.
+    """
+    char_w = font_size * _CHAR_ASPECT
+    parts = name.split(" / ")
+    if len(parts) <= 1:
+        return _truncate(name, font_size, max_w)
+    if len(name) * char_w <= max_w:
+        return name
+    candidate = parts[0] + " / \u2026 / " + parts[-1]
+    if len(candidate) * char_w <= max_w:
+        return candidate
+    return _truncate(candidate, font_size, max_w)
+
+
 # ---------------------------------------------------------------------------
 # Recursive draw
 # ---------------------------------------------------------------------------
@@ -367,7 +386,9 @@ def _draw_node_svg(
         )
         d.append(hdr)
 
-        label = _truncate(root_label if root_label is not None else node.name, font_size, w - 8)
+        label = _truncate_breadcrumb_svg(
+            root_label if root_label is not None else node.name, font_size, w - 8
+        )
         hclip = drawsvg.ClipPath()
         hclip.append(drawsvg.Rectangle(x + 2, y + 2, w - 4, header_h))
         d.append(hclip)

@@ -182,6 +182,32 @@ def count_nodes(node: Node) -> tuple[int, int]:
     return files, dirs
 
 
+def _apply_breadcrumbs_recursive(node: Node) -> Node:
+    """Recursively collapse single-subdirectory chains (internal helper)."""
+    node.children = [_apply_breadcrumbs_recursive(c) for c in node.children]
+    dir_children = [c for c in node.children if c.is_dir]
+    file_children = [c for c in node.children if not c.is_dir]
+    if node.is_dir and len(dir_children) == 1 and len(file_children) == 0:
+        child = dir_children[0]
+        node.name = f"{node.name} / {child.name}"
+        node.children = child.children
+    return node
+
+
+def apply_breadcrumbs(node: Node) -> Node:
+    """Collapse single-subdirectory chains into one node with a combined name.
+
+    A directory that has exactly one directory child and no file children is
+    merged with that child: the names are joined with `` / `` and the child's
+    children become this node's children.  The process is bottom-up so chains
+    of any length accumulate naturally.
+
+    The root node itself is never collapsed — only its descendants are.
+    """
+    node.children = [_apply_breadcrumbs_recursive(c) for c in node.children]
+    return node
+
+
 def collect_extensions(node: Node) -> list[str]:
     """Return a flat list of file extensions under *node*."""
     if not node.is_dir:
