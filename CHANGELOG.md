@@ -21,6 +21,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ```bash
   dirplot map src/main.py src/util.py --no-show
   ```
+- **stdout output** (`--output -`): passing `-` as the output path writes the PNG or SVG
+  bytes to stdout, enabling piping to other tools. Header and progress lines are
+  automatically redirected to stderr to keep the binary stream clean.
+  ```bash
+  dirplot map . --output - --no-show | convert - -resize 50% small.png
+  dirplot map . --output - --format svg --no-show > treemap.svg
+  ```
 
 ## [0.3.3] - 2026-03-14
 

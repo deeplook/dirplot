@@ -22,7 +22,7 @@
 - Van Wijk cushion shading gives tiles a raised 3-D appearance (optional).
 - **SVG output** (`--format svg` or `--output file.svg`) produces a fully self-contained interactive file: CSS hover highlight, a JavaScript floating tooltip panel, and cushion shading via a gradient — no external dependencies.
 - Display via system image viewer or inline in the terminal (iTerm2 and Kitty protocols, auto-detected).
-- Save output to a PNG or SVG file with `--output`.
+- Save output to a PNG or SVG file with `--output`, or pipe bytes to stdout with `--output -` (header lines go to stderr automatically).
 - Exclude paths with `--exclude` (repeatable), or focus on specific subtrees with `--subtree` / `-s` (allowlist complement, supports nested paths like `src/dirplot/fonts`).
 - Pass multiple local paths (`dirplot map src tests`) to scan each independently and display them under their common parent, ignoring all other siblings. Individual files are also accepted as roots (`dirplot map main.py util.py`).
 - Works on macOS, Linux, and Windows; WSL2 fully supported.
@@ -122,6 +122,12 @@ dirplot map . --output treemap.svg --no-show
 # Force SVG format explicitly
 dirplot map . --format svg --output treemap.svg --no-show
 
+# Write PNG bytes to stdout (pipe to another tool)
+dirplot map . --output - --no-show | convert - -resize 50% small.png
+
+# Write SVG to stdout
+dirplot map . --output - --format svg --no-show > treemap.svg
+
 # Watch a directory and regenerate the treemap on every change
 dirplot watch . --output treemap.png
 
@@ -136,7 +142,7 @@ dirplot watch . --output treemap.png --animate
 
 | Flag | Short | Default | Description |
 |---|---|---|---|
-| `--output` | `-o` | — | Save to this path (PNG or SVG) |
+| `--output` | `-o` | — | Save to this path (PNG or SVG); use `-` to write to stdout |
 | `--format` | `-f` | auto | Output format: `png` or `svg`. Auto-detected from `--output` extension |
 | `--show/--no-show` | | `--show` | Display the image after rendering |
 | `--inline` | | off | Display in terminal (protocol auto-detected; PNG only) |
