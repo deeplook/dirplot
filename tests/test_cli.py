@@ -1,7 +1,7 @@
 """Tests for the Typer CLI entry point."""
 
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import ANY, MagicMock, patch
 
 from typer.testing import CliRunner
 
@@ -182,6 +182,63 @@ def test_read_meta_multiple_files_partial_error(sample_tree: Path, tmp_path: Pat
     assert result.exit_code == 1
     assert "Date:" in result.output
     assert "file not found" in result.output
+
+
+def test_watch_single_path(sample_tree: Path, tmp_path: Path) -> None:
+    output = tmp_path / "out.png"
+    mock_obs = MagicMock()
+    with (
+        patch("dirplot.watch.build_tree_multi"),
+        patch("dirplot.watch.create_treemap") as mock_render,
+        patch("watchdog.observers.Observer", return_value=mock_obs),
+        patch("dirplot.main.time.sleep", side_effect=KeyboardInterrupt),
+    ):
+        mock_render.return_value = MagicMock(read=lambda: b"\x89PNG\r\n\x1a\n" + b"\x00" * 8)
+        result = runner.invoke(
+            app, ["watch", str(sample_tree), "--output", str(output), "--size", "100x100"]
+        )
+    assert result.exit_code == 0
+    mock_obs.schedule.assert_called_once_with(ANY, str(sample_tree.resolve()), recursive=True)
+
+
+def test_watch_multiple_paths(tmp_path: Path) -> None:
+    dir_a = tmp_path / "a"
+    dir_b = tmp_path / "b"
+    dir_a.mkdir()
+    dir_b.mkdir()
+    output = tmp_path / "out.png"
+    mock_obs = MagicMock()
+    with (
+        patch("dirplot.watch.build_tree_multi"),
+        patch("dirplot.watch.create_treemap") as mock_render,
+        patch("watchdog.observers.Observer", return_value=mock_obs),
+        patch("dirplot.main.time.sleep", side_effect=KeyboardInterrupt),
+    ):
+        mock_render.return_value = MagicMock(read=lambda: b"\x89PNG\r\n\x1a\n" + b"\x00" * 8)
+        result = runner.invoke(
+            app,
+            ["watch", str(dir_a), str(dir_b), "--output", str(output), "--size", "100x100"],
+        )
+    assert result.exit_code == 0
+    scheduled_paths = {call.args[1] for call in mock_obs.schedule.call_args_list}
+    assert scheduled_paths == {str(dir_a.resolve()), str(dir_b.resolve())}
+
+
+def test_watch_invalid_path(tmp_path: Path) -> None:
+    output = tmp_path / "out.png"
+    result = runner.invoke(app, ["watch", "/nonexistent/__dirplot_test__", "--output", str(output)])
+    assert result.exit_code == 1
+    assert "not a directory" in result.output
+
+
+def test_watch_missing_watchdog(sample_tree: Path, tmp_path: Path) -> None:
+    output = tmp_path / "out.png"
+    with patch.dict("sys.modules", {"watchdog.observers": None}):
+        result = runner.invoke(
+            app, ["watch", str(sample_tree), "--output", str(output), "--size", "100x100"]
+        )
+    assert result.exit_code == 1
+    assert "watchdog" in result.output
 
 
 def test_main_module() -> None:
