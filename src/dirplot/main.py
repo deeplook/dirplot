@@ -387,7 +387,7 @@ def main(
                 )
             ):
                 typer.echo(
-                    f"Multiple roots are only supported for local directories, got: {r}",
+                    f"Multiple roots are only supported for local paths, got: {r}",
                     err=True,
                 )
                 raise typer.Exit(1)
@@ -397,8 +397,8 @@ def main(
             if not rp.exists():
                 typer.echo(f"Path does not exist: {r}", err=True)
                 raise typer.Exit(1)
-            if not rp.is_dir():
-                typer.echo(f"Not a directory: {r}", err=True)
+            if not rp.is_dir() and not rp.is_file():
+                typer.echo(f"Not a file or directory: {r}", err=True)
                 raise typer.Exit(1)
             root_paths.append(rp.resolve())
         excluded = frozenset(Path(e).resolve() for e in exclude)

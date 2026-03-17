@@ -123,8 +123,18 @@ def build_tree_multi(
 
     common = Path(os.path.commonpath([str(r) for r in resolved]))
 
-    # Scan each target independently
-    scanned: list[tuple[Path, Node]] = [(r, build_tree(r, exclude, depth)) for r in resolved]
+    # Scan each target independently (dirs recurse; files become leaf nodes)
+    def _scan_one(r: Path) -> Node:
+        if r.is_dir():
+            return build_tree(r, exclude, depth)
+        try:
+            file_size = max(1, r.stat().st_size)
+        except OSError:
+            file_size = 1
+        ext = r.suffix.lower() if r.suffix else "(no ext)"
+        return Node(name=r.name, path=r, size=file_size, is_dir=False, extension=ext)
+
+    scanned: list[tuple[Path, Node]] = [(r, _scan_one(r)) for r in resolved]
 
     def _combine(parent: Path, targets: list[tuple[Path, Node]]) -> Node:
         """Build a synthetic Node for *parent* containing exactly the given *targets*."""
