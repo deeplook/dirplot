@@ -12,14 +12,14 @@ except ImportError:
     Observer = None  # type: ignore[assignment]
 
 from dirplot.render import create_treemap
-from dirplot.scanner import apply_log_sizes, build_tree
+from dirplot.scanner import apply_log_sizes, build_tree_multi
 from dirplot.svg_render import create_treemap_svg
 
 
 class TreemapEventHandler(FileSystemEventHandler):
     def __init__(
         self,
-        root: Path,
+        roots: list[Path],
         output: Path,
         *,
         exclude: frozenset[Path] = frozenset(),
@@ -32,7 +32,7 @@ class TreemapEventHandler(FileSystemEventHandler):
         log: bool = False,
     ) -> None:
         super().__init__()
-        self.root = root
+        self.roots = roots
         self.output = output
         self.exclude = exclude
         self.width_px = width_px
@@ -99,7 +99,7 @@ class TreemapEventHandler(FileSystemEventHandler):
 
     def _regenerate(self) -> None:
         try:
-            node = build_tree(self.root, self.exclude)
+            node = build_tree_multi(self.roots, self.exclude)
             if self.log:
                 apply_log_sizes(node)
             if self.use_svg:

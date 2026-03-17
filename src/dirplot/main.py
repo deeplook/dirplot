@@ -90,7 +90,7 @@ def termsize() -> None:
 
 @app.command(name="watch")
 def watch_cmd(
-    path: Path = typer.Argument(..., help="Directory to watch"),
+    paths: list[Path] = typer.Argument(..., help="Directories to watch"),
     output: Path = typer.Option(..., "--output", "-o", help="Output file (.png or .svg)"),
     exclude: list[str] = typer.Option([], "--exclude", "-e", help="Paths to exclude (repeatable)"),
     font_size: int = typer.Option(12, "--font-size", help="Directory label font size in pixels"),
@@ -112,7 +112,7 @@ def watch_cmd(
         help="Use log of file sizes for layout, making small files more visible",
     ),
 ) -> None:
-    """Watch a directory and regenerate the treemap on every file change."""
+    """Watch one or more directories and regenerate the treemap on every file change."""
     from dirplot.watch import TreemapEventHandler
 
     try:
@@ -121,9 +121,10 @@ def watch_cmd(
         typer.echo("Error: watchdog is required. Run: pip install watchdog", err=True)
         raise typer.Exit(1) from None
 
-    if not path.exists() or not path.is_dir():
-        typer.echo(f"Error: not a directory: {path}", err=True)
-        raise typer.Exit(1)
+    for path in paths:
+        if not path.exists() or not path.is_dir():
+            typer.echo(f"Error: not a directory: {path}", err=True)
+            raise typer.Exit(1)
 
     if animate and output.suffix.lower() == ".svg":
         typer.echo("Error: --animate requires a PNG output file.", err=True)
@@ -142,10 +143,10 @@ def watch_cmd(
         height_px = term_h - 3 * row_px
 
     excluded = frozenset(Path(e).resolve() for e in exclude)
-    root = path.resolve()
+    roots = [path.resolve() for path in paths]
 
     handler = TreemapEventHandler(
-        root,
+        roots,
         output,
         exclude=excluded,
         width_px=width_px,
@@ -161,9 +162,11 @@ def watch_cmd(
     handler._regenerate()
 
     observer = Observer()
-    observer.schedule(handler, str(root), recursive=True)
+    for root in roots:
+        observer.schedule(handler, str(root), recursive=True)
     observer.start()
-    typer.echo(f"Watching {root} → {output}  (Ctrl-C to stop)")
+    roots_str = ", ".join(str(r) for r in roots)
+    typer.echo(f"Watching {roots_str} → {output}  (Ctrl-C to stop)")
 
     try:
         while True:
