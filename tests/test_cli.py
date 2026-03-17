@@ -31,6 +31,15 @@ def test_cli_single_file(tmp_path: Path) -> None:
     assert result.exit_code == 0
 
 
+def test_cli_multiple_files(tmp_path: Path) -> None:
+    f1 = tmp_path / "a.txt"
+    f2 = tmp_path / "b.txt"
+    f1.write_bytes(b"x" * 100)
+    f2.write_bytes(b"x" * 200)
+    result = runner.invoke(app, ["map", str(f1), str(f2), "--no-show"])
+    assert result.exit_code == 0
+
+
 def test_cli_bad_colormap(sample_tree: Path) -> None:
     result = runner.invoke(app, ["map", str(sample_tree), "--no-show", "--colormap", "not_a_cmap"])
     assert result.exit_code == 1
