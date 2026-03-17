@@ -24,7 +24,7 @@
 - Display via system image viewer or inline in the terminal (iTerm2 and Kitty protocols, auto-detected).
 - Save output to a PNG or SVG file with `--output`.
 - Exclude paths with `--exclude` (repeatable), or focus on specific subtrees with `--subtree` / `-s` (allowlist complement, supports nested paths like `src/dirplot/fonts`).
-- Pass multiple local paths (`dirplot map src tests`) to scan each independently and display them under their common parent, ignoring all other siblings.
+- Pass multiple local paths (`dirplot map src tests`) to scan each independently and display them under their common parent, ignoring all other siblings. Individual files are also accepted as roots (`dirplot map main.py util.py`).
 - Works on macOS, Linux, and Windows; WSL2 fully supported.
 - Scan remote hosts over SSH (`pip install "dirplot[ssh]"`), AWS S3 buckets (`pip install "dirplot[s3]"`), any public/private GitHub repository (including specific branch, tag, commit SHA, or subdirectory), **running Docker containers**, or **Kubernetes pods** — all without extra dependencies beyond the respective CLI/SDK. See [EXAMPLES.md](docs/EXAMPLES.md).
 - Optional **file-count legend** (`--legend`) — a corner overlay listing the top extensions by number of files, with coloured swatches and counts, automatically sized to fit the image.
@@ -91,6 +91,9 @@ dirplot map . --exclude .venv --exclude .git
 # Map two specific subtrees under their common parent
 dirplot map src tests
 
+# Map individual files under their common parent
+dirplot map src/main.py src/util.py
+
 # Focus on named subtrees of a root (allowlist; supports nested paths)
 dirplot map . --subtree src --subtree tests
 dirplot map . --subtree src/dirplot/fonts
@@ -118,6 +121,15 @@ dirplot map . --output treemap.svg --no-show
 
 # Force SVG format explicitly
 dirplot map . --format svg --output treemap.svg --no-show
+
+# Watch a directory and regenerate the treemap on every change
+dirplot watch . --output treemap.png
+
+# Watch multiple directories simultaneously
+dirplot watch src tests --output treemap.png
+
+# Watch and build an animated APNG (one frame per change)
+dirplot watch . --output treemap.png --animate
 ```
 
 ### Options

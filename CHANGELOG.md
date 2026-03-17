@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`dirplot watch` accepts multiple directories**: the `watch` subcommand now takes
+  one or more positional path arguments and schedules a filesystem observer for each,
+  regenerating the treemap from all roots on every change.
+  ```bash
+  dirplot watch src tests --output treemap.png
+  ```
+- **`dirplot map` accepts multiple file paths as roots**: previously, multi-root mode
+  required every argument to be a directory. Individual files can now be passed as roots;
+  each is treated as a leaf node and displayed under the common parent directory.
+  ```bash
+  dirplot map src/main.py src/util.py --no-show
+  ```
+
 ## [0.3.3] - 2026-03-14
 
 ### Added
