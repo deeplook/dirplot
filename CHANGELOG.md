@@ -9,6 +9,81 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Debounced watch** (`--debounce SECONDS`, default `0.5`): the `watch` subcommand now
+  collects rapid file-system event bursts and regenerates the treemap once per quiet
+  period instead of on every raw event. A `git checkout` touching 100 files triggers
+  exactly one render after the activity settles. Pass `--debounce 0` to restore the
+  old immediate-fire behaviour.
+  ```bash
+  dirplot watch . --output treemap.png                      # 500 ms debounce (default)
+  dirplot watch . --output treemap.png --debounce 1.0       # 1 s quiet window
+  dirplot watch . --output treemap.png --debounce 0         # immediate, as before
+  ```
+- **Event log** (`--event-log FILE`): on Ctrl-C exit, all raw file-system events
+  recorded during the session are written as newline-delimited JSON (JSONL) to the
+  given file. Each line has `timestamp`, `type`, `path`, and `dest_path` fields.
+  The log is written only if there are events to record.
+  ```bash
+  dirplot watch src --output treemap.png --event-log events.jsonl
+  # Ctrl-C, then:
+  cat events.jsonl | python3 -m json.tool
+  ```
+- **Graceful finalization**: Ctrl-C now flushes any pending debounced render before
+  stopping the observer, so the output file always reflects the final state of the
+  watched tree.
+- **`--depth` for `watch`**: the `watch` subcommand now accepts `--depth N` to limit
+  recursion depth, matching the behaviour of `dirplot map`.
+  ```bash
+  dirplot watch . --output treemap.png --depth 3
+  ```
+
+### Changed
+
+- **`--animate` writes the APNG once on exit** instead of reading and rewriting the
+  entire file on every render. Frames are accumulated as raw PNG bytes in memory and
+  flushed as a single multi-frame APNG when the watcher stops (Ctrl-C). This removes
+  an O(N²) disk-I/O pattern where frame K required reading a K-frame APNG just to
+  append one more frame. Status output during a session now reads `Captured frame N`;
+  the final `Wrote N-frame APNG → …` line confirms the file was written on exit.
+
+### Fixed
+
+- **`--animate` race condition**: the debounce timer thread was marked as daemon,
+  causing an in-progress render to be killed when the main thread exited after
+  `observer.join()`. The timer is no longer a daemon thread; `flush()` joins any
+  in-flight render before stopping.
+- **`--animate` Pillow APNG regression**: passing `pnginfo` alongside `save_all=True`
+  caused Pillow to silently write a static PNG instead of an APNG. The `pnginfo`
+  argument is now omitted from multi-frame saves (cross-process timing metadata is
+  no longer needed since frames are held in memory for the lifetime of the process).
+- **APNG frame duration overflow**: restoring the inter-session frame duration from
+  stored metadata could produce a value exceeding 65 535 ms — the maximum expressible
+  by APNG's uint16 `delay_num` field when `delay_den = 1000` — causing Pillow to raise
+  `cannot write duration`. Durations are now capped at 65 535 ms (≈ 65 s).
+
+- **Path-list input from `tree` / `find`** (`--paths-from FILE` or stdin pipe): the `map`
+  subcommand now accepts a list of paths produced by `tree` or `find` — either piped via
+  stdin or read from a file with `--paths-from`. Format is auto-detected: `tree` output
+  (detected by `├──` / `└──` box-drawing characters) or `find` output (one path per line).
+  Handles `tree -s` / `tree -h` (size columns), `tree -f` (full embedded paths), and the
+  default indented name format. Ancestor/descendant duplicates are collapsed automatically
+  so only the minimal set of roots is passed to the scanner.
+  ```bash
+  # Implicit stdin — no flag needed
+  tree src/        | dirplot map
+  tree -s src/     | dirplot map        # with file sizes in tree output
+  find . -name "*.py" | dirplot map
+
+  # Explicit file
+  tree src/ > paths.txt && dirplot map --paths-from paths.txt
+
+  # Explicit stdin
+  tree src/ | dirplot map --paths-from -
+  ```
+  Positional path arguments and path-list input are mutually exclusive — combining them
+  exits with a clear error. Only local paths are supported (remote backends such as
+  `docker://`, `s3://`, `ssh://` remain positional-arg only).
+
 - **`dirplot watch` accepts multiple directories**: the `watch` subcommand now takes
   one or more positional path arguments and schedules a filesystem observer for each,
   regenerating the treemap from all roots on every change.

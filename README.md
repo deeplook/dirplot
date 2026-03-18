@@ -25,6 +25,8 @@
 - Save output to a PNG or SVG file with `--output`, or pipe bytes to stdout with `--output -` (header lines go to stderr automatically).
 - Exclude paths with `--exclude` (repeatable), or focus on specific subtrees with `--subtree` / `-s` (allowlist complement, supports nested paths like `src/dirplot/fonts`).
 - Pass multiple local paths (`dirplot map src tests`) to scan each independently and display them under their common parent, ignoring all other siblings. Individual files are also accepted as roots (`dirplot map main.py util.py`).
+- **Pipe `tree` or `find` output directly**: `tree src/ | dirplot map` and `find . -name "*.py" | dirplot map` are both supported. The format is auto-detected (`tree -s`, `tree -f`, and plain `find` output all work). Use `--paths-from FILE` to read from a file instead of stdin.
+- **Live watch mode** (`dirplot watch`) — monitors one or more directories and regenerates the treemap automatically. Rapid bursts of events (e.g. `git checkout`) are debounced into a single render after a configurable quiet period (`--debounce`, default 0.5 s). With `--animate`, each render is captured as a frame and the complete APNG is written on Ctrl-C exit. All events can be logged to a JSONL file with `--event-log`.
 - Works on macOS, Linux, and Windows; WSL2 fully supported.
 - Scan remote hosts over SSH (`pip install "dirplot[ssh]"`), AWS S3 buckets (`pip install "dirplot[s3]"`), any public/private GitHub repository (including specific branch, tag, commit SHA, or subdirectory), **running Docker containers**, or **Kubernetes pods** — all without extra dependencies beyond the respective CLI/SDK. See [EXAMPLES.md](docs/EXAMPLES.md).
 - Optional **file-count legend** (`--legend`) — a corner overlay listing the top extensions by number of files, with coloured swatches and counts, automatically sized to fit the image.
@@ -94,6 +96,15 @@ dirplot map src tests
 # Map individual files under their common parent
 dirplot map src/main.py src/util.py
 
+# Pipe tree or find output — format is auto-detected
+tree src/            | dirplot map
+tree -s src/         | dirplot map        # tree with file sizes
+find . -name "*.py"  | dirplot map
+find . -type d       | dirplot map        # directories only
+
+# Read a saved path list from a file
+tree src/ > paths.txt && dirplot map --paths-from paths.txt
+
 # Focus on named subtrees of a root (allowlist; supports nested paths)
 dirplot map . --subtree src --subtree tests
 dirplot map . --subtree src/dirplot/fonts
@@ -128,13 +139,22 @@ dirplot map . --output - --no-show | convert - -resize 50% small.png
 # Write SVG to stdout
 dirplot map . --output - --format svg --no-show > treemap.svg
 
-# Watch a directory and regenerate the treemap on every change
+# Watch a directory and regenerate the treemap on every change (500 ms debounce)
 dirplot watch . --output treemap.png
 
 # Watch multiple directories simultaneously
 dirplot watch src tests --output treemap.png
 
-# Watch and build an animated APNG (one frame per change)
+# Longer quiet window — useful for slow build systems or noisy editors
+dirplot watch . --output treemap.png --debounce 1.0
+
+# Disable debounce — regenerate immediately on every raw event (old behaviour)
+dirplot watch . --output treemap.png --debounce 0
+
+# Record all file-system events to a JSONL file; written on Ctrl-C exit
+dirplot watch src --output treemap.png --event-log events.jsonl
+
+# Watch and build an animated APNG — one frame per debounced render, written on Ctrl-C
 dirplot watch . --output treemap.png --animate
 ```
 
@@ -142,6 +162,7 @@ dirplot watch . --output treemap.png --animate
 
 | Flag | Short | Default | Description |
 |---|---|---|---|
+| `--paths-from` | | — | File containing a path list (`tree` or `find` output); use `-` for stdin |
 | `--output` | `-o` | — | Save to this path (PNG or SVG); use `-` to write to stdout |
 | `--format` | `-f` | auto | Output format: `png` or `svg`. Auto-detected from `--output` extension |
 | `--show/--no-show` | | `--show` | Display the image after rendering |
@@ -158,6 +179,24 @@ dirplot watch . --output treemap.png --animate
 | `--breadcrumbs/--no-breadcrumbs` | `-b`/`-B` | `--breadcrumbs` | Collapse single-child directory chains into `foo / bar / baz` labels |
 | `--password` | | — | Password for encrypted archives; prompted interactively if not supplied and needed |
 | `--github-token` | | `$GITHUB_TOKEN` | GitHub personal access token for private repos or higher rate limits |
+
+### `watch` options
+
+These options are specific to the `watch` subcommand.
+
+| Flag | Default | Description |
+|---|---|---|
+| `--output` / `-o` | required | Output file (`.png` or `.svg`) updated on each change |
+| `--debounce` | `0.5` | Seconds of quiet after the last event before regenerating; `0` disables |
+| `--event-log` | — | Write all raw events as JSONL to this file on Ctrl-C exit |
+| `--animate` / `--no-animate` | off | Capture one frame per debounced render; write the complete APNG on Ctrl-C exit |
+| `--log` / `--no-log` | off | Use log of file sizes for layout |
+| `--size` | terminal size | Output dimensions as `WIDTHxHEIGHT` |
+| `--depth` | — | Maximum recursion depth |
+| `--exclude` / `-e` | — | Path to exclude (repeatable) |
+| `--colormap` / `-c` | `tab20` | Matplotlib colormap |
+| `--font-size` | `12` | Directory label font size in pixels |
+| `--cushion` / `--no-cushion` | on | Van Wijk cushion shading |
 
 ## Inline Display
 
