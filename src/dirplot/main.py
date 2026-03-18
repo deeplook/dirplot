@@ -1,5 +1,6 @@
 """CLI entry point."""
 
+import signal
 import sys
 import time
 import webbrowser
@@ -179,25 +180,29 @@ def watch_cmd(
         depth=depth,
     )
 
-    # Generate an initial treemap immediately
-    handler._regenerate()
-
     observer = Observer()
-    for root in roots:
-        observer.schedule(handler, str(root), recursive=True)
-    observer.start()
-    roots_str = ", ".join(str(r) for r in roots)
-    typer.echo(f"Watching {roots_str} → {output}  (Ctrl-C to stop)")
-
     try:
+        # Generate an initial treemap immediately
+        roots_str = ", ".join(str(r) for r in roots)
+        typer.echo(f"Scanning {roots_str} ...", err=True)
+        handler._regenerate()
+
+        for root in roots:
+            observer.schedule(handler, str(root), recursive=True)
+        observer.start()
+        typer.echo(f"Watching {roots_str} → {output}  (Ctrl-C to stop)")
+
         while True:
             time.sleep(1)
     except KeyboardInterrupt:
         pass
     finally:
+        # Ignore further Ctrl-C so flush() can finish writing the APNG.
+        signal.signal(signal.SIGINT, signal.SIG_IGN)
         handler.flush()
-        observer.stop()
-        observer.join()
+        if observer.is_alive():
+            observer.stop()
+            observer.join()
 
 
 @app.command(name="read-meta")

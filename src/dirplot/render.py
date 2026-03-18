@@ -225,6 +225,7 @@ def draw_node(
     cushion: bool = True,
     img: Image.Image | None = None,
     root_label: str | None = None,
+    rect_map: dict[str, tuple[int, int, int, int]] | None = None,
 ) -> None:
     """Recursively draw *node* and its children into *draw*.
 
@@ -237,11 +238,15 @@ def draw_node(
         font: Font for directory name labels.
         root_label: When set, overrides the directory header label for this
             (root) node only; children always use their own name.
+        rect_map: When provided, populated with ``str(path) → (x, y, w, h)``
+            for every leaf node drawn.
     """
     if w < 2 or h < 2:
         return
 
     if not node.is_dir:
+        if rect_map is not None:
+            rect_map[str(node.path)] = (x, y, w, h)
         rgba = color_map.get(node.extension, (0.5, 0.5, 0.5, 1.0))
         rgb = (int(rgba[0] * 255), int(rgba[1] * 255), int(rgba[2] * 255))
         draw.rectangle([x, y, x + w - 1, y + h - 1], fill=rgb)
@@ -292,6 +297,9 @@ def draw_node(
                 )
         return
 
+    if rect_map is not None:
+        rect_map[str(node.path)] = (x, y, w, h)
+
     # Directory: 1-px white outer border + 1-px black inner border
     draw.rectangle([x, y, x + w - 1, y + h - 1], outline=(255, 255, 255), width=1)
     if w >= 4 and h >= 4:
@@ -339,7 +347,20 @@ def draw_node(
         ry = round(rect["y"])
         rw = round(rect["x"] + rect["dx"]) - rx
         rh = round(rect["y"] + rect["dy"]) - ry
-        draw_node(draw, child, rx, ry, rw - 1, rh - 1, color_map, font, font_size, cushion, img)
+        draw_node(
+            draw,
+            child,
+            rx,
+            ry,
+            rw - 1,
+            rh - 1,
+            color_map,
+            font,
+            font_size,
+            cushion,
+            img,
+            rect_map=rect_map,
+        )
 
 
 def _collect_ext_counts(node: Node) -> dict[str, int]:
@@ -459,6 +480,44 @@ def _draw_legend(
         )
 
 
+HIGHLIGHT_COLORS: dict[str, tuple[int, int, int]] = {
+    "created": (0, 220, 0),
+    "modified": (0, 128, 255),
+    "deleted": (255, 0, 0),
+    "moved": (255, 165, 0),
+}
+
+HIGHLIGHT_BORDER = 3  # pixels
+
+
+def _draw_highlights(
+    draw: ImageDraw.ImageDraw,
+    rect_map: dict[str, tuple[int, int, int, int]],
+    highlights: dict[str, str],
+) -> None:
+    """Draw coloured borders around tiles whose paths appear in *highlights*.
+
+    *highlights* maps ``str(path) → event_type`` where event_type is one of
+    ``"created"``, ``"modified"``, ``"deleted"``, or ``"moved"``.
+
+    For deleted files (not in *rect_map*), the parent directory is
+    highlighted instead.
+    """
+    for path, event_type in highlights.items():
+        if path not in rect_map:
+            continue
+        x, y, w, h = rect_map[path]
+        color = HIGHLIGHT_COLORS.get(event_type, (255, 255, 0))
+        border = min(HIGHLIGHT_BORDER, w // 3, h // 3)
+        if border < 1:
+            continue
+        for i in range(border):
+            draw.rectangle(
+                [x + i, y + i, x + w - 1 - i, y + h - 1 - i],
+                outline=color,
+            )
+
+
 def create_treemap(
     root_node: Node,
     width_px: int,
@@ -468,6 +527,8 @@ def create_treemap(
     legend: int | None = None,
     cushion: bool = True,
     tree_depth: int | None = None,
+    highlights: dict[str, str] | None = None,
+    rect_map_out: dict[str, tuple[int, int, int, int]] | None = None,
 ) -> io.BytesIO:
     """Render a nested squarified treemap and return it as a PNG in a BytesIO buffer.
 
@@ -478,6 +539,10 @@ def create_treemap(
         font_size: Directory label font size in pixels.
         colormap: Matplotlib colormap name for file-extension colours.
         legend: Max entries in the file-count legend, or None to disable.
+        highlights: Optional mapping of ``str(path) → event_type`` for tiles
+            that should receive a coloured border (created/modified/deleted).
+        rect_map_out: When provided, populated with ``str(path) → (x, y, w, h)``
+            for every node drawn. Useful for highlighting tiles in a later pass.
 
     Returns:
         BytesIO containing the rendered PNG, seeked to position 0.
@@ -496,6 +561,13 @@ def create_treemap(
         f"{root_node.name} \u2014 {n_files:,} files, {n_dirs:,} dirs,"
         f" {_human_bytes(total_bytes)} ({total_bytes:,} bytes), depth: {depth}"
     )
+    rect_map: dict[str, tuple[int, int, int, int]] | None
+    if rect_map_out is not None:
+        rect_map = rect_map_out
+    elif highlights:
+        rect_map = {}
+    else:
+        rect_map = None
     draw_node(
         idraw,
         root_node,
@@ -509,7 +581,11 @@ def create_treemap(
         cushion,
         img,
         root_label=root_label,
+        rect_map=rect_map,
     )
+
+    if highlights and rect_map is not None:
+        _draw_highlights(idraw, rect_map, highlights)
 
     if legend is not None:
         overlay_font = _font(max(6, font_size - 2))
