@@ -199,7 +199,7 @@ def _read_libarchive(path: Path, password: str | None = None) -> list[tuple[str,
     except ImportError as exc:
         raise ImportError(
             f"libarchive-c is required to read {path.suffix} archives. "
-            "Install it with: pip install libarchive-c\n"
+            "Install it with: pip install 'dirplot[libarchive]'\n"
             "(The system libarchive library must also be present: "
             "brew install libarchive  or  apt install libarchive-dev)"
         ) from exc

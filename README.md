@@ -26,13 +26,13 @@
 - Exclude paths with `--exclude` (repeatable), or focus on specific subtrees with `--subtree` / `-s` (allowlist complement, supports nested paths like `src/dirplot/fonts`).
 - Pass multiple local paths (`dirplot map src tests`) to scan each independently and display them under their common parent, ignoring all other siblings. Individual files are also accepted as roots (`dirplot map main.py util.py`).
 - **Pipe `tree` or `find` output directly**: `tree src/ | dirplot map` and `find . -name "*.py" | dirplot map` are both supported. The format is auto-detected (`tree -s`, `tree -f`, and plain `find` output all work). Use `--paths-from FILE` to read from a file instead of stdin.
-- **Live watch mode** (`dirplot watch`) — monitors one or more directories and regenerates the treemap automatically. Rapid bursts of events (e.g. `git checkout`) are debounced into a single render after a configurable quiet period (`--debounce`, default 0.5 s). With `--animate`, each render is captured as a frame and the complete APNG is written on Ctrl-C exit. All events can be logged to a JSONL file with `--event-log`.
+- **Live watch mode** (`dirplot watch`) — monitors one or more directories and regenerates the treemap automatically. Rapid bursts of events (e.g. `git checkout`) are debounced into a single render after a configurable quiet period (`--debounce`, default 0.5 s). With `--animate`, each render is captured as a frame and the complete APNG is written on Ctrl-C exit; changed tiles receive colour-coded highlight borders (green = created, blue = modified, red = deleted, orange = moved). All events can be logged to a JSONL file with `--event-log`.
 - Works on macOS, Linux, and Windows; WSL2 fully supported.
 - Scan remote hosts over SSH (`pip install "dirplot[ssh]"`), AWS S3 buckets (`pip install "dirplot[s3]"`), any public/private GitHub repository (including specific branch, tag, commit SHA, or subdirectory), **running Docker containers**, or **Kubernetes pods** — all without extra dependencies beyond the respective CLI/SDK. See [EXAMPLES.md](docs/EXAMPLES.md).
 - Optional **file-count legend** (`--legend`) — a corner overlay listing the top extensions by number of files, with coloured swatches and counts, automatically sized to fit the image.
 - **Breadcrumbs mode** (on by default) — single-child directory chains are collapsed into one tile with a `foo / bar / baz` header label. Middle segments are replaced with `…` when the tile is too narrow. Disable with `-B` / `--no-breadcrumbs`.
 - **Tree depth** shown in the root tile header alongside the file count and total size (e.g. `myproject — 124 files, 18 dirs, 4.0 MB (…), depth: 6`).
-- **Wide archive support** — reads zip, tar (gz/bz2/xz/zst), 7z, rar, and via libarchive: iso, cpio, rpm, cab, lha/lzh, xar/pkg, a/ar, and all ZIP-based formats (jar, whl, apk, nupkg, vsix, ipa, …) as virtual directory trees without unpacking. Encrypted archives are handled gracefully: metadata-only reads work without a password for most formats; a password can be supplied with `--password` or entered interactively when needed.
+- **Wide archive support** — reads zip, tar (gz/bz2/xz/zst), 7z, rar, and all ZIP-based formats (jar, whl, apk, nupkg, vsix, ipa, …) as virtual directory trees without unpacking. Encrypted archives are handled gracefully: metadata-only reads work without a password for most formats; a password can be supplied with `--password` or entered interactively when needed. Additional formats (iso, cpio, rpm, cab, lha/lzh, xar/pkg, a/ar, tar.zst) require the optional `libarchive` extra: `pip install 'dirplot[libarchive]'`.
 
 ## How It Works
 
@@ -221,12 +221,21 @@ The default mode (`--show`, no `--inline`) opens the PNG in the system viewer (`
 
 ## Archives
 
-dirplot can read local archive files without unpacking them — zip, tar (gz/bz2/xz/zst), 7z, rar, and many more via libarchive (iso, cpio, rpm, cab, lha, xar, and all ZIP-based formats like jar, whl, apk, nupkg, vsix, ipa). See [ARCHIVES.md](docs/ARCHIVES.md) for the full list, dependencies, and platform notes.
+dirplot can read local archive files without unpacking them — zip, tar (gz/bz2/xz/zst), 7z, rar, and all ZIP-based formats (jar, whl, apk, nupkg, vsix, ipa). See [ARCHIVES.md](docs/ARCHIVES.md) for the full list, dependencies, and platform notes.
+
+Formats handled by libarchive (iso, cpio, rpm, cab, lha, xar, pkg, dmg, a/ar, tar.zst) require the optional extra and the system libarchive library:
+
+```bash
+pip install 'dirplot[libarchive]'          # Python wrapper
+brew install libarchive                    # macOS
+# apt install libarchive-dev              # Debian/Ubuntu
+```
 
 ```bash
 dirplot map project.zip
 dirplot map release.tar.gz --depth 2
 dirplot map app.jar
+dirplot map image.iso                      # requires dirplot[libarchive]
 ```
 
 ## Remote Access
