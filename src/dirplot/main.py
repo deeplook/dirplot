@@ -611,7 +611,7 @@ def main(
             except PasswordRequired as exc2:
                 typer.echo("Error: incorrect password.", err=True)
                 raise typer.Exit(1) from exc2
-        except (OSError, RuntimeError) as exc:
+        except (ImportError, OSError, RuntimeError) as exc:
             typer.echo(f"Error: {exc}", err=True)
             raise typer.Exit(1) from exc
     else:

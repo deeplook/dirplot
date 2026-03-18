@@ -53,6 +53,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **`libarchive-c` is now an optional dependency.** Install it with
+  `pip install 'dirplot[libarchive]'` (plus the system library:
+  `brew install libarchive` / `apt install libarchive-dev`) to enable
+  `.iso`, `.cpio`, `.rpm`, `.cab`, `.lha`, `.xar`, `.pkg`, `.dmg`, `.a`, `.ar`,
+  and `.tar.zst` / `.tzst` support. The base install works without it; a clear
+  error is shown if you try to open one of these formats without the extra.
+
 - **`--animate` writes the APNG once on exit** instead of reading and rewriting the
   entire file on every render. Frames are accumulated as raw PNG bytes in memory and
   flushed as a single multi-frame APNG when the watcher stops (Ctrl-C). This removes
