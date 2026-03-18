@@ -28,9 +28,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   # Ctrl-C, then:
   cat events.jsonl | python3 -m json.tool
   ```
+- **File-change highlights** (`--animate`): each APNG frame now draws colour-coded
+  borders around tiles that changed since the previous frame — green for created,
+  blue for modified, red for deleted, orange for moved. Deleted files are highlighted
+  retroactively on the *previous* frame (since the tile no longer exists in the current
+  one), so the animation clearly shows both the disappearance and the appearance of files.
+  Moved files appear as a deletion at the old path and a creation at the new path.
 - **Graceful finalization**: Ctrl-C now flushes any pending debounced render before
   stopping the observer, so the output file always reflects the final state of the
-  watched tree.
+  watched tree. A second Ctrl-C during APNG writing is ignored so the file can finish
+  being written.
+- **Tree comment stripping**: trailing `# comments` in `tree` output are now ignored
+  by the path-list parser, so annotated tree listings (e.g. `├── config.json  # app config`)
+  are parsed correctly. Filenames containing `#` without a leading space are preserved.
+- **`scripts/apng_frames.py`**: utility script to list frame durations, dimensions, and
+  offsets in an APNG file.
+- **`scripts/watch_events.py`**: utility script to watch directories and log filesystem
+  events to a CSV file (or stdout) in real time using watchdog.
 - **`--depth` for `watch`**: the `watch` subcommand now accepts `--depth N` to limit
   recursion depth, matching the behaviour of `dirplot map`.
   ```bash
@@ -48,6 +62,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Initial scan progress**: the `watch` subcommand now prints `Scanning <roots> …`
+  before the first render and starts the filesystem observer only after the initial
+  treemap has been generated, avoiding spurious events during the first scan.
 - **`--animate` race condition**: the debounce timer thread was marked as daemon,
   causing an in-progress render to be killed when the main thread exited after
   `observer.join()`. The timer is no longer a daemon thread; `flush()` joins any
