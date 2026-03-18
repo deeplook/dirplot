@@ -3,6 +3,7 @@
 from pathlib import Path
 from unittest.mock import ANY, MagicMock, patch
 
+import pytest
 from typer.testing import CliRunner
 
 from dirplot.main import app
@@ -51,6 +52,61 @@ def test_cli_runs_successfully(sample_tree: Path) -> None:
     assert result.exit_code == 0
     assert "Found" in result.output
     assert "files" in result.output
+
+
+def test_cli_stdout_png(sample_tree: Path, tmp_path: Path) -> None:
+    # Binary PNG can't cleanly round-trip through CliRunner's text capture;
+    # pipe via --output - to a real file to verify the bytes.
+    out = tmp_path / "via_stdout.png"
+    import subprocess
+    import sys
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "dirplot",
+            "map",
+            str(sample_tree),
+            "--no-show",
+            "--output",
+            "-",
+            "--size",
+            "100x100",
+        ],
+        capture_output=True,
+    )
+    assert result.returncode == 0
+    assert result.stdout[:8] == b"\x89PNG\r\n\x1a\n"
+    out.write_bytes(result.stdout)
+    assert out.stat().st_size > 0
+
+
+def test_cli_stdout_svg(sample_tree: Path) -> None:
+    import subprocess
+    import sys
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "dirplot",
+            "map",
+            str(sample_tree),
+            "--no-show",
+            "--output",
+            "-",
+            "--format",
+            "svg",
+            "--size",
+            "100x100",
+        ],
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0
+    assert result.stdout.startswith("<?xml")
+    assert "<?xml" not in result.stderr
 
 
 def test_cli_saves_output(sample_tree: Path, tmp_path: Path) -> None:
@@ -233,6 +289,103 @@ def test_watch_multiple_paths(tmp_path: Path) -> None:
     assert scheduled_paths == {str(dir_a.resolve()), str(dir_b.resolve())}
 
 
+def test_watch_debounce_coalesces(sample_tree: Path, tmp_path: Path) -> None:
+    import time
+    from unittest.mock import patch
+
+    from dirplot.watch import TreemapEventHandler
+
+    output = tmp_path / "out.png"
+    with (
+        patch("dirplot.watch.build_tree_multi"),
+        patch("dirplot.watch.create_treemap") as mock_render,
+    ):
+        mock_render.return_value = MagicMock(read=lambda: b"\x89PNG\r\n\x1a\n" + b"\x00" * 8)
+        handler = TreemapEventHandler(
+            [sample_tree.resolve()],
+            output,
+            width_px=100,
+            height_px=100,
+            font_size=12,
+            colormap="tab20",
+            cushion=True,
+            debounce=0.1,
+        )
+        regenerate_calls = []
+        original = handler._regenerate
+        handler._regenerate = lambda: regenerate_calls.append(1) or original()
+
+        for _ in range(5):
+            handler._schedule_regenerate()
+
+        assert len(regenerate_calls) == 0
+        time.sleep(0.3)
+        assert len(regenerate_calls) == 1
+
+
+def test_watch_flush_fires_pending(sample_tree: Path, tmp_path: Path) -> None:
+    from unittest.mock import patch
+
+    from dirplot.watch import TreemapEventHandler
+
+    output = tmp_path / "out.png"
+    with (
+        patch("dirplot.watch.build_tree_multi"),
+        patch("dirplot.watch.create_treemap") as mock_render,
+    ):
+        mock_render.return_value = MagicMock(read=lambda: b"\x89PNG\r\n\x1a\n" + b"\x00" * 8)
+        handler = TreemapEventHandler(
+            [sample_tree.resolve()],
+            output,
+            width_px=100,
+            height_px=100,
+            font_size=12,
+            colormap="tab20",
+            cushion=True,
+            debounce=60.0,
+        )
+        regenerate_calls = []
+        original = handler._regenerate
+        handler._regenerate = lambda: regenerate_calls.append(1) or original()
+
+        handler._schedule_regenerate()
+        assert len(regenerate_calls) == 0
+
+        handler.flush()
+        assert len(regenerate_calls) == 1
+
+
+def test_watch_event_log_written(tmp_path: Path) -> None:
+    from dirplot.watch import TreemapEventHandler
+
+    output = tmp_path / "out.png"
+    log_file = tmp_path / "events.jsonl"
+    handler = TreemapEventHandler(
+        [tmp_path],
+        output,
+        width_px=100,
+        height_px=100,
+        font_size=12,
+        colormap="tab20",
+        cushion=True,
+        event_log=log_file,
+    )
+    handler._events = [
+        {"timestamp": 1.0, "type": "created", "path": "/foo/bar.txt", "dest_path": None},
+        {"timestamp": 2.0, "type": "modified", "path": "/foo/bar.txt", "dest_path": None},
+    ]
+    handler.flush()
+
+    assert log_file.exists()
+    lines = log_file.read_text(encoding="utf-8").splitlines()
+    assert len(lines) == 2
+    import json
+
+    first = json.loads(lines[0])
+    assert first["type"] == "created"
+    assert first["path"] == "/foo/bar.txt"
+
+
 def test_watch_invalid_path(tmp_path: Path) -> None:
     output = tmp_path / "out.png"
     result = runner.invoke(app, ["watch", "/nonexistent/__dirplot_test__", "--output", str(output)])
@@ -257,3 +410,71 @@ def test_main_module() -> None:
     with patch("dirplot.__main__.app") as mock_app:
         main()
         mock_app.assert_called_once()
+
+
+# ---------------------------------------------------------------------------
+# --paths-from and stdin path-list mode
+# ---------------------------------------------------------------------------
+
+
+def test_paths_from_find_format(tmp_path: Path, sample_tree: Path) -> None:
+    """--paths-from FILE with find-style output (one path per line)."""
+    paths_file = tmp_path / "paths.txt"
+    # Write two real sub-paths from sample_tree
+    children = sorted(sample_tree.iterdir())[:2]
+    paths_file.write_text("\n".join(str(c) for c in children) + "\n")
+    result = runner.invoke(
+        app, ["map", "--paths-from", str(paths_file), "--no-show", "--size", "100x100"]
+    )
+    assert result.exit_code == 0, result.output
+
+
+def test_paths_from_stdin_find_format(tmp_path: Path, sample_tree: Path) -> None:
+    """Pipe find-style path list via stdin."""
+    import subprocess
+    import sys
+
+    children = sorted(sample_tree.iterdir())[:2]
+    stdin_data = "\n".join(str(c) for c in children) + "\n"
+    result = subprocess.run(
+        [sys.executable, "-m", "dirplot", "map", "--no-show", "--size", "100x100"],
+        input=stdin_data.encode(),
+        capture_output=True,
+    )
+    assert result.returncode == 0, result.stderr.decode()
+
+
+def test_paths_from_tree_format(tmp_path: Path, sample_tree: Path) -> None:
+    """--paths-from FILE with tree-style output."""
+    import subprocess
+
+    # Generate real tree output from sample_tree
+    tree_result = subprocess.run(["tree", str(sample_tree)], capture_output=True, text=True)
+    if tree_result.returncode != 0:
+        pytest.skip("tree command not available")
+
+    paths_file = tmp_path / "tree.txt"
+    paths_file.write_text(tree_result.stdout)
+    result = runner.invoke(
+        app, ["map", "--paths-from", str(paths_file), "--no-show", "--size", "100x100"]
+    )
+    assert result.exit_code == 0, result.output
+
+
+def test_paths_from_conflicts_with_positional(sample_tree: Path, tmp_path: Path) -> None:
+    """Combining --paths-from with positional args must error."""
+    paths_file = tmp_path / "paths.txt"
+    paths_file.write_text(str(sample_tree) + "\n")
+    result = runner.invoke(
+        app, ["map", str(sample_tree), "--paths-from", str(paths_file), "--no-show"]
+    )
+    assert result.exit_code == 1
+    assert "cannot combine" in result.output.lower()
+
+
+def test_paths_from_nonexistent_file(sample_tree: Path) -> None:
+    result = runner.invoke(
+        app, ["map", "--paths-from", "/nonexistent/__dirplot_test_paths__.txt", "--no-show"]
+    )
+    assert result.exit_code == 1
+    assert "does not exist" in result.output

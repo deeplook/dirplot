@@ -15,6 +15,7 @@ from dirplot.display import display_inline, display_window
 from dirplot.docker import build_tree_docker, is_docker_path, parse_docker_path
 from dirplot.github import build_tree_github, is_github_path, parse_github_path
 from dirplot.k8s import build_tree_pod, is_pod_path, parse_pod_path
+from dirplot.pathlist import parse_pathlist
 from dirplot.render import create_treemap
 from dirplot.s3 import build_tree_s3, is_s3_path, make_s3_client, parse_s3_path
 from dirplot.scanner import (
@@ -111,6 +112,23 @@ def watch_cmd(
         "--log/--no-log",
         help="Use log of file sizes for layout, making small files more visible",
     ),
+    depth: int | None = typer.Option(
+        None,
+        "--depth",
+        help="Maximum recursion depth (same as for map)",
+    ),
+    debounce: float = typer.Option(
+        0.5,
+        "--debounce",
+        help="Seconds of quiet after last event before regenerating (0 to disable)",
+        show_default=True,
+    ),
+    event_log: Path | None = typer.Option(
+        None,
+        "--event-log",
+        help="Write all raw events as JSONL to this file on exit",
+        metavar="FILE",
+    ),
 ) -> None:
     """Watch one or more directories and regenerate the treemap on every file change."""
     from dirplot.watch import TreemapEventHandler
@@ -156,6 +174,9 @@ def watch_cmd(
         cushion=cushion,
         animate=animate,
         log=log,
+        debounce=debounce,
+        event_log=event_log,
+        depth=depth,
     )
 
     # Generate an initial treemap immediately
@@ -174,6 +195,7 @@ def watch_cmd(
     except KeyboardInterrupt:
         pass
     finally:
+        handler.flush()
         observer.stop()
         observer.join()
 
@@ -245,14 +267,24 @@ def read_meta(
 @app.command(name="map", epilog=_EPILOG)
 def main(
     roots: list[str] = typer.Argument(
-        ...,
+        default=None,
         help="Root(s) to map: one or more local directories (multiple → shows only those "
         "subtrees under their common parent), archive file, ssh://…, s3://…, "
         r"github://owner/repo\[@branch], https://github.com/owner/repo\[/tree/branch], "
-        r"docker://container:/path, or pod://pod-name\[@namespace]/path",
+        r"docker://container:/path, or pod://pod-name\[@namespace]/path. "
+        "Omit to read paths from --paths-from or stdin (tree/find output).",
+    ),
+    paths_from: Path | None = typer.Option(
+        None,
+        "--paths-from",
+        help="File containing a path list in tree or find output format. Use - for stdin.",
+        metavar="FILE",
     ),
     output: Path | None = typer.Option(
-        None, "--output", "-o", help="Output path (optional). Use .svg extension for SVG output."
+        None,
+        "--output",
+        "-o",
+        help="Output path (optional). Use .svg extension for SVG output. Use - for stdout.",
     ),
     fmt: str | None = typer.Option(
         None,
@@ -362,18 +394,56 @@ def main(
     ),
 ) -> None:
     """Create a nested treemap bitmap for a directory tree."""
-    if not roots:
-        typer.echo("Error: at least one path is required.", err=True)
-        raise typer.Exit(1)
-    root = roots[0]  # alias used by all single-root branches below
+    roots = roots or []
+    to_stdout = output is not None and str(output) == "-"
+
+    def _info(msg: str) -> None:
+        typer.echo(msg, err=to_stdout)
 
     if colormap not in plt.colormaps():
         valid = ", ".join(sorted(plt.colormaps()))
         typer.echo(f"Unknown colormap '{colormap}'. Valid options:\n{valid}", err=True)
         raise typer.Exit(1)
 
+    # Resolve path-list mode: --paths-from FILE or implicit stdin pipe
+    use_stdin = paths_from is not None or (not roots and not sys.stdin.isatty())
+    if use_stdin and roots:
+        typer.echo(
+            "Error: cannot combine positional paths with --paths-from / piped stdin.",
+            err=True,
+        )
+        raise typer.Exit(1)
+
+    root = roots[0] if len(roots) == 1 else ""  # alias for single-root branches
     t_scan_start = time.monotonic()
-    if len(roots) > 1:
+    if use_stdin:
+        if paths_from is None or str(paths_from) == "-":
+            raw = sys.stdin.read()
+        else:
+            if not paths_from.exists():
+                typer.echo(f"Error: --paths-from path does not exist: {paths_from}", err=True)
+                raise typer.Exit(1)
+            raw = paths_from.read_text()
+        parsed = parse_pathlist(raw.splitlines())
+        if not parsed:
+            typer.echo("Error: no paths found in path-list input.", err=True)
+            raise typer.Exit(1)
+        for p in parsed:
+            if not p.exists():
+                typer.echo(f"Path does not exist: {p}", err=True)
+                raise typer.Exit(1)
+        excluded = frozenset(Path(e).resolve() for e in exclude)
+        root_paths = [p.resolve() for p in parsed]
+        if header:
+            import os
+
+            common_str = os.path.commonpath([str(p) for p in root_paths])
+            _info(f"Scanning {len(root_paths)} paths under {common_str} ...")
+        root_node = build_tree_multi(root_paths, excluded, depth)
+    elif not roots:
+        typer.echo("Error: at least one path is required.", err=True)
+        raise typer.Exit(1)
+    elif len(roots) > 1:
         for r in roots:
             if any(
                 f(r)
@@ -406,12 +476,12 @@ def main(
             import os
 
             common_str = os.path.commonpath([str(p) for p in root_paths])
-            typer.echo(f"Scanning {len(roots)} paths under {common_str} ...")
+            _info(f"Scanning {len(roots)} paths under {common_str} ...")
         root_node = build_tree_multi(root_paths, excluded, depth)
     elif is_docker_path(root):
         docker_container, docker_path = parse_docker_path(root)
         if header:
-            typer.echo(f"Scanning docker://{docker_container}:{docker_path} ...")
+            _info(f"Scanning docker://{docker_container}:{docker_path} ...")
         progress = [0]
         try:
             root_node = build_tree_docker(
@@ -431,7 +501,7 @@ def main(
         namespace = k8s_namespace or pod_ns
         if header:
             ns_label = f"@{namespace}" if namespace else ""
-            typer.echo(f"Scanning pod://{pod_name}{ns_label}:{pod_path} ...")
+            _info(f"Scanning pod://{pod_name}{ns_label}:{pod_path} ...")
         progress = [0]
         try:
             root_node = build_tree_pod(
@@ -465,11 +535,11 @@ def main(
             raise typer.Exit(1) from exc
         if header:
             subpath_label = f"/{gh_subpath}" if gh_subpath else ""
-            typer.echo(f"Scanning github:{gh_owner}/{gh_repo}@{resolved_ref}{subpath_label} ...")
+            _info(f"Scanning github:{gh_owner}/{gh_repo}@{resolved_ref}{subpath_label} ...")
     elif is_s3_path(root):
         bucket, prefix = parse_s3_path(root)
         if header:
-            typer.echo(f"Scanning {root} ...")
+            _info(f"Scanning {root} ...")
         try:
             s3 = make_s3_client(profile=aws_profile, no_sign=no_sign)
         except ImportError as exc:
@@ -489,7 +559,7 @@ def main(
     elif is_ssh_path(root):
         ssh_user, ssh_host, remote_path = parse_ssh_path(root)
         if header:
-            typer.echo(f"Scanning {root} ...")
+            _info(f"Scanning {root} ...")
         try:
             client = connect(ssh_host, ssh_user, ssh_key=ssh_key, ssh_password=ssh_password)
         except ImportError as exc:
@@ -519,7 +589,7 @@ def main(
             typer.echo(f"Not a file: {root}", err=True)
             raise typer.Exit(1)
         if header:
-            typer.echo(f"Reading archive {root} ...")
+            _info(f"Reading archive {root} ...")
         try:
             root_node = build_tree_archive(
                 archive_path, exclude=frozenset(exclude), depth=depth, password=password
@@ -563,11 +633,11 @@ def main(
                 children=[file_node],
             )
             if header:
-                typer.echo(f"Scanning {root} ...")
+                _info(f"Scanning {root} ...")
         else:
             excluded = frozenset(Path(e).resolve() for e in exclude)
             if header:
-                typer.echo(f"Scanning {root} ...")
+                _info(f"Scanning {root} ...")
             root_node = build_tree(root_path.resolve(), excluded, depth)
 
     if subtrees:
@@ -584,9 +654,7 @@ def main(
     total_files = len(collect_extensions(root_node))
     if header:
         _f = "file" if total_files == 1 else "files"
-        typer.echo(
-            f"Found {total_files:,} {_f}, total size: {root_node.size:,} bytes  [{t_scan:.1f}s]"
-        )
+        _info(f"Found {total_files:,} {_f}, total size: {root_node.size:,} bytes  [{t_scan:.1f}s]")
 
     if size is not None:
         try:
@@ -599,13 +667,13 @@ def main(
             )
             raise typer.Exit(1) from None
         if header:
-            typer.echo(f"Output size: {width_px}x{height_px}px")
+            _info(f"Output size: {width_px}x{height_px}px")
     else:
         term_w, term_h, row_px = get_terminal_pixel_size()
         width_px = term_w + 1
         height_px = term_h - 3 * row_px
         if header:
-            typer.echo(f"Terminal size: {width_px}x{height_px}px")
+            _info(f"Terminal size: {width_px}x{height_px}px")
 
     # Resolve output format: explicit --format > inferred from --output extension > png
     if fmt is not None:
@@ -630,12 +698,16 @@ def main(
     t_render = time.monotonic() - t_render_start
 
     if output is not None:
-        output.write_bytes(buf.read())
-        if header:
-            typer.echo(f"Saved dirplot to {output}  [{t_render:.1f}s]")
-        buf.seek(0)
+        if to_stdout:
+            sys.stdout.buffer.write(buf.read())
+            buf.seek(0)
+        else:
+            output.write_bytes(buf.read())
+            if header:
+                _info(f"Saved dirplot to {output}  [{t_render:.1f}s]")
+            buf.seek(0)
 
-    if show:
+    if show and not to_stdout:
         if use_svg:
             if output is not None:
                 webbrowser.open(output.resolve().as_uri())
