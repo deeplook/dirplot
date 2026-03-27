@@ -97,6 +97,36 @@ def _api_get(url: str, token: str | None) -> Any:
         raise
 
 
+def count_commits_github(owner: str, repo: str, ref: str | None, token: str | None) -> int | None:
+    """Return the total commit count on *ref* using a single cheap API call.
+
+    Fetches one commit and reads the ``page`` number from the ``Link: rel="last"``
+    response header.  Returns ``None`` if the count cannot be determined.
+    """
+    url = f"https://api.github.com/repos/{owner}/{repo}/commits?per_page=1"
+    if ref:
+        url += f"&sha={ref}"
+    req = urllib.request.Request(url)
+    req.add_header("Accept", "application/vnd.github+json")
+    req.add_header("X-GitHub-Api-Version", "2022-11-28")
+    if token:
+        req.add_header("Authorization", f"Bearer {token}")
+    try:
+        with urllib.request.urlopen(req) as resp:
+            link = resp.getheader("Link") or ""
+            for part in link.split(","):
+                if 'rel="last"' in part:
+                    url_part = part.split(";")[0].strip().strip("<>")
+                    for param in url_part.split("?", 1)[-1].split("&"):
+                        if param.startswith("page="):
+                            return int(param[5:])
+            # No "last" link — all commits fit on one page (≤1 here since per_page=1)
+            data = json.loads(resp.read())
+            return len(data)
+    except Exception:
+        return None
+
+
 def _default_branch(owner: str, repo: str, token: str | None) -> str:
     data = _api_get(f"https://api.github.com/repos/{owner}/{repo}", token)
     return str(data["default_branch"])

@@ -9,6 +9,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **`dirplot git` subcommand** — replays a git repository's commit history as an
+  animated treemap. Each commit becomes one frame; changed tiles receive the same
+  colour-coded highlight borders as `watch --animate` (green = created, blue = modified,
+  red = deleted). The commit SHA and local timestamp are shown in the root tile header,
+  and a progress bar at the top of each frame advances as the animation plays.
+  ```bash
+  # Animate all commits, write APNG
+  dirplot git . --output history.apng --animate --exclude .git
+
+  # Last 50 commits on main, 30-second animation with time-proportional frame durations
+  dirplot git . --output history.apng --animate \
+    --range main~50..main --total-duration 30
+
+  # Live-updating static PNG (last frame wins; useful with an auto-refreshing viewer)
+  dirplot git /path/to/repo --output treemap.png --max-commits 100
+  ```
+- **`--range`** (`-r`): git revision range passed directly to `git log`
+  (e.g. `main~50..main`, `v1.0..HEAD`). Defaults to the full history of the current branch.
+- **`--max-commits`** (`-n`): cap the number of commits processed.
+- **`--frame-duration`**: fixed frame display time in ms when `--total-duration` is not set
+  (default: 1000 ms).
+- **`--total-duration`**: target total animation length in seconds. Frame durations are
+  scaled proportionally to the real elapsed time between commits, so quiet periods in
+  development history map to longer pauses and burst activity to rapid flips. A 200 ms
+  floor prevents very fast commits from being invisible; durations are capped at 65 535 ms
+  (APNG uint16 limit). A summary line reports the actual range:
+  `Proportional timing: 200–7553 ms/frame (total ~30.1s)`.
+- **`--workers`** (`-w`): number of parallel render workers in animate mode (default: all
+  CPU cores). Rendering is memory-bandwidth bound, so 4–8 workers is typically optimal;
+  use this flag to tune for your hardware.
+- **Time-proportional progress bar**: a 2 px bar at the top of each frame advances in
+  proportion to animation time consumed, not frame count — so a burst of closely-spaced
+  commits produces only a small movement while a long quiet period advances it visibly.
+  With fixed `--frame-duration` the bar is linear as before.
+
 - **Debounced watch** (`--debounce SECONDS`, default `0.5`): the `watch` subcommand now
   collects rapid file-system event bursts and regenerates the treemap once per quiet
   period instead of on every raw event. A `git checkout` touching 100 files triggers
@@ -50,6 +85,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ```bash
   dirplot watch . --output treemap.png --depth 3
   ```
+- **`dirplot git` accepts GitHub URLs** — pass a `github://owner/repo[@branch]` or
+  `https://github.com/owner/repo` URL directly to `dirplot git`. dirplot clones the
+  repository into a temporary directory (shallow when `--max-commits` is set, full
+  otherwise), runs the full history pipeline locally, and removes the clone on exit.
+  No permanent local copy is created.
+  ```bash
+  # Animate the last 50 commits of a GitHub repo — no local clone needed
+  dirplot git github://owner/repo --output history.png --animate --max-commits 50
+
+  # Specific branch
+  dirplot git github://owner/repo@main --output history.png --animate --max-commits 50
+  ```
+- **Total commit count shown** — `dirplot git` now reports the total number of commits
+  available alongside the number being animated, so you can gauge how much history
+  exists before committing to a longer run:
+  ```
+  Replaying 20 of 147 commit(s) (increase --max-commits to process more) ...
+  ```
+  For GitHub URLs the count is fetched with a single cheap API request (one commit
+  object + `Link` header). For local repos `git rev-list --count HEAD` is used.
+- **`--github-token`** (`$GITHUB_TOKEN`): added to `dirplot git` for private GitHub
+  repos or to raise the API rate limit when fetching the total commit count.
 
 ### Changed
 

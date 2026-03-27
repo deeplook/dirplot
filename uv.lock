@@ -763,7 +763,6 @@ version = "0.3.3"
 source = { editable = "." }
 dependencies = [
     { name = "drawsvg" },
-    { name = "libarchive-c" },
     { name = "matplotlib" },
     { name = "pillow" },
     { name = "py7zr" },
@@ -795,8 +794,7 @@ ssh = [
 requires-dist = [
     { name = "boto3", marker = "extra == 's3'", specifier = ">=1.26" },
     { name = "drawsvg", specifier = ">=2.4.1" },
-    { name = "libarchive-c", specifier = ">=5.0" },
-    { name = "libarchive-c", marker = "extra == 'libarchive'", specifier = ">=5.3" },
+    { name = "libarchive-c", marker = "extra == 'libarchive'", specifier = ">=5.0" },
     { name = "matplotlib", specifier = ">=3.7" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.10" },
     { name = "paramiko", marker = "extra == 'ssh'", specifier = ">=3.0" },

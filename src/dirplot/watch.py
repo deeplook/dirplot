@@ -6,6 +6,7 @@ import sys
 import threading
 import time
 from pathlib import Path
+from typing import Any
 
 try:
     from watchdog.events import FileSystemEvent, FileSystemEventHandler
@@ -51,7 +52,7 @@ class TreemapEventHandler(FileSystemEventHandler):
         self.log = log
         self.debounce = debounce
         self.event_log = event_log
-        self._events: list[dict] = []
+        self._events: list[dict[str, Any]] = []
         self._timer: threading.Timer | None = None
         self._render_thread: threading.Thread | None = None
         self._lock = threading.Lock()
@@ -78,21 +79,10 @@ class TreemapEventHandler(FileSystemEventHandler):
 
     def _write_apng(self) -> None:
         """Write all accumulated frames as a single APNG (called once in flush())."""
-        from PIL import Image
+        from dirplot.render import write_apng
 
-        frames = [Image.open(io.BytesIO(b)).convert("RGBA") for b in self._frame_bytes]
-        if len(frames) == 1:
-            frames[0].save(self.output, format="PNG")
-        else:
-            frames[0].save(
-                self.output,
-                save_all=True,
-                append_images=frames[1:],
-                loop=0,
-                format="PNG",
-                duration=self._durations,
-            )
-        print(f"Wrote {len(frames)}-frame APNG → {self.output}", file=sys.stderr)
+        write_apng(self.output, self._frame_bytes, self._durations)
+        print(f"Wrote {len(self._frame_bytes)}-frame APNG → {self.output}", file=sys.stderr)
 
     def _patch_prev_frame_deletions(self, deletions: dict[str, str]) -> None:
         """Draw red borders on the previous frame for files about to be deleted."""
