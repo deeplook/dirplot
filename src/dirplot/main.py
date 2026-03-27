@@ -14,7 +14,12 @@ from dirplot import __version__
 from dirplot.archives import PasswordRequired, build_tree_archive, is_archive_path
 from dirplot.display import display_inline, display_window
 from dirplot.docker import build_tree_docker, is_docker_path, parse_docker_path
-from dirplot.github import build_tree_github, is_github_path, parse_github_path
+from dirplot.github import (
+    build_tree_github,
+    count_commits_github,
+    is_github_path,
+    parse_github_path,
+)
 from dirplot.k8s import build_tree_pod, is_pod_path, parse_pod_path
 from dirplot.pathlist import parse_pathlist
 from dirplot.render import create_treemap
@@ -37,6 +42,12 @@ app = typer.Typer(
     context_settings={"help_option_names": ["-h", "--help"]},
     rich_markup_mode="rich",
 )
+
+
+def _worker_ignore_sigint() -> None:
+    """Initializer for ProcessPoolExecutor workers: ignore SIGINT so Ctrl-C is
+    handled only by the main process and workers exit cleanly on shutdown."""
+    signal.signal(signal.SIGINT, signal.SIG_IGN)
 
 
 def _version_callback(value: bool) -> None:
@@ -93,7 +104,7 @@ def termsize() -> None:
 @app.command(name="watch")
 def watch_cmd(
     paths: list[Path] = typer.Argument(..., help="Directories to watch"),
-    output: Path = typer.Option(..., "--output", "-o", help="Output file (.png or .svg)"),
+    output: Path = typer.Option(..., "--output", "-o", help="Output file (.png, .apng, or .svg)"),
     exclude: list[str] = typer.Option([], "--exclude", "-e", help="Paths to exclude (repeatable)"),
     font_size: int = typer.Option(12, "--font-size", help="Directory label font size in pixels"),
     colormap: str = typer.Option("tab20", "--colormap", "-c", help="Matplotlib colormap"),
@@ -203,6 +214,366 @@ def watch_cmd(
         if observer.is_alive():
             observer.stop()
             observer.join()
+
+
+@app.command(name="git")
+def git_cmd(
+    repo_arg: str = typer.Argument(
+        ".", help="Git repository path, github://owner/repo, or https://github.com/owner/repo"
+    ),
+    output: Path = typer.Option(..., "--output", "-o", help="Output PNG file"),
+    revision_range: str | None = typer.Option(
+        None,
+        "--range",
+        "-r",
+        help=(
+            "Git revision range (e.g. main~50..main). "
+            "When using a GitHub URL with --max-commits, "
+            "ensure the clone depth covers the range's base commit."
+        ),
+    ),
+    max_commits: int | None = typer.Option(
+        None, "--max-commits", "-n", help="Maximum number of commits to process"
+    ),
+    exclude: list[str] = typer.Option(
+        [], "--exclude", "-e", help="Top-level paths to exclude (repeatable)"
+    ),
+    font_size: int = typer.Option(12, "--font-size", help="Directory label font size in pixels"),
+    colormap: str = typer.Option("tab20", "--colormap", "-c", help="Matplotlib colormap"),
+    size: str | None = typer.Option(
+        None, "--size", help="Output size as WIDTHxHEIGHT", metavar="WIDTHxHEIGHT"
+    ),
+    cushion: bool = typer.Option(
+        True, "--cushion/--no-cushion", help="Apply van Wijk cushion shading"
+    ),
+    animate: bool = typer.Option(
+        False,
+        "--animate/--no-animate",
+        help="Build an animated PNG (APNG) from all commits",
+    ),
+    log: bool = typer.Option(False, "--log/--no-log", help="Use log of file sizes for layout"),
+    depth: int | None = typer.Option(None, "--depth", help="Maximum directory depth"),
+    frame_duration: int = typer.Option(
+        1000,
+        "--frame-duration",
+        help="Frame display duration in ms when not using --total-duration",
+    ),
+    total_duration: float | None = typer.Option(
+        None,
+        "--total-duration",
+        help=(
+            "Target total animation length in seconds.  Frames are shown proportionally"
+            " to the real time gaps between commits.  Overrides --frame-duration."
+        ),
+    ),
+    workers: int | None = typer.Option(
+        None,
+        "--workers",
+        "-w",
+        help="Parallel render workers for animate mode (default: all CPU cores).  "
+        "Rendering is memory-bandwidth bound, so the optimal value depends on your hardware; "
+        "try --workers 4-8 if the default is slower than expected.",
+    ),
+    github_token: str | None = typer.Option(
+        None,
+        "--github-token",
+        envvar="GITHUB_TOKEN",
+        help="GitHub personal access token for private repos",
+    ),
+) -> None:
+    """Replay git history commit-by-commit as an animated treemap."""
+    import io
+    import os
+    import subprocess
+    import tempfile
+    from datetime import datetime
+
+    from dirplot.git_scanner import build_node_tree, git_apply_diff, git_initial_files, git_log
+    from dirplot.render import _draw_highlights
+
+    _tmpdir: tempfile.TemporaryDirectory[str] | None = None
+    _gh_owner: str | None = None
+    _gh_repo_name: str | None = None
+    _gh_ref: str | None = None
+    _gh_token: str | None = None
+    repo: Path
+    if is_github_path(repo_arg):
+        gh_owner, gh_repo_name, gh_ref, _ = parse_github_path(repo_arg)
+        _gh_owner, _gh_repo_name, _gh_ref = gh_owner, gh_repo_name, gh_ref
+        token = github_token or os.environ.get("GITHUB_TOKEN")
+        _gh_token = token
+        if token:
+            clone_url = f"https://x-access-token:{token}@github.com/{gh_owner}/{gh_repo_name}.git"
+        else:
+            clone_url = f"https://github.com/{gh_owner}/{gh_repo_name}.git"
+        _tmpdir = tempfile.TemporaryDirectory(prefix="dirplot-git-")
+        # Clone into a subdirectory named after the repo so that repo.name
+        # reflects the actual repository name (not the temp dir basename).
+        _clone_dir = Path(_tmpdir.name) / gh_repo_name
+        # Always clone with blobs so git ls-tree --long and git cat-file resolve
+        # sizes locally (fast). Without blobs, git fetches each size lazily over
+        # the network, which is slower than just cloning the objects upfront.
+        clone_cmd = ["git", "clone", "--quiet"]
+        if max_commits is not None:
+            clone_cmd += ["--depth", str(max_commits)]
+        if gh_ref:
+            clone_cmd += ["--branch", gh_ref]
+        clone_cmd += [clone_url, str(_clone_dir)]
+        typer.echo(f"Cloning github:{gh_owner}/{gh_repo_name} ...", err=True)
+        try:
+            subprocess.run(clone_cmd, check=True, capture_output=True, text=True)
+        except subprocess.CalledProcessError as exc:
+            typer.echo(f"Error cloning repository: {exc.stderr.strip()}", err=True)
+            raise typer.Exit(1) from exc
+        repo = _clone_dir
+    else:
+        repo = Path(repo_arg).resolve()
+        if not (repo / ".git").exists():
+            typer.echo(f"Error: not a git repository: {repo}", err=True)
+            raise typer.Exit(1)
+
+    if output.suffix.lower() not in {".png", ".apng"}:
+        typer.echo("Error: --output must be a .png or .apng file.", err=True)
+        raise typer.Exit(1)
+
+    if size is not None:
+        try:
+            w_str, h_str = size.lower().split("x", 1)
+            width_px, height_px = int(w_str), int(h_str)
+        except ValueError:
+            typer.echo(f"Invalid --size '{size}'. Expected WIDTHxHEIGHT.", err=True)
+            raise typer.Exit(1) from None
+    else:
+        term_w, term_h, row_px = get_terminal_pixel_size()
+        width_px = term_w + 1
+        height_px = term_h - 3 * row_px
+
+    typer.echo(f"Reading git log from {repo} ...", err=True)
+    _shallow_hint = (
+        "\nHint: --max-commits limits the shallow clone depth. "
+        "If --range references a commit beyond that depth, increase --max-commits or drop it."
+        if _tmpdir is not None and revision_range and max_commits is not None
+        else ""
+    )
+    try:
+        commits = git_log(repo, revision_range, max_commits)
+    except subprocess.CalledProcessError as exc:
+        typer.echo(f"Error reading git log: {exc.stderr.strip()}{_shallow_hint}", err=True)
+        raise typer.Exit(1) from exc
+
+    if not commits:
+        typer.echo(f"No commits found.{_shallow_hint}", err=True)
+        raise typer.Exit(1)
+
+    # Show total commits on HEAD so the user knows how much history is available.
+    # For shallow GitHub clones, git rev-list would only reflect the clone depth,
+    # so we use the GitHub API instead (one cheap request).
+    total_in_repo: int | None = None
+    if _gh_owner is not None:
+        total_in_repo = count_commits_github(_gh_owner, _gh_repo_name, _gh_ref, _gh_token)  # type: ignore[arg-type]
+    else:
+        try:
+            _r = subprocess.run(
+                ["git", "-C", str(repo), "rev-list", "--count", "HEAD"],
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+            total_in_repo = int(_r.stdout.strip())
+        except (subprocess.CalledProcessError, ValueError):
+            pass
+
+    if total_in_repo is not None and total_in_repo > len(commits):
+        typer.echo(
+            f"Replaying {len(commits)} of {total_in_repo} commit(s) "
+            f"(increase --max-commits to process more) ...",
+            err=True,
+        )
+    else:
+        typer.echo(f"Replaying {len(commits)} commit(s) ...", err=True)
+
+    # Pre-compute per-commit frame durations.
+    if total_duration is not None and animate:
+        if total_duration <= 0:
+            typer.echo("Error: --total-duration must be positive.", err=True)
+            raise typer.Exit(1)
+        timestamps = [ts for _, ts, _ in commits]
+        # Gap for commit i = time until the next commit (i+1).
+        # Last commit reuses the previous gap (or 1 if there is only one commit).
+        gaps: list[float] = [
+            max(1.0, float(timestamps[j + 1] - timestamps[j])) for j in range(len(timestamps) - 1)
+        ]
+        gaps.append(gaps[-1] if gaps else 1.0)
+        total_gap = sum(gaps)
+        total_ms = total_duration * 1000
+        # Scale proportionally; enforce a 200 ms floor and APNG uint16 ceiling.
+        commit_durations = [max(200, min(65535, round(g / total_gap * total_ms))) for g in gaps]
+        min_d, max_d = min(commit_durations), max(commit_durations)
+        typer.echo(
+            f"  Proportional timing: {min_d}–{max_d} ms/frame"
+            f" (total ~{sum(commit_durations) / 1000:.1f}s)",
+            err=True,
+        )
+    else:
+        commit_durations = [frame_duration] * len(commits)
+
+    excluded = frozenset(exclude)
+    files: dict[str, int] = {}
+    prev_sha: str | None = None
+
+    if animate:
+        # ── Phase 1: fast sequential git pass ────────────────────────────────
+        # Collect (files snapshot, highlights, deletions) per commit without
+        # rendering.  Rendering is the bottleneck (~5 s/frame on a typical
+        # repo); deferring it lets us parallelise across CPU cores in phase 2.
+        # snapshot: (orig_i, sha, ts, files_copy, cur_highlights, deletions)
+        Snapshot = tuple[int, str, int, dict[str, int], dict[str, str], dict[str, str]]
+        snapshots: list[Snapshot] = []
+
+        for i, (sha, ts, subject) in enumerate(commits):
+            typer.echo(f"  [{i + 1}/{len(commits)}] {sha[:8]}  {subject[:72]}", err=True)
+            try:
+                if prev_sha is None:
+                    files = git_initial_files(repo, sha, excluded)
+                    all_hl: dict[str, str] = {}
+                else:
+                    all_hl = git_apply_diff(repo, files, prev_sha, sha, excluded)
+            except subprocess.CalledProcessError as exc:
+                typer.echo(f"  Warning: skipping {sha[:8]}: {exc.stderr.strip()}", err=True)
+                prev_sha = sha
+                continue
+            prev_sha = sha
+            deletions = {p: v for p, v in all_hl.items() if v == "deleted"}
+            cur_hl = {p: v for p, v in all_hl.items() if v != "deleted"}
+            snapshots.append((i, sha, ts, dict(files), cur_hl, deletions))
+
+        if not snapshots:
+            typer.echo("No frames captured.", err=True)
+            raise typer.Exit(1)
+
+        # ── Phase 2: parallel render ──────────────────────────────────────────
+        import os
+        from concurrent.futures import ProcessPoolExecutor, as_completed
+
+        from dirplot.git_scanner import _render_frame_worker
+
+        total = len(snapshots)
+        n_workers = min(workers if workers is not None else (os.cpu_count() or 1), total)
+        typer.echo(f"Rendering {total} frame(s) using {n_workers} worker(s) ...", err=True)
+
+        # Per-frame progress: fraction of total animation time elapsed after
+        # each frame plays.  With proportional timing this reflects real bursts;
+        # with fixed durations it is the same as linear.
+        total_anim_ms = sum(commit_durations)
+        cumulative_ms = 0.0
+        frame_progress: dict[int, float] = {}
+        for orig_i, *_ in snapshots:
+            cumulative_ms += commit_durations[orig_i]
+            frame_progress[orig_i] = cumulative_ms / total_anim_ms
+
+        render_args = [
+            (
+                str(repo),
+                files_copy,
+                cur_hl,
+                sha,
+                ts,
+                orig_i,
+                frame_progress[orig_i],
+                depth,
+                log,
+                width_px,
+                height_px,
+                font_size,
+                colormap,
+                cushion,
+            )
+            for orig_i, sha, ts, files_copy, cur_hl, _del in snapshots
+        ]
+
+        # raw[orig_i] = (png_bytes, rect_map) as returned by the worker
+        raw: dict[int, tuple[bytes, dict[str, tuple[int, int, int, int]]]] = {}
+
+        try:
+            with ProcessPoolExecutor(
+                max_workers=n_workers, initializer=_worker_ignore_sigint
+            ) as pool:
+                futures = {pool.submit(_render_frame_worker, args): args[5] for args in render_args}
+                for done, future in enumerate(as_completed(futures), 1):
+                    orig_i, png_bytes, rect_map = future.result()
+                    raw[orig_i] = (png_bytes, rect_map)
+                    typer.echo(f"  Rendered {done}/{total}", err=True)
+        except KeyboardInterrupt:
+            typer.echo("\nInterrupted.", err=True)
+            raise typer.Exit(1) from None
+
+        # ── Phase 3: assemble ordered frames, patch deletions ─────────────────
+        frame_bytes: list[bytes] = []
+        frame_durations: list[int] = []
+
+        for j, (orig_i, _sha, _ts, _files, _hl, deletions) in enumerate(snapshots):
+            if deletions and j > 0:
+                # Draw deletion highlights onto the previous frame.
+                prev_bytes, prev_rect = raw[snapshots[j - 1][0]]
+                from PIL import Image, ImageDraw
+
+                prev_img = Image.open(io.BytesIO(prev_bytes)).convert("RGB")
+                _draw_highlights(ImageDraw.Draw(prev_img), prev_rect, deletions)
+                buf = io.BytesIO()
+                prev_img.save(buf, format="PNG")
+                frame_bytes[-1] = buf.getvalue()
+            frame_bytes.append(raw[orig_i][0])
+            frame_durations.append(commit_durations[orig_i])
+
+        # ── Phase 4: write APNG ───────────────────────────────────────────────
+        from dirplot.render import write_apng
+
+        write_apng(output, frame_bytes, frame_durations)
+        typer.echo(f"Wrote {len(frame_bytes)}-frame APNG → {output}", err=True)
+
+    else:
+        # ── Non-animate: render and overwrite output file per commit ──────────
+        total_anim_ms = sum(commit_durations)
+        cumulative_ms = 0.0
+
+        for i, (sha, ts, subject) in enumerate(commits):
+            typer.echo(f"  [{i + 1}/{len(commits)}] {sha[:8]}  {subject[:72]}", err=True)
+            try:
+                if prev_sha is None:
+                    files = git_initial_files(repo, sha, excluded)
+                    all_hl = {}
+                else:
+                    all_hl = git_apply_diff(repo, files, prev_sha, sha, excluded)
+            except subprocess.CalledProcessError as exc:
+                typer.echo(f"  Warning: skipping {sha[:8]}: {exc.stderr.strip()}", err=True)
+                prev_sha = sha
+                continue
+            prev_sha = sha
+            cumulative_ms += commit_durations[i]
+
+            node = build_node_tree(repo, files, depth)
+            if log:
+                apply_log_sizes(node)
+
+            deletions = {p: v for p, v in all_hl.items() if v == "deleted"}
+            rect_map = {}
+            png_buf = create_treemap(
+                node,
+                width_px,
+                height_px,
+                font_size,
+                colormap,
+                None,
+                cushion,
+                highlights={p: v for p, v in all_hl.items() if v != "deleted"} or None,
+                rect_map_out=rect_map,
+                title_suffix=(
+                    f"sha:{sha[:8]}  {datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M')}"
+                ),
+                progress=cumulative_ms / total_anim_ms,
+            )
+            output.write_bytes(png_buf.read())
+            typer.echo(f"  Updated {output}", err=True)
 
 
 @app.command(name="read-meta")
@@ -466,7 +837,7 @@ def main(
                     err=True,
                 )
                 raise typer.Exit(1)
-        root_paths: list[Path] = []
+        root_paths = []
         for r in roots:
             rp = Path(r)
             if not rp.exists():

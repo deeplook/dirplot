@@ -27,6 +27,7 @@
 - Pass multiple local paths (`dirplot map src tests`) to scan each independently and display them under their common parent, ignoring all other siblings. Individual files are also accepted as roots (`dirplot map main.py util.py`).
 - **Pipe `tree` or `find` output directly**: `tree src/ | dirplot map` and `find . -name "*.py" | dirplot map` are both supported. The format is auto-detected (`tree -s`, `tree -f`, and plain `find` output all work). Use `--paths-from FILE` to read from a file instead of stdin.
 - **Live watch mode** (`dirplot watch`) — monitors one or more directories and regenerates the treemap automatically. Rapid bursts of events (e.g. `git checkout`) are debounced into a single render after a configurable quiet period (`--debounce`, default 0.5 s). With `--animate`, each render is captured as a frame and the complete APNG is written on Ctrl-C exit; changed tiles receive colour-coded highlight borders (green = created, blue = modified, red = deleted, orange = moved). All events can be logged to a JSONL file with `--event-log`.
+- **Git history replay** (`dirplot git`) — renders a git repository's commit history as an animated treemap APNG. Each commit becomes one frame, with colour-coded change highlights matching `watch --animate`. Frame durations can be uniform (`--frame-duration`) or proportional to real elapsed time between commits (`--total-duration`). Frames are rendered in parallel across CPU cores for speed. Accepts a local path or a **GitHub URL** (`github://owner/repo[@branch]` or `https://github.com/owner/repo`) — dirplot clones the repo into a temporary directory and removes it when done. The total number of commits available is always reported so you can tune `--max-commits` before committing to a long render.
 - Works on macOS, Linux, and Windows; WSL2 fully supported.
 - Scan remote hosts over SSH (`pip install "dirplot[ssh]"`), AWS S3 buckets (`pip install "dirplot[s3]"`), any public/private GitHub repository (including specific branch, tag, commit SHA, or subdirectory), **running Docker containers**, or **Kubernetes pods** — all without extra dependencies beyond the respective CLI/SDK. See [EXAMPLES.md](docs/EXAMPLES.md).
 - Optional **file-count legend** (`--legend`) — a corner overlay listing the top extensions by number of files, with coloured swatches and counts, automatically sized to fit the image.
@@ -156,6 +157,23 @@ dirplot watch src --output treemap.png --event-log events.jsonl
 
 # Watch and build an animated APNG — one frame per debounced render, written on Ctrl-C
 dirplot watch . --output treemap.png --animate
+
+# Replay full git history as an animated APNG
+dirplot git . --output history.apng --animate --exclude .git
+
+# Last 50 commits, 30-second animation with time-proportional frame durations
+dirplot git . --output history.apng --animate --range main~50..main --total-duration 30
+
+# Specific revision range at fixed resolution
+dirplot git /path/to/repo --output history.apng --animate \
+  --range v1.0..HEAD --size 1920x1080 --exclude .git --exclude node_modules
+
+# Animate a GitHub repo directly — no local clone needed
+dirplot git github://owner/repo --output history.apng --animate --max-commits 100
+dirplot git https://github.com/owner/repo --output history.apng --animate --max-commits 100
+
+# Same for a specific branch
+dirplot git github://owner/repo@main --output history.apng --animate --max-commits 50
 ```
 
 ### Options
@@ -197,6 +215,33 @@ These options are specific to the `watch` subcommand.
 | `--colormap` / `-c` | `tab20` | Matplotlib colormap |
 | `--font-size` | `12` | Directory label font size in pixels |
 | `--cushion` / `--no-cushion` | on | Van Wijk cushion shading |
+
+### `git` options
+
+These options are specific to the `git` subcommand.
+
+The positional `repo` argument accepts a local path (default: `.`) or a GitHub URL:
+`github://owner/repo[@branch]` or `https://github.com/owner/repo[/tree/branch]`.
+For GitHub URLs dirplot clones into a temporary directory (shallow when `--max-commits`
+is set, full otherwise) and removes it on exit.
+
+| Flag | Default | Description |
+|---|---|---|
+| `--output` / `-o` | required | Output PNG file |
+| `--range` / `-r` | all commits | Git revision range (e.g. `main~50..main`, `v1.0..HEAD`). When using a GitHub URL, `--range` works without `--max-commits`; if both are set, `--max-commits` controls the shallow clone depth and must be large enough to reach the range's base commit. |
+| `--max-commits` / `-n` | — | Maximum number of commits to process |
+| `--animate` / `--no-animate` | off | Build an animated APNG; without this flag each commit overwrites the output PNG |
+| `--frame-duration` | `1000` | Frame display time in ms (when `--total-duration` is not set) |
+| `--total-duration` | — | Target total animation length in seconds; frame durations scale proportionally to real time gaps between commits |
+| `--workers` / `-w` | all CPU cores | Parallel render workers; 4–8 is typically optimal due to memory-bandwidth limits |
+| `--log` / `--no-log` | off | Use log of file sizes for layout |
+| `--size` | terminal size | Output dimensions as `WIDTHxHEIGHT` |
+| `--depth` | — | Maximum directory depth |
+| `--exclude` / `-e` | — | Top-level path to exclude (repeatable) |
+| `--colormap` / `-c` | `tab20` | Matplotlib colormap |
+| `--font-size` | `12` | Directory label font size in pixels |
+| `--cushion` / `--no-cushion` | on | Van Wijk cushion shading |
+| `--github-token` | `$GITHUB_TOKEN` | GitHub personal access token for private repos or to raise the API rate limit when fetching the total commit count |
 
 ## Inline Display
 

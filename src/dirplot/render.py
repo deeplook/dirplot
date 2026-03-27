@@ -3,7 +3,9 @@
 import io
 import math
 import platform
+import struct
 import sys
+import zlib
 from collections import defaultdict
 from datetime import datetime, timezone
 from importlib.metadata import version as _pkg_version
@@ -11,6 +13,7 @@ from pathlib import Path
 
 import numpy as np
 import squarify
+from numpy.typing import NDArray
 from PIL import Image, ImageDraw, ImageFont, PngImagePlugin
 
 from dirplot.colors import RGBAColor, assign_colors
@@ -180,36 +183,49 @@ def _truncate_breadcrumb(
     return _truncate(candidate, draw, font, max_w)
 
 
-def _apply_cushion(img: Image.Image, x: int, y: int, w: int, h: int) -> None:
-    """Apply van Wijk-style quadratic cushion shading to a tile in-place."""
-    if w < 4 or h < 4:
-        return
-    xs = np.arange(w, dtype=float)
-    ys = np.arange(h, dtype=float)
+def _cushion_brightness(w: int, h: int) -> NDArray[np.float32]:
+    """Return a (h, w) float32 brightness map for van Wijk cushion shading."""
+    xs = np.arange(w, dtype=np.float32)
+    ys = np.arange(h, dtype=np.float32)
     gx, gy = np.meshgrid(xs, ys)
-
-    # Quadratic surface: h = Ix*(gx)*(w-1-gx) + Iy*(gy)*(h-1-gy)
-    # Surface normal components (un-normalized): (-dh/dx, -dh/dy, 1)
-    # Use Ix = C/w (not C/w²) so edge slope is size-independent: same visible
-    # shading depth on large tiles as on small ones.
     Ix, Iy = 0.12 / w, 0.12 / h
     nx = Ix * (w - 1 - 2 * gx)
     ny = Iy * (h - 1 - 2 * gy)
-
-    # Light direction: top-left, slightly above the surface
     lx, ly, lz = 1.0, 1.0, 1.2
     mag = (lx**2 + ly**2 + lz**2) ** 0.5
     lx, ly, lz = lx / mag, ly / mag, lz / mag
+    brightness = nx * lx + ny * ly + lz
+    np.clip(brightness, 0.0, None, out=brightness)
+    brightness /= float(brightness.mean())
+    return brightness  # type: ignore[no-any-return]
 
-    brightness = nx * lx + ny * ly + lz  # dot(normal, light)
-    brightness = np.clip(brightness, 0.0, None)
-    brightness /= brightness.mean()  # preserve average luminance
 
+def _apply_cushion(img: Image.Image, x: int, y: int, w: int, h: int) -> None:
+    """Apply van Wijk-style quadratic cushion shading to a tile in-place (PIL path)."""
+    if w < 4 or h < 4:
+        return
+    brightness = _cushion_brightness(w, h)
     tile = img.crop((x, y, x + w, y + h))
-    arr = np.array(tile, dtype=float)
+    arr = np.array(tile, dtype=np.float32)
     arr[:, :, :3] *= brightness[:, :, np.newaxis]
     np.clip(arr, 0, 255, out=arr)
     img.paste(Image.fromarray(arr.astype(np.uint8)), (x, y))
+
+
+def _apply_cushion_inplace(arr: np.ndarray, x: int, y: int, w: int, h: int) -> None:
+    """Apply van Wijk cushion shading directly to a region of a numpy (H, W, 3) array.
+
+    Avoids the PIL crop/paste round-trip of :func:`_apply_cushion`.  Call this
+    after converting the full image to numpy once, then converting back once —
+    much cheaper than one PIL round-trip per tile when there are many tiles.
+    """
+    if w < 4 or h < 4:
+        return
+    brightness = _cushion_brightness(w, h)
+    region = arr[y : y + h, x : x + w].astype(np.float32)
+    region *= brightness[:, :, np.newaxis]
+    np.clip(region, 0, 255, out=region)
+    arr[y : y + h, x : x + w] = region.astype(np.uint8)
 
 
 def draw_node(
@@ -529,6 +545,8 @@ def create_treemap(
     tree_depth: int | None = None,
     highlights: dict[str, str] | None = None,
     rect_map_out: dict[str, tuple[int, int, int, int]] | None = None,
+    title_suffix: str | None = None,
+    progress: float | None = None,
 ) -> io.BytesIO:
     """Render a nested squarified treemap and return it as a PNG in a BytesIO buffer.
 
@@ -560,14 +578,10 @@ def create_treemap(
     root_label = (
         f"{root_node.name} \u2014 {n_files:,} files, {n_dirs:,} dirs,"
         f" {_human_bytes(total_bytes)} ({total_bytes:,} bytes), depth: {depth}"
+        + (f"  [{title_suffix}]" if title_suffix else "")
     )
-    rect_map: dict[str, tuple[int, int, int, int]] | None
-    if rect_map_out is not None:
-        rect_map = rect_map_out
-    elif highlights:
-        rect_map = {}
-    else:
-        rect_map = None
+    # Always collect tile positions — needed for batch cushion and/or highlights.
+    _tile_rects: dict[str, tuple[int, int, int, int]] = {}
     draw_node(
         idraw,
         root_node,
@@ -578,14 +592,34 @@ def create_treemap(
         color_map,
         font,
         font_size,
-        cushion,
+        False,  # cushion deferred: applied in one batch pass below
         img,
         root_label=root_label,
-        rect_map=rect_map,
+        rect_map=_tile_rects,
     )
 
-    if highlights and rect_map is not None:
-        _draw_highlights(idraw, rect_map, highlights)
+    # Batch cushion: one PIL→numpy→PIL round-trip for all tiles instead of one per tile.
+    if cushion and _tile_rects:
+        arr = np.array(img)
+        for tx, ty, tw, th in _tile_rects.values():
+            _apply_cushion_inplace(arr, tx, ty, tw, th)
+        img = Image.fromarray(arr)
+        idraw = ImageDraw.Draw(img)
+
+    if rect_map_out is not None:
+        rect_map_out.update(_tile_rects)
+
+    if highlights:
+        _draw_highlights(idraw, _tile_rects, highlights)
+
+    if progress is not None:
+        clipped = max(0.0, min(1.0, progress))
+        filled = round(clipped * width_px)
+        # Draw dark track across the full width first, then overlay the filled portion.
+        # Without the track the bar is invisible because the root-tile border is white.
+        idraw.rectangle([(0, 0), (width_px - 1, 1)], fill=(50, 50, 70))
+        if filled > 0:
+            idraw.rectangle([(0, 0), (filled - 1, 1)], fill=(255, 255, 255))
 
     if legend is not None:
         overlay_font = _font(max(6, font_size - 2))
@@ -603,3 +637,92 @@ def create_treemap(
     img.save(buf, format="PNG", pnginfo=pnginfo)
     buf.seek(0)
     return buf
+
+
+# ── Streaming APNG writer ─────────────────────────────────────────────────────
+# Works directly with PNG binary chunks so no PIL Image objects need to be held
+# in memory beyond a single frame at a time.
+
+_PNG_SIG = b"\x89PNG\r\n\x1a\n"
+
+
+def _apng_make_chunk(chunk_type: bytes, data: bytes) -> bytes:
+    crc = zlib.crc32(chunk_type + data) & 0xFFFFFFFF
+    return struct.pack(">I", len(data)) + chunk_type + data + struct.pack(">I", crc)
+
+
+def _apng_iter_chunks(data: bytes) -> list[tuple[bytes, bytes]]:
+    """Return (chunk_type, chunk_data) pairs from raw PNG bytes."""
+    pos = 8  # skip PNG signature
+    chunks = []
+    while pos + 12 <= len(data):
+        (length,) = struct.unpack_from(">I", data, pos)
+        chunk_type = data[pos + 4 : pos + 8]
+        chunk_data = data[pos + 8 : pos + 8 + length]
+        pos += 12 + length
+        chunks.append((chunk_type, chunk_data))
+    return chunks
+
+
+def write_apng(output: Path, frame_bytes: list[bytes], durations_ms: list[int]) -> None:
+    """Write *frame_bytes* as an APNG file, processing one frame at a time.
+
+    Avoids loading all frames as decoded PIL Images simultaneously — each frame
+    is processed as compressed PNG bytes and written directly as APNG chunks.
+    For a single frame, ``output`` is written as a plain PNG with no APNG chunks.
+    """
+    n = len(frame_bytes)
+    if n == 1:
+        output.write_bytes(frame_bytes[0])
+        return
+
+    seq = 0
+    with open(output, "wb") as f:
+        f.write(_PNG_SIG)
+
+        # Collect IHDR and standard colour-space chunks from the first frame.
+        ihdr_data = b""
+        pre_idat: list[tuple[bytes, bytes]] = []
+        for chunk_type, chunk_data in _apng_iter_chunks(frame_bytes[0]):
+            if chunk_type == b"IHDR":
+                ihdr_data = chunk_data
+                pre_idat.append((chunk_type, chunk_data))
+            elif chunk_type in {b"pHYs", b"sRGB", b"gAMA", b"cHRM", b"iCCP"}:
+                pre_idat.append((chunk_type, chunk_data))
+            elif chunk_type == b"IDAT":
+                break
+
+        for chunk_type, chunk_data in pre_idat:
+            f.write(_apng_make_chunk(chunk_type, chunk_data))
+
+        # acTL – animation control (num_frames, num_plays=0 → loop forever)
+        f.write(_apng_make_chunk(b"acTL", struct.pack(">II", n, 0)))
+
+        width, height = struct.unpack_from(">II", ihdr_data)
+
+        for i, (frame_data, duration_ms) in enumerate(zip(frame_bytes, durations_ms, strict=False)):
+            # fcTL – frame control
+            fctl = struct.pack(
+                ">IIIIIHHbb",
+                seq,
+                width,
+                height,
+                0,
+                0,
+                duration_ms,
+                1000,  # delay = duration_ms / 1000 s
+                0,
+                0,  # dispose_op=NONE, blend_op=SOURCE
+            )
+            f.write(_apng_make_chunk(b"fcTL", fctl))
+            seq += 1
+
+            for chunk_type, chunk_data in _apng_iter_chunks(frame_data):
+                if chunk_type == b"IDAT":
+                    if i == 0:
+                        f.write(_apng_make_chunk(b"IDAT", chunk_data))
+                    else:
+                        f.write(_apng_make_chunk(b"fdAT", struct.pack(">I", seq) + chunk_data))
+                        seq += 1
+
+        f.write(_apng_make_chunk(b"IEND", b""))
