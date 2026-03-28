@@ -67,6 +67,24 @@ url = "https://test.pypi.org/simple/"
 publish-url = "https://test.pypi.org/legacy/"
 explicit = true
 
+[tool.hatch.build.targets.sdist]
+exclude = [
+    "movies/",
+    "output/",
+    "misc/",
+    "scripts/",
+    "tests/animation/",
+    "*.cast",
+    "*.jsonl",
+    "*.png",
+    "*.mp4",
+    "*.mov",
+    "*.svg",
+    "PLAN.md",
+    "TASKS.md",
+    "DEBUG_DOCKER.md",
+]
+
 [tool.hatch.build.targets.wheel]
 packages = ["src/dirplot"]
 
