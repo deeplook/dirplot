@@ -68,7 +68,7 @@ dirplot map ssh://prod/var/www   # resolves using the config block above
 
 ```python
 from dirplot.ssh import connect, build_tree_ssh
-from dirplot.render import create_treemap
+from dirplot.render_png import create_treemap
 
 client = connect("prod.example.com", "alice", ssh_key="~/.ssh/prod_key")
 sftp = client.open_sftp()
@@ -132,7 +132,7 @@ boto3's standard credential chain is used automatically — no extra configurati
 
 ```python
 from dirplot.s3 import make_s3_client, build_tree_s3
-from dirplot.render import create_treemap
+from dirplot.render_png import create_treemap
 
 # Authenticated access
 s3 = make_s3_client(profile="prod")
@@ -233,7 +233,7 @@ Tokens are resolved in this order:
 
 ```python
 from dirplot.github import build_tree_github
-from dirplot.render import create_treemap
+from dirplot.render_png import create_treemap
 import os
 
 root, branch = build_tree_github(
@@ -304,7 +304,7 @@ docker rm -f pg-demo
 
 ```python
 from dirplot.docker import build_tree_docker
-from dirplot.render import create_treemap
+from dirplot.render_png import create_treemap
 
 root = build_tree_docker("my-container", "/app", depth=5)
 buf = create_treemap(root, width_px=1920, height_px=1080)
@@ -382,7 +382,7 @@ kubectl delete pod pg-demo --grace-period=0
 
 ```python
 from dirplot.k8s import build_tree_pod
-from dirplot.render import create_treemap
+from dirplot.render_png import create_treemap
 
 root = build_tree_pod(
     "my-pod",
