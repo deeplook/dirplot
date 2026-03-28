@@ -27,6 +27,7 @@
 - Pass multiple local paths (`dirplot map src tests`) to scan each independently and display them under their common parent, ignoring all other siblings. Individual files are also accepted as roots (`dirplot map main.py util.py`).
 - **Pipe `tree` or `find` output directly**: `tree src/ | dirplot map` and `find . -name "*.py" | dirplot map` are both supported. The format is auto-detected (`tree -s`, `tree -f`, and plain `find` output all work). Use `--paths-from FILE` to read from a file instead of stdin.
 - **Live watch mode** (`dirplot watch`) — monitors one or more directories and regenerates the treemap automatically. Rapid bursts of events (e.g. `git checkout`) are debounced into a single render after a configurable quiet period (`--debounce`, default 0.5 s). With `--animate`, each render is captured as a frame and the complete APNG is written on Ctrl-C exit; changed tiles receive colour-coded highlight borders (green = created, blue = modified, red = deleted, orange = moved). All events can be logged to a JSONL file with `--event-log`.
+- **Event log replay** (`dirplot replay`) — replays a JSONL filesystem event log (produced by `dirplot watch --event-log`) as an animated treemap APNG. Events are grouped into time buckets (one frame per bucket, default 60 s); only files referenced in the log appear in the treemap. Frame durations can be uniform or proportional to real elapsed time between buckets (`--total-duration`). Frames are rendered in parallel.
 - **Git history replay** (`dirplot git`) — renders a git repository's commit history as an animated treemap APNG. Each commit becomes one frame, with colour-coded change highlights matching `watch --animate`. Frame durations can be uniform (`--frame-duration`) or proportional to real elapsed time between commits (`--total-duration`). Frames are rendered in parallel across CPU cores for speed. Accepts a local path or a **GitHub URL** (`github://owner/repo[@branch]` or `https://github.com/owner/repo`) — dirplot clones the repo into a temporary directory and removes it when done. The total number of commits available is always reported so you can tune `--max-commits` before committing to a long render.
 - Works on macOS, Linux, and Windows; WSL2 fully supported.
 - Scan remote hosts over SSH (`pip install "dirplot[ssh]"`), AWS S3 buckets (`pip install "dirplot[s3]"`), any public/private GitHub repository (including specific branch, tag, commit SHA, or subdirectory), **running Docker containers**, or **Kubernetes pods** — all without extra dependencies beyond the respective CLI/SDK. See [EXAMPLES.md](docs/EXAMPLES.md).
@@ -158,6 +159,12 @@ dirplot watch src --output treemap.png --event-log events.jsonl
 # Watch and build an animated APNG — one frame per debounced render, written on Ctrl-C
 dirplot watch . --output treemap.png --animate
 
+# Replay a filesystem event log as an animated APNG (60-second buckets, 30-second animation)
+dirplot replay events.jsonl --output replay.apng --total-duration 30
+
+# Smaller buckets for finer-grained activity
+dirplot replay events.jsonl --output replay.apng --bucket 10 --frame-duration 200
+
 # Replay full git history as an animated APNG
 dirplot git . --output history.apng --animate --exclude .git
 
@@ -211,6 +218,25 @@ These options are specific to the `watch` subcommand.
 | `--log` / `--no-log` | off | Use log of file sizes for layout |
 | `--size` | terminal size | Output dimensions as `WIDTHxHEIGHT` |
 | `--depth` | — | Maximum recursion depth |
+| `--exclude` / `-e` | — | Path to exclude (repeatable) |
+| `--colormap` / `-c` | `tab20` | Matplotlib colormap |
+| `--font-size` | `12` | Directory label font size in pixels |
+| `--cushion` / `--no-cushion` | on | Van Wijk cushion shading |
+
+### `replay` options
+
+These options are specific to the `replay` subcommand.
+
+| Flag | Default | Description |
+|---|---|---|
+| `--output` / `-o` | required | Output `.png` or `.apng` file |
+| `--bucket` | `60.0` | Time bucket size in seconds; one frame per bucket |
+| `--frame-duration` | `500` | Frame display time in ms (when `--total-duration` is not set) |
+| `--total-duration` | — | Target total animation length in seconds; frame durations scale proportionally to real time gaps between buckets |
+| `--workers` / `-w` | all CPU cores | Parallel render workers |
+| `--log` / `--no-log` | off | Use log of file sizes for layout |
+| `--size` | terminal size | Output dimensions as `WIDTHxHEIGHT` |
+| `--depth` | — | Maximum directory depth |
 | `--exclude` / `-e` | — | Path to exclude (repeatable) |
 | `--colormap` / `-c` | `tab20` | Matplotlib colormap |
 | `--font-size` | `12` | Directory label font size in pixels |
