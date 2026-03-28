@@ -449,7 +449,10 @@ def test_paths_from_tree_format(tmp_path: Path, sample_tree: Path) -> None:
     import subprocess
 
     # Generate real tree output from sample_tree
-    tree_result = subprocess.run(["tree", str(sample_tree)], capture_output=True, text=True)
+    try:
+        tree_result = subprocess.run(["tree", str(sample_tree)], capture_output=True, text=True)
+    except FileNotFoundError:
+        pytest.skip("tree command not available")
     if tree_result.returncode != 0:
         pytest.skip("tree command not available")
 
