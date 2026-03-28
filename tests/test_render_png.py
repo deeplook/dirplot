@@ -1,13 +1,15 @@
 """Tests for treemap rendering."""
 
 import io
+import shutil
 from pathlib import Path
 
+import pytest
 import squarify
 from PIL import Image
 
 from dirplot.colors import assign_colors
-from dirplot.render_png import _label_color, build_metadata, create_treemap
+from dirplot.render_png import _label_color, build_metadata, create_treemap, write_mp4
 from dirplot.scanner import build_tree
 
 
@@ -200,3 +202,55 @@ def test_png_metadata_software_value() -> None:
     buf = create_treemap(root, width_px=400, height_px=300)
     info = Image.open(buf).info
     assert info["Software"].startswith("dirplot ")
+
+
+# ── write_mp4 ────────────────────────────────────────────────────────────────
+
+
+def _make_png_frame(color: tuple[int, int, int], width: int = 64, height: int = 64) -> bytes:
+    buf = io.BytesIO()
+    Image.new("RGB", (width, height), color).save(buf, format="PNG")
+    return buf.getvalue()
+
+
+@pytest.mark.skipif(not shutil.which("ffmpeg"), reason="ffmpeg not found")
+def test_write_mp4_produces_file(tmp_path: Path) -> None:
+    """write_mp4 creates a non-empty .mp4 file from PNG frames."""
+    frames = [_make_png_frame((255, 0, 0)), _make_png_frame((0, 255, 0))]
+    durations = [500, 500]
+    out = tmp_path / "out.mp4"
+    write_mp4(out, frames, durations)
+    assert out.exists()
+    assert out.stat().st_size > 0
+
+
+@pytest.mark.skipif(not shutil.which("ffmpeg"), reason="ffmpeg not found")
+def test_write_mp4_respects_crf(tmp_path: Path) -> None:
+    """Lower CRF produces a larger (higher-quality) file."""
+    frames = [_make_png_frame((r, 100, 100)) for r in range(0, 256, 32)]
+    durations = [200] * len(frames)
+    out_hq = tmp_path / "hq.mp4"
+    out_lq = tmp_path / "lq.mp4"
+    write_mp4(out_hq, frames, durations, crf=0)
+    write_mp4(out_lq, frames, durations, crf=51)
+    assert out_hq.stat().st_size > out_lq.stat().st_size
+
+
+@pytest.mark.skipif(not shutil.which("ffmpeg"), reason="ffmpeg not found")
+def test_write_mp4_libx265(tmp_path: Path) -> None:
+    """write_mp4 works with libx265 codec."""
+    frames = [_make_png_frame((0, 0, 255)), _make_png_frame((255, 255, 0))]
+    out = tmp_path / "out.mp4"
+    write_mp4(out, frames, [300, 300], codec="libx265", crf=28)
+    assert out.exists()
+    assert out.stat().st_size > 0
+
+
+@pytest.mark.skipif(not shutil.which("ffmpeg"), reason="ffmpeg not found")
+def test_write_mp4_odd_dimensions(tmp_path: Path) -> None:
+    """write_mp4 handles odd pixel dimensions (pads to even via ffmpeg -vf scale)."""
+    frames = [_make_png_frame((128, 128, 128), width=65, height=63)]
+    out = tmp_path / "out.mp4"
+    write_mp4(out, frames, [500])
+    assert out.exists()
+    assert out.stat().st_size > 0

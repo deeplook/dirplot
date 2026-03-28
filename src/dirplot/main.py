@@ -104,7 +104,9 @@ def termsize() -> None:
 @app.command(name="watch")
 def watch_cmd(
     paths: list[Path] = typer.Argument(..., help="Directories to watch"),
-    output: Path = typer.Option(..., "--output", "-o", help="Output file (.png, .apng, or .svg)"),
+    output: Path = typer.Option(
+        ..., "--output", "-o", help="Output file (.png, .apng, .mp4, or .svg)"
+    ),
     exclude: list[str] = typer.Option([], "--exclude", "-e", help="Paths to exclude (repeatable)"),
     font_size: int = typer.Option(12, "--font-size", help="Directory label font size in pixels"),
     colormap: str = typer.Option("tab20", "--colormap", "-c", help="Matplotlib colormap"),
@@ -117,7 +119,7 @@ def watch_cmd(
     animate: bool = typer.Option(
         False,
         "--animate/--no-animate",
-        help="Build an animated PNG (APNG) by appending each new frame",
+        help="Build an animated APNG or MP4 by appending each new frame",
     ),
     log: bool = typer.Option(
         False,
@@ -141,8 +143,26 @@ def watch_cmd(
         help="Write all raw events as JSONL to this file on exit",
         metavar="FILE",
     ),
+    crf: int = typer.Option(
+        23,
+        "--crf",
+        help="MP4 quality: Constant Rate Factor (0=lossless, 51=worst; default 23). "
+        "Ignored for APNG output.",
+        show_default=True,
+    ),
+    codec: str = typer.Option(
+        "libx264",
+        "--codec",
+        help="MP4 video codec: libx264 (H.264, default) or libx265 (H.265, smaller files). "
+        "Ignored for APNG output.",
+    ),
 ) -> None:
-    """Watch one or more directories and regenerate the treemap on every file change."""
+    """Watch one or more directories and regenerate the treemap on every file change.
+
+    With [bold]--animate[/bold] and a [bold].mp4[/bold] output path, frames are written
+    as an MP4 video on exit (requires ffmpeg). Use [bold]--crf[/bold] and
+    [bold]--codec[/bold] to control quality and codec.
+    """
     from dirplot.watch import TreemapEventHandler
 
     try:
@@ -157,7 +177,7 @@ def watch_cmd(
             raise typer.Exit(1)
 
     if animate and output.suffix.lower() == ".svg":
-        typer.echo("Error: --animate requires a PNG output file.", err=True)
+        typer.echo("Error: --animate requires a PNG or MP4 output file.", err=True)
         raise typer.Exit(1)
 
     if size is not None:
@@ -189,6 +209,8 @@ def watch_cmd(
         debounce=debounce,
         event_log=event_log,
         depth=depth,
+        crf=crf,
+        codec=codec,
     )
 
     observer = Observer()
@@ -219,17 +241,17 @@ def watch_cmd(
 _GIT_EPILOG = (
     "[bold]Examples[/bold]\n\n"
     "  dirplot git . -o history.apng --animate"
-    "  [dim]# full history of current branch[/dim]\n\n"
-    "  dirplot git .@my-branch -o history.apng --animate"
+    "  [dim]# full history, APNG[/dim]\n\n"
+    "  dirplot git . -o history.mp4 --animate"
+    "  [dim]# full history, MP4 (H.264, CRF 23)[/dim]\n\n"
+    "  dirplot git . -o history.mp4 --animate --crf 18 --codec libx265"
+    "  [dim]# high-quality H.265[/dim]\n\n"
+    "  dirplot git .@my-branch -o history.mp4 --animate"
     "  [dim]# specific local branch[/dim]\n\n"
-    "  dirplot git .@my-branch~50..my-branch -o history.apng --animate"
-    "  [dim]# last 50 commits on a branch[/dim]\n\n"
-    "  dirplot git . -o history.apng --animate --range v1.0..HEAD"
+    "  dirplot git . -o history.mp4 --animate --range v1.0..HEAD"
     "  [dim]# explicit revision range[/dim]\n\n"
-    "  dirplot git github://owner/repo -o history.apng --animate --max-commits 50"
-    "  [dim]# GitHub repo[/dim]\n\n"
-    "  dirplot git github://owner/repo@main -o history.apng --animate --max-commits 50"
-    "  [dim]# specific GitHub branch[/dim]"
+    "  dirplot git github://owner/repo -o history.mp4 --animate --max-commits 50"
+    "  [dim]# GitHub repo[/dim]"
 )
 
 
@@ -270,7 +292,7 @@ def git_cmd(
     animate: bool = typer.Option(
         False,
         "--animate/--no-animate",
-        help="Build an animated PNG (APNG) from all commits",
+        help="Build an animated APNG or MP4 from all commits",
     ),
     log: bool = typer.Option(False, "--log/--no-log", help="Use log of file sizes for layout"),
     depth: int | None = typer.Option(None, "--depth", help="Maximum directory depth"),
@@ -294,6 +316,19 @@ def git_cmd(
         help="Parallel render workers for animate mode (default: all CPU cores).  "
         "Rendering is memory-bandwidth bound, so the optimal value depends on your hardware; "
         "try --workers 4-8 if the default is slower than expected.",
+    ),
+    crf: int = typer.Option(
+        23,
+        "--crf",
+        help="MP4 quality: Constant Rate Factor (0=lossless, 51=worst; default 23). "
+        "Ignored for APNG output.",
+        show_default=True,
+    ),
+    codec: str = typer.Option(
+        "libx264",
+        "--codec",
+        help="MP4 video codec: libx264 (H.264, default) or libx265 (H.265, smaller files). "
+        "Ignored for APNG output.",
     ),
     github_token: str | None = typer.Option(
         None,
@@ -359,8 +394,8 @@ def git_cmd(
             typer.echo(f"Error: not a git repository: {repo}", err=True)
             raise typer.Exit(1)
 
-    if output.suffix.lower() not in {".png", ".apng"}:
-        typer.echo("Error: --output must be a .png or .apng file.", err=True)
+    if output.suffix.lower() not in {".png", ".apng", ".mp4", ".mov"}:
+        typer.echo("Error: --output must be a .png, .apng, or .mp4 file.", err=True)
         raise typer.Exit(1)
 
     if size is not None:
@@ -552,11 +587,17 @@ def git_cmd(
             frame_bytes.append(raw[orig_i][0])
             frame_durations.append(commit_durations[orig_i])
 
-        # ── Phase 4: write APNG ───────────────────────────────────────────────
-        from dirplot.render_png import write_apng
+        # ── Phase 4: write output ─────────────────────────────────────────────
+        if output.suffix.lower() in {".mp4", ".mov"}:
+            from dirplot.render_png import write_mp4
 
-        write_apng(output, frame_bytes, frame_durations)
-        typer.echo(f"Wrote {len(frame_bytes)}-frame APNG → {output}", err=True)
+            write_mp4(output, frame_bytes, frame_durations, crf=crf, codec=codec)
+        else:
+            from dirplot.render_png import write_apng
+
+            write_apng(output, frame_bytes, frame_durations)
+        fmt = output.suffix.upper()[1:]
+        typer.echo(f"Wrote {len(frame_bytes)}-frame {fmt} → {output}", err=True)
 
     else:
         # ── Non-animate: render and overwrite output file per commit ──────────
@@ -606,15 +647,15 @@ def git_cmd(
 _REPLAY_EPILOG = (
     "[bold]Examples[/bold]\n\n"
     "  dirplot replay events.jsonl -o replay.apng"
-    "  [dim]# 60-second buckets, 500 ms/frame[/dim]\n\n"
-    "  dirplot replay events.jsonl -o replay.apng --total-duration 30"
-    "  [dim]# proportional timing, 30 s animation[/dim]\n\n"
-    "  dirplot replay events.jsonl -o replay.apng --bucket 10"
-    "  [dim]# finer-grained 10-second buckets[/dim]\n\n"
-    "  dirplot replay events.jsonl -o replay.apng --size 1920x1080"
-    "  [dim]# fixed resolution[/dim]\n\n"
-    "  dirplot replay events.jsonl -o replay.apng --depth 4 --colormap viridis"
-    "  [dim]# limit depth, custom colormap[/dim]"
+    "  [dim]# 60-second buckets, 500 ms/frame, APNG[/dim]\n\n"
+    "  dirplot replay events.jsonl -o replay.mp4 --total-duration 30"
+    "  [dim]# MP4, proportional timing, 30 s animation[/dim]\n\n"
+    "  dirplot replay events.jsonl -o replay.mp4 --crf 18"
+    "  [dim]# MP4, higher quality[/dim]\n\n"
+    "  dirplot replay events.jsonl -o replay.mp4 --codec libx265 --crf 28"
+    "  [dim]# H.265, smaller file[/dim]\n\n"
+    "  dirplot replay events.jsonl -o replay.mp4 --bucket 10"
+    "  [dim]# finer-grained 10-second buckets[/dim]"
 )
 
 
@@ -654,13 +695,25 @@ def replay_cmd(
         "-w",
         help="Parallel render workers (default: all CPU cores)",
     ),
+    crf: int = typer.Option(
+        23,
+        "--crf",
+        help="MP4 quality: Constant Rate Factor (0=lossless, 51=worst; default 23). "
+        "Ignored for APNG output.",
+        show_default=True,
+    ),
+    codec: str = typer.Option(
+        "libx264",
+        "--codec",
+        help="MP4 video codec: libx264 (H.264, default) or libx265 (H.265, smaller files). "
+        "Ignored for APNG output.",
+    ),
 ) -> None:
     """Replay a JSONL filesystem event log as an animated treemap."""
     import io
     import os
     from concurrent.futures import ProcessPoolExecutor, as_completed
 
-    from dirplot.render_png import write_apng
     from dirplot.replay_scanner import (
         _render_replay_frame_worker,
         apply_events,
@@ -672,8 +725,8 @@ def replay_cmd(
         typer.echo(f"Error: event log not found: {event_log}", err=True)
         raise typer.Exit(1)
 
-    if output.suffix.lower() not in {".png", ".apng"}:
-        typer.echo("Error: --output must be a .png or .apng file.", err=True)
+    if output.suffix.lower() not in {".png", ".apng", ".mp4", ".mov"}:
+        typer.echo("Error: --output must be a .png, .apng, or .mp4 file.", err=True)
         raise typer.Exit(1)
 
     if size is not None:
@@ -822,8 +875,15 @@ def replay_cmd(
         frame_bytes.append(raw[orig_i][0])
         final_durations.append(frame_durations[orig_i])
 
-    write_apng(output, frame_bytes, final_durations)
-    typer.echo(f"Wrote {len(frame_bytes)}-frame APNG → {output}", err=True)
+    if output.suffix.lower() in {".mp4", ".mov"}:
+        from dirplot.render_png import write_mp4
+
+        write_mp4(output, frame_bytes, final_durations, crf=crf, codec=codec)
+    else:
+        from dirplot.render_png import write_apng
+
+        write_apng(output, frame_bytes, final_durations)
+    typer.echo(f"Wrote {len(frame_bytes)}-frame {output.suffix.upper()[1:]} → {output}", err=True)
 
 
 @app.command(name="read-meta")

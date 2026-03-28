@@ -36,6 +36,8 @@ class TreemapEventHandler(FileSystemEventHandler):
         debounce: float = 0.0,
         event_log: Path | None = None,
         depth: int | None = None,
+        crf: int = 23,
+        codec: str = "libx264",
     ) -> None:
         super().__init__()
         self.roots = roots
@@ -48,6 +50,9 @@ class TreemapEventHandler(FileSystemEventHandler):
         self.colormap = colormap
         self.cushion = cushion
         self.use_svg = output.suffix.lower() == ".svg"
+        self.use_mp4 = output.suffix.lower() in {".mp4", ".mov"}
+        self.crf = crf
+        self.codec = codec
         self.animate = animate
         self.log = log
         self.debounce = debounce
@@ -83,6 +88,13 @@ class TreemapEventHandler(FileSystemEventHandler):
 
         write_apng(self.output, self._frame_bytes, self._durations)
         print(f"Wrote {len(self._frame_bytes)}-frame APNG → {self.output}", file=sys.stderr)
+
+    def _write_mp4(self) -> None:
+        """Write all accumulated frames as an MP4 video (called once in flush())."""
+        from dirplot.render_png import write_mp4
+
+        write_mp4(self.output, self._frame_bytes, self._durations, crf=self.crf, codec=self.codec)
+        print(f"Wrote {len(self._frame_bytes)}-frame MP4 → {self.output}", file=sys.stderr)
 
     def _patch_prev_frame_deletions(self, deletions: dict[str, str]) -> None:
         """Draw red borders on the previous frame for files about to be deleted."""
@@ -205,7 +217,10 @@ class TreemapEventHandler(FileSystemEventHandler):
         elif render_thread is not None:
             render_thread.join()
         if self.animate and self._frame_bytes:
-            self._write_apng()
+            if self.use_mp4:
+                self._write_mp4()
+            else:
+                self._write_apng()
         if self.event_log is not None and self._events:
             with self._lock:
                 snapshot = list(self._events)

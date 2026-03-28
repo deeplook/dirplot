@@ -726,3 +726,82 @@ def write_apng(output: Path, frame_bytes: list[bytes], durations_ms: list[int]) 
                         seq += 1
 
         f.write(_apng_make_chunk(b"IEND", b""))
+
+
+def write_mp4(
+    output: Path,
+    frame_bytes: list[bytes],
+    durations_ms: list[int],
+    crf: int = 23,
+    codec: str = "libx264",
+) -> None:
+    """Write *frame_bytes* as an MP4 video file using ffmpeg.
+
+    Args:
+        output: Destination ``.mp4`` (or ``.mov``) path.
+        frame_bytes: Sequence of PNG-encoded frames.
+        durations_ms: Per-frame display duration in milliseconds.
+        crf: Constant Rate Factor controlling quality.  Lower = better quality
+            and larger file.  Typical range: 0 (lossless) – 51 (worst).
+            Default 23 is a good balance for flat-colour treemaps.
+            For ``libx265`` the perceptually equivalent default is 28.
+        codec: FFmpeg video codec.  ``"libx264"`` (H.264, default) is the most
+            compatible; ``"libx265"`` (H.265/HEVC) gives ~40 % smaller files at
+            the same perceived quality.
+
+    Raises:
+        RuntimeError: If ffmpeg is not found on PATH or exits non-zero.
+    """
+    import shutil
+    import subprocess
+    import tempfile
+
+    if not shutil.which("ffmpeg"):
+        raise RuntimeError(
+            "ffmpeg not found on PATH.  Install it to write MP4 files:\n"
+            "  macOS:  brew install ffmpeg\n"
+            "  Linux:  apt install ffmpeg  /  dnf install ffmpeg"
+        )
+
+    with tempfile.TemporaryDirectory(prefix="dirplot-mp4-") as tmpdir:
+        tmp = Path(tmpdir)
+        lines: list[str] = []
+        for i, (png_bytes, dur_ms) in enumerate(zip(frame_bytes, durations_ms, strict=True)):
+            frame_path = tmp / f"frame{i:06d}.png"
+            frame_path.write_bytes(png_bytes)
+            lines.append(f"file '{frame_path}'\n")
+            lines.append(f"duration {dur_ms / 1000:.6f}\n")
+        # The concat demuxer ignores the duration of the last entry; repeat the
+        # last frame so ffmpeg has a file reference to close the stream cleanly.
+        if frame_bytes:
+            lines.append(f"file '{tmp / f'frame{len(frame_bytes) - 1:06d}.png'}'\n")
+
+        concat_file = tmp / "concat.txt"
+        concat_file.write_text("".join(lines))
+
+        cmd = [
+            "ffmpeg",
+            "-y",
+            "-f",
+            "concat",
+            "-safe",
+            "0",
+            "-i",
+            str(concat_file),
+            "-c:v",
+            codec,
+            "-crf",
+            str(crf),
+            "-pix_fmt",
+            "yuv420p",
+            # libx264/libx265 require even dimensions
+            "-vf",
+            "scale=trunc(iw/2)*2:trunc(ih/2)*2",
+            str(output),
+        ]
+        result = subprocess.run(cmd, capture_output=True)
+        if result.returncode != 0:
+            raise RuntimeError(
+                f"ffmpeg exited with code {result.returncode}:\n"
+                f"{result.stderr.decode(errors='replace')}"
+            )
