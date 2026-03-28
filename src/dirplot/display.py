@@ -156,8 +156,26 @@ def display_inline(buf: io.BytesIO) -> None:
         _display_iterm2(buf)
 
 
-def display_window(buf: io.BytesIO) -> None:
-    """Open the PNG in the system default image viewer."""
+def display_window(buf: io.BytesIO, title: str | None = None) -> None:
+    """Open the PNG in the system default image viewer.
+
+    When *title* is given it is used as a prefix for the temporary file name
+    (sanitised so it is safe on all platforms), making the file easier to
+    identify in the OS image viewer's title bar.
+    """
+    import re
+    import tempfile
+    import webbrowser
+    from pathlib import Path
+
     from PIL import Image
 
-    Image.open(buf).show()
+    if title:
+        safe = re.sub(r"[^\w.\-]", "_", title)
+        prefix = f"dirplot-{safe}-"
+        img = Image.open(buf)
+        with tempfile.NamedTemporaryFile(prefix=prefix, suffix=".png", delete=False) as tmp:
+            img.save(tmp, format="PNG")
+            webbrowser.open(Path(tmp.name).resolve().as_uri())
+    else:
+        Image.open(buf).show()
