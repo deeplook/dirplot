@@ -26,9 +26,10 @@
 - Exclude paths with `--exclude` (repeatable), or focus on specific subtrees with `--subtree` / `-s` (allowlist complement, supports nested paths like `src/dirplot/fonts`).
 - Pass multiple local paths (`dirplot map src tests`) to scan each independently and display them under their common parent, ignoring all other siblings. Individual files are also accepted as roots (`dirplot map main.py util.py`).
 - **Pipe `tree` or `find` output directly**: `tree src/ | dirplot map` and `find . -name "*.py" | dirplot map` are both supported. The format is auto-detected (`tree -s`, `tree -f`, and plain `find` output all work). Use `--paths-from FILE` to read from a file instead of stdin.
-- **Live watch mode** (`dirplot watch`) — monitors one or more directories and regenerates the treemap automatically. Rapid bursts of events (e.g. `git checkout`) are debounced into a single render after a configurable quiet period (`--debounce`, default 0.5 s). With `--animate`, each render is captured as a frame and the complete APNG is written on Ctrl-C exit; changed tiles receive colour-coded highlight borders (green = created, blue = modified, red = deleted, orange = moved). All events can be logged to a JSONL file with `--event-log`.
-- **Event log replay** (`dirplot replay`) — replays a JSONL filesystem event log (produced by `dirplot watch --event-log`) as an animated treemap APNG. Events are grouped into time buckets (one frame per bucket, default 60 s); only files referenced in the log appear in the treemap. Frame durations can be uniform or proportional to real elapsed time between buckets (`--total-duration`). Frames are rendered in parallel.
-- **Git history replay** (`dirplot git`) — renders a git repository's commit history as an animated treemap APNG. Each commit becomes one frame, with colour-coded change highlights matching `watch --animate`. Frame durations can be uniform (`--frame-duration`) or proportional to real elapsed time between commits (`--total-duration`). Frames are rendered in parallel across CPU cores for speed. Accepts a local path or a **GitHub URL** (`github://owner/repo[@branch]` or `https://github.com/owner/repo`) — dirplot clones the repo into a temporary directory and removes it when done. The total number of commits available is always reported so you can tune `--max-commits` before committing to a long render.
+- **Live watch mode** (`dirplot watch`) — monitors one or more directories and regenerates the treemap automatically. Rapid bursts of events (e.g. `git checkout`) are debounced into a single render after a configurable quiet period (`--debounce`, default 0.5 s). With `--animate`, each render is captured as a frame and the complete APNG or **MP4** is written on Ctrl-C exit; changed tiles receive colour-coded highlight borders. All events can be logged to a JSONL file with `--event-log`.
+- **Event log replay** (`dirplot replay`) — replays a JSONL filesystem event log (produced by `dirplot watch --event-log`) as an animated treemap APNG or **MP4**. Events are grouped into time buckets (one frame per bucket, default 60 s); only files referenced in the log appear in the treemap. Frame durations can be uniform or proportional to real elapsed time between buckets (`--total-duration`). Frames are rendered in parallel.
+- **Git history replay** (`dirplot git`) — renders a git repository's commit history as an animated treemap APNG or **MP4**. Each commit becomes one frame, with colour-coded change highlights. Frame durations can be uniform (`--frame-duration`) or proportional to real elapsed time between commits (`--total-duration`). Frames are rendered in parallel across CPU cores for speed. Accepts a local path (with optional `@ref` suffix), or a **GitHub URL**.
+- **MP4 output** (`--output file.mp4`) — all three animation commands (`watch --animate`, `git --animate`, `replay`) write MP4 video when the output path ends in `.mp4` or `.mov`. Quality is controlled via `--crf` (Constant Rate Factor: 0 = lossless, 51 = worst, default 23) and `--codec` (`libx264` H.264 or `libx265` H.265). MP4 files are typically 10–100× smaller than equivalent APNGs. Requires `ffmpeg` on PATH.
 - Works on macOS, Linux, and Windows; WSL2 fully supported.
 - Scan remote hosts over SSH (`pip install "dirplot[ssh]"`), AWS S3 buckets (`pip install "dirplot[s3]"`), any public/private GitHub repository (including specific branch, tag, commit SHA, or subdirectory), **running Docker containers**, or **Kubernetes pods** — all without extra dependencies beyond the respective CLI/SDK. See [EXAMPLES.md](docs/EXAMPLES.md).
 - Optional **file-count legend** (`--legend`) — a corner overlay listing the top extensions by number of files, with coloured swatches and counts, automatically sized to fit the image.
@@ -159,8 +160,18 @@ dirplot watch src --output treemap.png --event-log events.jsonl
 # Watch and build an animated APNG — one frame per debounced render, written on Ctrl-C
 dirplot watch . --output treemap.png --animate
 
+# Watch and build an MP4 video instead (requires ffmpeg)
+dirplot watch . --output treemap.mp4 --animate
+dirplot watch . --output treemap.mp4 --animate --crf 18          # higher quality
+dirplot watch . --output treemap.mp4 --animate --codec libx265   # smaller file (H.265)
+
 # Replay a filesystem event log as an animated APNG (60-second buckets, 30-second animation)
 dirplot replay events.jsonl --output replay.apng --total-duration 30
+
+# Replay as MP4 instead
+dirplot replay events.jsonl --output replay.mp4 --total-duration 30
+dirplot replay events.jsonl --output replay.mp4 --crf 18             # higher quality
+dirplot replay events.jsonl --output replay.mp4 --codec libx265      # smaller file
 
 # Smaller buckets for finer-grained activity
 dirplot replay events.jsonl --output replay.apng --bucket 10 --frame-duration 200
@@ -168,8 +179,13 @@ dirplot replay events.jsonl --output replay.apng --bucket 10 --frame-duration 20
 # Replay full git history as an animated APNG
 dirplot git . --output history.apng --animate --exclude .git
 
+# Replay as MP4 instead
+dirplot git . --output history.mp4 --animate
+dirplot git . --output history.mp4 --animate --crf 18            # higher quality
+dirplot git . --output history.mp4 --animate --codec libx265     # smaller file (H.265)
+
 # Replay a specific local branch
-dirplot git .@my-branch --output history.apng --animate
+dirplot git .@my-branch --output history.mp4 --animate
 
 # Last 50 commits, 30-second animation with time-proportional frame durations
 dirplot git . --output history.apng --animate --range main~50..main --total-duration 30
@@ -214,10 +230,12 @@ These options are specific to the `watch` subcommand.
 
 | Flag | Default | Description |
 |---|---|---|
-| `--output` / `-o` | required | Output file (`.png` or `.svg`) updated on each change |
+| `--output` / `-o` | required | Output file (`.png`, `.apng`, `.mp4`, or `.svg`) updated on each change |
 | `--debounce` | `0.5` | Seconds of quiet after the last event before regenerating; `0` disables |
 | `--event-log` | — | Write all raw events as JSONL to this file on Ctrl-C exit |
-| `--animate` / `--no-animate` | off | Capture one frame per debounced render; write the complete APNG on Ctrl-C exit |
+| `--animate` / `--no-animate` | off | Capture one frame per debounced render; write the complete APNG or MP4 on Ctrl-C exit |
+| `--crf` | `23` | MP4 quality: Constant Rate Factor (0 = lossless, 51 = worst). Ignored for APNG |
+| `--codec` | `libx264` | MP4 video codec: `libx264` (H.264) or `libx265` (H.265, smaller files) |
 | `--log` / `--no-log` | off | Use log of file sizes for layout |
 | `--size` | terminal size | Output dimensions as `WIDTHxHEIGHT` |
 | `--depth` | — | Maximum recursion depth |
@@ -232,10 +250,12 @@ These options are specific to the `replay` subcommand.
 
 | Flag | Default | Description |
 |---|---|---|
-| `--output` / `-o` | required | Output `.png` or `.apng` file |
+| `--output` / `-o` | required | Output `.png`, `.apng`, or `.mp4` file |
 | `--bucket` | `60.0` | Time bucket size in seconds; one frame per bucket |
 | `--frame-duration` | `500` | Frame display time in ms (when `--total-duration` is not set) |
 | `--total-duration` | — | Target total animation length in seconds; frame durations scale proportionally to real time gaps between buckets |
+| `--crf` | `23` | MP4 quality: Constant Rate Factor (0 = lossless, 51 = worst). Ignored for APNG |
+| `--codec` | `libx264` | MP4 video codec: `libx264` (H.264) or `libx265` (H.265, smaller files) |
 | `--workers` / `-w` | all CPU cores | Parallel render workers |
 | `--log` / `--no-log` | off | Use log of file sizes for layout |
 | `--size` | terminal size | Output dimensions as `WIDTHxHEIGHT` |
@@ -260,9 +280,11 @@ is set, full otherwise) and removes it on exit.
 | `--output` / `-o` | required | Output PNG file |
 | `--range` / `-r` | all commits | Git revision range (e.g. `main~50..main`, `v1.0..HEAD`). When using a GitHub URL, `--range` works without `--max-commits`; if both are set, `--max-commits` controls the shallow clone depth and must be large enough to reach the range's base commit. |
 | `--max-commits` / `-n` | — | Maximum number of commits to process |
-| `--animate` / `--no-animate` | off | Build an animated APNG; without this flag each commit overwrites the output PNG |
+| `--animate` / `--no-animate` | off | Build an animated APNG or MP4; without this flag each commit overwrites the output PNG |
 | `--frame-duration` | `1000` | Frame display time in ms (when `--total-duration` is not set) |
 | `--total-duration` | — | Target total animation length in seconds; frame durations scale proportionally to real time gaps between commits |
+| `--crf` | `23` | MP4 quality: Constant Rate Factor (0 = lossless, 51 = worst). Ignored for APNG |
+| `--codec` | `libx264` | MP4 video codec: `libx264` (H.264) or `libx265` (H.265, ~40% smaller at same quality) |
 | `--workers` / `-w` | all CPU cores | Parallel render workers; 4–8 is typically optimal due to memory-bandwidth limits |
 | `--log` / `--no-log` | off | Use log of file sizes for layout |
 | `--size` | terminal size | Output dimensions as `WIDTHxHEIGHT` |

@@ -4,9 +4,11 @@ The output is written to tests/animation/watch_demo.png and kept after the
 test so it can be inspected visually in Safari, Firefox, or Preview.
 """
 
+import shutil
 import time
 from pathlib import Path
 
+import pytest
 from PIL import Image, ImageSequence
 
 from dirplot.watch import TreemapEventHandler
@@ -240,3 +242,35 @@ def test_watch_animate_apng(tmp_path: Path) -> None:
 
     print(f"\n  APNG: {_DEMO_OUTPUT} ({n_frames} frames)")
     print("  Open in Safari, Firefox, or Preview to view the animation.")
+
+
+# ── MP4 output ────────────────────────────────────────────────────────────────
+
+
+@pytest.mark.skipif(not shutil.which("ffmpeg"), reason="ffmpeg not found")
+def test_watch_animate_mp4(tmp_path: Path) -> None:
+    """Watch handler writes a valid .mp4 file when output has .mp4 extension."""
+    out = tmp_path / "demo.mp4"
+
+    handler = TreemapEventHandler(
+        [tmp_path],
+        out,
+        width_px=200,
+        height_px=150,
+        font_size=12,
+        colormap="tab20",
+        cushion=True,
+        animate=True,
+        crf=28,
+    )
+
+    (tmp_path / "a.py").write_bytes(b"x" * 4_000)
+    handler._regenerate()
+
+    (tmp_path / "b.py").write_bytes(b"x" * 2_000)
+    handler._regenerate()
+
+    handler.flush()
+
+    assert out.exists()
+    assert out.stat().st_size > 0

@@ -16,6 +16,8 @@ pytestmark = pytest.mark.skipif(
     reason="git CLI not found",
 )
 
+_ffmpeg_available = bool(shutil.which("ffmpeg"))
+
 
 @pytest.fixture()
 def local_repo(tmp_path: Path) -> Path:
@@ -125,3 +127,27 @@ def test_git_local_no_at_syntax(local_repo: Path, tmp_path: Path) -> None:
     assert result.exit_code == 0, result.output
     assert out.exists()
     assert out.stat().st_size > 0
+
+
+@pytest.mark.skipif(not _ffmpeg_available, reason="ffmpeg not found")
+def test_git_local_animate_mp4(local_repo: Path, tmp_path: Path) -> None:
+    """dirplot git --animate produces a valid .mp4 file."""
+    out = tmp_path / "out.mp4"
+    result = runner.invoke(
+        app,
+        ["git", str(local_repo), "--output", str(out), "--animate", "--size", "200x150"],
+    )
+    assert result.exit_code == 0, result.output
+    assert out.exists()
+    assert out.stat().st_size > 0
+
+
+@pytest.mark.skipif(not _ffmpeg_available, reason="ffmpeg not found")
+def test_git_local_animate_mp4_crf(local_repo: Path, tmp_path: Path) -> None:
+    """--crf controls MP4 quality: lower CRF produces a larger file."""
+    out_hq = tmp_path / "hq.mp4"
+    out_lq = tmp_path / "lq.mp4"
+    common = ["git", str(local_repo), "--animate", "--size", "200x150"]
+    runner.invoke(app, common + ["--output", str(out_hq), "--crf", "0"])
+    runner.invoke(app, common + ["--output", str(out_lq), "--crf", "51"])
+    assert out_hq.stat().st_size > out_lq.stat().st_size

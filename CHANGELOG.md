@@ -7,17 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
-
-- **`@ref` suffix for `dirplot git`**: local repository paths now accept an optional
-  `@ref` suffix to target a specific branch, tag, or commit SHA without needing
-  `--range` (e.g. `dirplot git .@my-branch -o out.apng --animate`). `--range` takes
-  precedence when both are provided.
-
 ## [0.4.0] - 2026-03-28
 
 ### Added
 
+- **MP4 video output** — all three animation commands (`watch --animate`, `git --animate`,
+  `replay`) now write MP4 video when the output path ends in `.mp4` or `.mov`. Quality is
+  controlled via `--crf` (Constant Rate Factor: 0 = lossless, 51 = worst, default 23) and
+  `--codec` (`libx264` H.264 or `libx265` H.265). MP4 files are typically 10–100× smaller
+  than equivalent APNGs. Requires `ffmpeg` on PATH.
+  ```bash
+  dirplot git . -o history.mp4 --animate
+  dirplot git . -o history.mp4 --animate --crf 18 --codec libx265
+  dirplot replay events.jsonl -o replay.mp4 --total-duration 30
+  dirplot watch . -o treemap.mp4 --animate
+  ```
+- **`@ref` suffix for `dirplot git`**: local repository paths now accept an optional
+  `@ref` suffix to target a specific branch, tag, or commit SHA without needing
+  `--range` (e.g. `dirplot git .@my-branch -o out.apng --animate`). `--range` takes
+  precedence when both are provided.
 - **`dirplot git` subcommand** — replays a git repository's commit history as an
   animated treemap. Each commit becomes one frame; changed tiles receive the same
   colour-coded highlight borders as `watch --animate` (green = created, blue = modified,
