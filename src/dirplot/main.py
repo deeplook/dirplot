@@ -216,10 +216,31 @@ def watch_cmd(
             observer.join()
 
 
-@app.command(name="git")
+_GIT_EPILOG = (
+    "[bold]Examples[/bold]\n\n"
+    "  dirplot git . -o history.apng --animate"
+    "  [dim]# full history of current branch[/dim]\n\n"
+    "  dirplot git .@my-branch -o history.apng --animate"
+    "  [dim]# specific local branch[/dim]\n\n"
+    "  dirplot git .@my-branch~50..my-branch -o history.apng --animate"
+    "  [dim]# last 50 commits on a branch[/dim]\n\n"
+    "  dirplot git . -o history.apng --animate --range v1.0..HEAD"
+    "  [dim]# explicit revision range[/dim]\n\n"
+    "  dirplot git github://owner/repo -o history.apng --animate --max-commits 50"
+    "  [dim]# GitHub repo[/dim]\n\n"
+    "  dirplot git github://owner/repo@main -o history.apng --animate --max-commits 50"
+    "  [dim]# specific GitHub branch[/dim]"
+)
+
+
+@app.command(name="git", epilog=_GIT_EPILOG)
 def git_cmd(
     repo_arg: str = typer.Argument(
-        ".", help="Git repository path, github://owner/repo, or https://github.com/owner/repo"
+        ".",
+        help=(
+            "Git repository path (optionally suffixed with @ref, e.g. .@my-branch),"
+            " github://owner/repo[@branch], or https://github.com/owner/repo"
+        ),
     ),
     output: Path = typer.Option(..., "--output", "-o", help="Output PNG file"),
     revision_range: str | None = typer.Option(
@@ -327,7 +348,13 @@ def git_cmd(
             raise typer.Exit(1) from exc
         repo = _clone_dir
     else:
-        repo = Path(repo_arg).resolve()
+        if "@" in repo_arg:
+            repo_path_str, _, inline_ref = repo_arg.partition("@")
+            if revision_range is None:
+                revision_range = inline_ref
+        else:
+            repo_path_str = repo_arg
+        repo = Path(repo_path_str).resolve()
         if not (repo / ".git").exists():
             typer.echo(f"Error: not a git repository: {repo}", err=True)
             raise typer.Exit(1)

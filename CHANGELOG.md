@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **`@ref` suffix for `dirplot git`**: local repository paths now accept an optional
+  `@ref` suffix to target a specific branch, tag, or commit SHA without needing
+  `--range` (e.g. `dirplot git .@my-branch -o out.apng --animate`). `--range` takes
+  precedence when both are provided.
+
+## [0.4.0] - 2026-03-28
+
+### Added
+
 - **`dirplot git` subcommand** — replays a git repository's commit history as an
   animated treemap. Each commit becomes one frame; changed tiles receive the same
   colour-coded highlight borders as `watch --animate` (green = created, blue = modified,
