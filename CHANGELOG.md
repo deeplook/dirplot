@@ -85,6 +85,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ```bash
   dirplot watch . --output treemap.png --depth 3
   ```
+- **`dirplot replay` subcommand** — replays a JSONL filesystem event log (as produced
+  by `dirplot watch --event-log`) as an animated treemap APNG. Events are grouped into
+  time buckets (one frame per bucket, default 60 s), with colour-coded highlight borders
+  matching `watch --animate`. Only files referenced in the event log appear in the
+  treemap; the common ancestor of all paths is used as the tree root. Frame durations
+  can be uniform (`--frame-duration`, default 500 ms) or proportional to the real time
+  gaps between buckets (`--total-duration`). Frames are rendered in parallel.
+  ```bash
+  # Replay an event log with 60-second buckets, 30-second total animation
+  dirplot replay events.jsonl --output replay.apng --total-duration 30
+
+  # Smaller buckets for fine-grained activity, fixed frame duration
+  dirplot replay events.jsonl --output replay.apng --bucket 10 --frame-duration 200
+  ```
+
 - **`dirplot git` accepts GitHub URLs** — pass a `github://owner/repo[@branch]` or
   `https://github.com/owner/repo` URL directly to `dirplot git`. dirplot clones the
   repository into a temporary directory (shallow when `--max-commits` is set, full

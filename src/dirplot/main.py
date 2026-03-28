@@ -576,6 +576,229 @@ def git_cmd(
             typer.echo(f"  Updated {output}", err=True)
 
 
+_REPLAY_EPILOG = (
+    "[bold]Examples[/bold]\n\n"
+    "  dirplot replay events.jsonl -o replay.apng"
+    "  [dim]# 60-second buckets, 500 ms/frame[/dim]\n\n"
+    "  dirplot replay events.jsonl -o replay.apng --total-duration 30"
+    "  [dim]# proportional timing, 30 s animation[/dim]\n\n"
+    "  dirplot replay events.jsonl -o replay.apng --bucket 10"
+    "  [dim]# finer-grained 10-second buckets[/dim]\n\n"
+    "  dirplot replay events.jsonl -o replay.apng --size 1920x1080"
+    "  [dim]# fixed resolution[/dim]\n\n"
+    "  dirplot replay events.jsonl -o replay.apng --depth 4 --colormap viridis"
+    "  [dim]# limit depth, custom colormap[/dim]"
+)
+
+
+@app.command(name="replay", epilog=_REPLAY_EPILOG)
+def replay_cmd(
+    event_log: Path = typer.Argument(..., help="JSONL event log produced by fswatched.py"),
+    output: Path = typer.Option(..., "--output", "-o", help="Output file (.png or .apng)"),
+    bucket: float = typer.Option(
+        60.0,
+        "--bucket",
+        help="Time bucket size in seconds: one frame per bucket",
+        show_default=True,
+    ),
+    frame_duration: int = typer.Option(
+        500, "--frame-duration", help="Frame display duration in ms (default: 500)"
+    ),
+    total_duration: float | None = typer.Option(
+        None,
+        "--total-duration",
+        help=(
+            "Target total animation length in seconds. Frames are shown proportionally"
+            " to the real time gaps between buckets. Overrides --frame-duration."
+        ),
+    ),
+    exclude: list[str] = typer.Option([], "--exclude", "-e", help="Paths to exclude (repeatable)"),
+    font_size: int = typer.Option(12, "--font-size", help="Directory label font size in pixels"),
+    colormap: str = typer.Option("tab20", "--colormap", "-c", help="Matplotlib colormap"),
+    size: str | None = typer.Option(
+        None, "--size", help="Output size as WIDTHxHEIGHT", metavar="WIDTHxHEIGHT"
+    ),
+    cushion: bool = typer.Option(True, "--cushion/--no-cushion", help="Apply cushion shading"),
+    log: bool = typer.Option(False, "--log/--no-log", help="Use log of file sizes for layout"),
+    depth: int | None = typer.Option(None, "--depth", help="Maximum directory depth"),
+    workers: int | None = typer.Option(
+        None,
+        "--workers",
+        "-w",
+        help="Parallel render workers (default: all CPU cores)",
+    ),
+) -> None:
+    """Replay a JSONL filesystem event log as an animated treemap."""
+    import io
+    import os
+    from concurrent.futures import ProcessPoolExecutor, as_completed
+
+    from dirplot.render import write_apng
+    from dirplot.replay_scanner import (
+        _render_replay_frame_worker,
+        apply_events,
+        bucket_events,
+        parse_events,
+    )
+
+    if not event_log.exists():
+        typer.echo(f"Error: event log not found: {event_log}", err=True)
+        raise typer.Exit(1)
+
+    if output.suffix.lower() not in {".png", ".apng"}:
+        typer.echo("Error: --output must be a .png or .apng file.", err=True)
+        raise typer.Exit(1)
+
+    if size is not None:
+        try:
+            w_str, h_str = size.lower().split("x", 1)
+            width_px, height_px = int(w_str), int(h_str)
+        except ValueError:
+            typer.echo(f"Invalid --size '{size}'. Expected WIDTHxHEIGHT.", err=True)
+            raise typer.Exit(1) from None
+    else:
+        term_w, term_h, row_px = get_terminal_pixel_size()
+        width_px = term_w + 1
+        height_px = term_h - 3 * row_px
+
+    typer.echo(f"Reading events from {event_log} ...", err=True)
+    events = parse_events(event_log)
+    if not events:
+        typer.echo("Error: no events found in event log.", err=True)
+        raise typer.Exit(1)
+
+    # Derive common root from all paths in the event log
+    all_paths = [e[2] for e in events] + [e[3] for e in events if e[3]]
+    common_root = Path(os.path.commonpath(all_paths))
+    if not common_root.is_dir():
+        common_root = common_root.parent
+    typer.echo(f"Common root: {common_root}", err=True)
+
+    excluded = frozenset(Path(e).resolve() for e in exclude)
+
+    # Build initial files dict by statting only paths that appear in the event log
+    files: dict[str, int] = {}
+    for _ts, _type, path_str, dest_str in events:
+        for p_str in (path_str, dest_str) if dest_str else (path_str,):
+            p = Path(p_str)
+            if not p_str.startswith(str(common_root)):
+                continue
+            if p.resolve() in excluded or not p.is_file():
+                continue
+            try:
+                rel = str(p.relative_to(common_root)).replace(os.sep, "/")
+                files[rel] = max(1, p.stat().st_size)
+            except (OSError, ValueError):
+                pass
+    typer.echo(f"  {len(files)} unique files from event log", err=True)
+
+    buckets = bucket_events(events, bucket)
+    typer.echo(
+        f"Grouped {len(events)} events into {len(buckets)} frame(s) ({bucket:.0f}s buckets) ...",
+        err=True,
+    )
+
+    # Pre-compute per-frame durations
+    if total_duration is not None:
+        if total_duration <= 0:
+            typer.echo("Error: --total-duration must be positive.", err=True)
+            raise typer.Exit(1)
+        timestamps = [ts for ts, _ in buckets]
+        gaps: list[float] = [
+            max(1.0, float(timestamps[j + 1] - timestamps[j])) for j in range(len(timestamps) - 1)
+        ]
+        gaps.append(gaps[-1] if gaps else 1.0)
+        total_gap = sum(gaps)
+        total_ms = total_duration * 1000
+        frame_durations = [max(200, min(65535, round(g / total_gap * total_ms))) for g in gaps]
+        min_d, max_d = min(frame_durations), max(frame_durations)
+        typer.echo(
+            f"  Proportional timing: {min_d}–{max_d} ms/frame"
+            f" (total ~{sum(frame_durations) / 1000:.1f}s)",
+            err=True,
+        )
+    else:
+        frame_durations = [frame_duration] * len(buckets)
+
+    # Phase 1: sequential pass — apply events bucket by bucket, collect snapshots
+    Snapshot = tuple[int, float, dict[str, int], dict[str, str], dict[str, str]]
+    snapshots: list[Snapshot] = []
+
+    for i, (ts, bucket_evs) in enumerate(buckets):
+        highlights = apply_events(files, common_root, bucket_evs, excluded)
+        deletions = {p: v for p, v in highlights.items() if v == "deleted"}
+        cur_hl = {p: v for p, v in highlights.items() if v != "deleted"}
+        snapshots.append((i, ts, dict(files), cur_hl, deletions))
+
+    # Phase 2: parallel render
+    total = len(snapshots)
+    n_workers = min(workers if workers is not None else (os.cpu_count() or 1), total)
+    typer.echo(f"Rendering {total} frame(s) using {n_workers} worker(s) ...", err=True)
+
+    total_anim_ms = sum(frame_durations)
+    cumulative_ms = 0.0
+    frame_progress: dict[int, float] = {}
+    for orig_i, *_ in snapshots:
+        cumulative_ms += frame_durations[orig_i]
+        frame_progress[orig_i] = cumulative_ms / total_anim_ms
+
+    render_args = [
+        (
+            str(common_root),
+            files_copy,
+            cur_hl,
+            ts,
+            orig_i,
+            frame_progress[orig_i],
+            depth,
+            log,
+            width_px,
+            height_px,
+            font_size,
+            colormap,
+            cushion,
+        )
+        for orig_i, ts, files_copy, cur_hl, _del in snapshots
+    ]
+
+    raw: dict[int, tuple[bytes, dict[str, tuple[int, int, int, int]]]] = {}
+
+    try:
+        with ProcessPoolExecutor(max_workers=n_workers, initializer=_worker_ignore_sigint) as pool:
+            futures = {
+                pool.submit(_render_replay_frame_worker, args): args[4] for args in render_args
+            }
+            for done, future in enumerate(as_completed(futures), 1):
+                orig_i, png_bytes, rect_map = future.result()
+                raw[orig_i] = (png_bytes, rect_map)
+                typer.echo(f"  Rendered {done}/{total}", err=True)
+    except KeyboardInterrupt:
+        typer.echo("\nInterrupted.", err=True)
+        raise typer.Exit(1) from None
+
+    # Phase 3: assemble ordered frames, patch deletions onto prior frame
+    frame_bytes: list[bytes] = []
+    final_durations: list[int] = []
+
+    for j, (orig_i, _ts, _files, _hl, deletions) in enumerate(snapshots):
+        if deletions and j > 0:
+            prev_bytes, prev_rect = raw[snapshots[j - 1][0]]
+            from PIL import Image, ImageDraw
+
+            from dirplot.render import _draw_highlights
+
+            prev_img = Image.open(io.BytesIO(prev_bytes)).convert("RGB")
+            _draw_highlights(ImageDraw.Draw(prev_img), prev_rect, deletions)
+            buf = io.BytesIO()
+            prev_img.save(buf, format="PNG")
+            frame_bytes[-1] = buf.getvalue()
+        frame_bytes.append(raw[orig_i][0])
+        final_durations.append(frame_durations[orig_i])
+
+    write_apng(output, frame_bytes, final_durations)
+    typer.echo(f"Wrote {len(frame_bytes)}-frame APNG → {output}", err=True)
+
+
 @app.command(name="read-meta")
 def read_meta(
     files: list[Path] = typer.Argument(
@@ -791,6 +1014,7 @@ def main(
         raise typer.Exit(1)
 
     root = roots[0] if len(roots) == 1 else ""  # alias for single-root branches
+    _display_title: str | None = None  # used as prefix for the temp image filename
     t_scan_start = time.monotonic()
     if use_stdin:
         if paths_from is None or str(paths_from) == "-":
@@ -896,6 +1120,7 @@ def main(
             print("", file=sys.stderr)
     elif is_github_path(root):
         gh_owner, gh_repo, gh_ref, gh_subpath = parse_github_path(root)
+        _display_title = f"{gh_owner}-{gh_repo}"
         try:
             root_node, resolved_ref = build_tree_github(
                 gh_owner,
@@ -1096,4 +1321,4 @@ def main(
         elif inline:
             display_inline(buf)
         else:
-            display_window(buf)
+            display_window(buf, title=_display_title)
