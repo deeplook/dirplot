@@ -168,6 +168,9 @@ dirplot replay events.jsonl --output replay.apng --bucket 10 --frame-duration 20
 # Replay full git history as an animated APNG
 dirplot git . --output history.apng --animate --exclude .git
 
+# Replay a specific local branch
+dirplot git .@my-branch --output history.apng --animate
+
 # Last 50 commits, 30-second animation with time-proportional frame durations
 dirplot git . --output history.apng --animate --range main~50..main --total-duration 30
 
@@ -246,7 +249,8 @@ These options are specific to the `replay` subcommand.
 
 These options are specific to the `git` subcommand.
 
-The positional `repo` argument accepts a local path (default: `.`) or a GitHub URL:
+The positional `repo` argument accepts a local path (default: `.`), a local path with an
+optional `@ref` suffix (e.g. `.@my-branch`, `.@v1.0`, `.@abc1234`), or a GitHub URL:
 `github://owner/repo[@branch]` or `https://github.com/owner/repo[/tree/branch]`.
 For GitHub URLs dirplot clones into a temporary directory (shallow when `--max-commits`
 is set, full otherwise) and removes it on exit.
