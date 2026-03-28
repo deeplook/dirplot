@@ -7,7 +7,7 @@ import squarify
 from PIL import Image
 
 from dirplot.colors import assign_colors
-from dirplot.render import _label_color, build_metadata, create_treemap
+from dirplot.render_png import _label_color, build_metadata, create_treemap
 from dirplot.scanner import build_tree
 
 

@@ -14,7 +14,7 @@ try:
 except ImportError:
     Observer = None  # type: ignore[assignment]
 
-from dirplot.render import _draw_highlights, create_treemap
+from dirplot.render_png import _draw_highlights, create_treemap
 from dirplot.scanner import apply_log_sizes, build_tree_multi
 from dirplot.svg_render import create_treemap_svg
 
@@ -79,7 +79,7 @@ class TreemapEventHandler(FileSystemEventHandler):
 
     def _write_apng(self) -> None:
         """Write all accumulated frames as a single APNG (called once in flush())."""
-        from dirplot.render import write_apng
+        from dirplot.render_png import write_apng
 
         write_apng(self.output, self._frame_bytes, self._durations)
         print(f"Wrote {len(self._frame_bytes)}-frame APNG → {self.output}", file=sys.stderr)

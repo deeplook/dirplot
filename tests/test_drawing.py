@@ -10,7 +10,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 from dirplot.colors import assign_colors
 from dirplot.display import display_inline, display_window
-from dirplot.render import draw_node
+from dirplot.render_png import draw_node
 from dirplot.scanner import Node
 from tests.test_display import _no_tty
 

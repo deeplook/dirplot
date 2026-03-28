@@ -146,7 +146,7 @@ def _render_replay_frame_worker(args: tuple[Any, ...]) -> tuple[int, bytes, Rect
     from pathlib import Path
 
     from dirplot.git_scanner import build_node_tree
-    from dirplot.render import create_treemap
+    from dirplot.render_png import create_treemap
     from dirplot.scanner import apply_log_sizes
 
     root = Path(root_str)

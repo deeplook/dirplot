@@ -108,7 +108,7 @@ def git_apply_diff(
     files are fetched in a single ``git cat-file --batch-check`` call.
 
     Returns a highlights dict ``{abs_path: event_type}`` suitable for passing
-    to :func:`~dirplot.render.create_treemap`.
+    to :func:`~dirplot.render_png.create_treemap`.
     """
     result = subprocess.run(
         ["git", "-C", str(repo), "diff-tree", "-r", "--no-commit-id", prev_commit, curr_commit],
@@ -272,7 +272,7 @@ def _render_frame_worker(args: tuple[Any, ...]) -> tuple[int, bytes, RectMap]:
     from datetime import datetime
     from pathlib import Path
 
-    from dirplot.render import create_treemap
+    from dirplot.render_png import create_treemap
     from dirplot.scanner import apply_log_sizes
 
     repo = Path(repo_str)

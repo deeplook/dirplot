@@ -22,7 +22,7 @@ from dirplot.github import (
 )
 from dirplot.k8s import build_tree_pod, is_pod_path, parse_pod_path
 from dirplot.pathlist import parse_pathlist
-from dirplot.render import create_treemap
+from dirplot.render_png import create_treemap
 from dirplot.s3 import build_tree_s3, is_s3_path, make_s3_client, parse_s3_path
 from dirplot.scanner import (
     Node,
@@ -310,7 +310,7 @@ def git_cmd(
     from datetime import datetime
 
     from dirplot.git_scanner import build_node_tree, git_apply_diff, git_initial_files, git_log
-    from dirplot.render import _draw_highlights
+    from dirplot.render_png import _draw_highlights
 
     _tmpdir: tempfile.TemporaryDirectory[str] | None = None
     _gh_owner: str | None = None
@@ -553,7 +553,7 @@ def git_cmd(
             frame_durations.append(commit_durations[orig_i])
 
         # ── Phase 4: write APNG ───────────────────────────────────────────────
-        from dirplot.render import write_apng
+        from dirplot.render_png import write_apng
 
         write_apng(output, frame_bytes, frame_durations)
         typer.echo(f"Wrote {len(frame_bytes)}-frame APNG → {output}", err=True)
@@ -660,7 +660,7 @@ def replay_cmd(
     import os
     from concurrent.futures import ProcessPoolExecutor, as_completed
 
-    from dirplot.render import write_apng
+    from dirplot.render_png import write_apng
     from dirplot.replay_scanner import (
         _render_replay_frame_worker,
         apply_events,
@@ -812,7 +812,7 @@ def replay_cmd(
             prev_bytes, prev_rect = raw[snapshots[j - 1][0]]
             from PIL import Image, ImageDraw
 
-            from dirplot.render import _draw_highlights
+            from dirplot.render_png import _draw_highlights
 
             prev_img = Image.open(io.BytesIO(prev_bytes)).convert("RGB")
             _draw_highlights(ImageDraw.Draw(prev_img), prev_rect, deletions)
