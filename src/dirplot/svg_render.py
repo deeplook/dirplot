@@ -8,7 +8,7 @@ import drawsvg
 import squarify
 
 from dirplot.colors import RGBAColor, assign_colors
-from dirplot.render import _human_bytes, build_metadata
+from dirplot.render_png import _human_bytes, build_metadata
 from dirplot.scanner import Node, collect_extensions, count_nodes, max_depth
 
 _CHAR_ASPECT = 0.6  # approximate width/height ratio for monospace font

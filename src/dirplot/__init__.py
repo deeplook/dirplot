@@ -1,7 +1,7 @@
 from importlib.metadata import version
 
 from dirplot.display import display_inline, display_window
-from dirplot.render import create_treemap
+from dirplot.render_png import create_treemap
 from dirplot.scanner import apply_log_sizes, build_tree
 from dirplot.svg_render import create_treemap_svg
 
