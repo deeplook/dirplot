@@ -61,6 +61,24 @@ def parse_github_path(s: str) -> tuple[str, str, str | None, str]:
     return owner, repo, ref, subpath
 
 
+def _gh_cli_token() -> str | None:
+    """Return the token from the gh CLI if installed and authenticated, else None."""
+    import subprocess
+
+    try:
+        result = subprocess.run(
+            ["gh", "auth", "token"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        if result.returncode == 0:
+            return result.stdout.strip() or None
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        pass
+    return None
+
+
 def _api_get(url: str, token: str | None) -> Any:
     req = urllib.request.Request(url)
     req.add_header("Accept", "application/vnd.github+json")
@@ -74,7 +92,7 @@ def _api_get(url: str, token: str | None) -> Any:
         if exc.code == 401:
             raise PermissionError(
                 "GitHub authentication failed — token invalid or expired. "
-                "Set GITHUB_TOKEN or use --github-token."
+                "Set GITHUB_TOKEN, use --github-token, or run 'gh auth login'."
             ) from exc
         if exc.code == 403:
             # Could be rate-limit (unauthenticated: 60 req/h) or repo permissions.
@@ -82,17 +100,19 @@ def _api_get(url: str, token: str | None) -> Any:
             if "rate limit" in body.lower():
                 raise PermissionError(
                     "GitHub API rate limit exceeded (60 req/h without a token). "
-                    "Set GITHUB_TOKEN or use --github-token to raise the limit to 5,000 req/h."
+                    "Set GITHUB_TOKEN, use --github-token, or run 'gh auth login' "
+                    "to raise the limit to 5,000 req/h."
                 ) from exc
             raise PermissionError(
                 "GitHub access denied — the repository may be private. "
-                "Set GITHUB_TOKEN or use --github-token."
+                "Set GITHUB_TOKEN, use --github-token, or run 'gh auth login'."
             ) from exc
         if exc.code == 404:
             raise FileNotFoundError(
                 f"GitHub repository or branch not found: {url}\n"
                 "Check the owner/repo spelling and branch name. "
-                "Private repositories require GITHUB_TOKEN or --github-token."
+                "Private repositories require GITHUB_TOKEN, --github-token, "
+                "or 'gh auth login'."
             ) from exc
         raise
 
@@ -157,7 +177,7 @@ def build_tree_github(
         depth: Maximum recursion depth. ``None`` means unlimited.
         subpath: Optional subdirectory within the repo to use as the tree root.
     """
-    token = token or os.environ.get("GITHUB_TOKEN")
+    token = token or os.environ.get("GITHUB_TOKEN") or _gh_cli_token()
     resolved = ref or _default_branch(owner, repo, token)
 
     data = _api_get(

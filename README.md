@@ -369,18 +369,32 @@ dirplot map pod://my-pod@staging:/app
 
 Public repositories work without a token but are subject to GitHub's unauthenticated rate limit of **60 requests/hour**. A personal access token raises this to **5,000 requests/hour** and is required for private repositories.
 
-Pass a token via the `--github-token` flag or the `GITHUB_TOKEN` environment variable:
+**Option 1 — gh CLI (easiest):** If you have the [GitHub CLI](https://cli.github.com/) installed, just authenticate once and dirplot picks up your credentials automatically:
 
 ```bash
-# via flag
-dirplot map github://my-org/private-repo --github-token ghp_…
-
-# via environment variable (also picked up automatically by the CLI)
-export GITHUB_TOKEN=ghp_…
+gh auth login
 dirplot map github://my-org/private-repo
+dirplot git github://my-org/private-repo -o history.mp4 --animate
 ```
 
-To create a token: GitHub → Settings → Developer settings → Personal access tokens → Generate new token (see [GitHub's guide](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens)). For read-only treemap access the `public_repo` scope (or no scope for public repos) is sufficient; add `repo` for private repositories.
+**Option 2 — environment variable:**
+
+```bash
+export GITHUB_TOKEN=ghp_…
+dirplot map github://my-org/private-repo
+dirplot git github://my-org/private-repo -o history.mp4 --animate
+```
+
+**Option 3 — flag:**
+
+```bash
+dirplot map github://my-org/private-repo --github-token ghp_…
+dirplot git github://my-org/private-repo -o history.mp4 --animate --github-token ghp_…
+```
+
+Token resolution order: `--github-token` flag → `$GITHUB_TOKEN` → `gh auth token`.
+
+To create a personal access token: GitHub → Settings → Developer settings → Personal access tokens → Generate new token (see [GitHub's guide](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens)). Add the `repo` scope for private repositories (`public_repo` or no scope is enough for public repos).
 
 ## Python API
 

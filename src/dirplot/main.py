@@ -17,6 +17,7 @@ from dirplot.archives import PasswordRequired, build_tree_archive, is_archive_pa
 from dirplot.display import display_inline, display_window
 from dirplot.docker import build_tree_docker, is_docker_path, parse_docker_path
 from dirplot.github import (
+    _gh_cli_token,
     build_tree_github,
     count_commits_github,
     is_github_path,
@@ -398,7 +399,7 @@ def git_cmd(
     if is_github_path(repo_arg):
         gh_owner, gh_repo_name, gh_ref, _ = parse_github_path(repo_arg)
         _gh_owner, _gh_repo_name, _gh_ref = gh_owner, gh_repo_name, gh_ref
-        token = github_token or os.environ.get("GITHUB_TOKEN")
+        token = github_token or _gh_cli_token()
         _gh_token = token
         if token:
             clone_url = f"https://x-access-token:{token}@github.com/{gh_owner}/{gh_repo_name}.git"

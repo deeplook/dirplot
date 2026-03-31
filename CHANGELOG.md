@@ -11,6 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Automatic `gh` CLI credential fallback** — if `--github-token` and `GITHUB_TOKEN`
+  are both absent, dirplot silently runs `gh auth token`. Users authenticated with the
+  [GitHub CLI](https://cli.github.com/) (`gh auth login`) can access private repositories
+  with no extra configuration. Token resolution order: `--github-token` →
+  `$GITHUB_TOKEN` → `gh auth token`.
 - **`--last PERIOD`** for `dirplot git` — filter commits by a relative time period instead
   of (or in addition to) `--max-commits`. Accepts a number followed by a unit:
   `m` (minutes), `h` (hours), `d` (days), `w` (weeks), `mo` (months = 30 days).
