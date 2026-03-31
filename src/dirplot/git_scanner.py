@@ -2,6 +2,7 @@
 
 import contextlib
 import subprocess
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -12,11 +13,14 @@ def git_log(
     repo: Path,
     revision_range: str | None = None,
     max_count: int | None = None,
+    last: datetime | None = None,
 ) -> list[tuple[str, int, str]]:
     """Return commits as (sha, unix_timestamp, subject), oldest-first."""
     cmd = ["git", "-C", str(repo), "log", "--format=%H %at %s", "--reverse"]
     if max_count is not None:
         cmd += [f"-{max_count}"]
+    if last is not None:
+        cmd += [f"--after={last.strftime('%Y-%m-%dT%H:%M:%SZ')}"]
     if revision_range:
         cmd.append(revision_range)
     result = subprocess.run(cmd, capture_output=True, text=True, check=True)
