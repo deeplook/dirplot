@@ -1,10 +1,12 @@
 """CLI entry point."""
 
+import re
 import signal
 import sys
 import time
 import webbrowser
 import xml.etree.ElementTree as ET
+from datetime import datetime as _datetime
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -238,6 +240,29 @@ def watch_cmd(
             observer.join()
 
 
+_LAST_RE = re.compile(r"^(\d+)(mo|m|h|d|w)$")
+
+
+def parse_last_period(value: str) -> _datetime:
+    """Parse a human period string into an absolute UTC datetime.
+
+    Units: m=minutes, h=hours, d=days, w=weeks, mo=months (30d each).
+    Examples: '10d', '24h', '2w', '1mo', '30m'
+    """
+    from datetime import datetime, timedelta, timezone
+
+    match = _LAST_RE.match(value.strip().lower())
+    if not match:
+        raise ValueError(
+            f"Invalid --last value {value!r}. "
+            "Expected a number + unit: h, d, w, mo  (e.g. 24h, 10d, 2w, 1mo)."
+        )
+    amount = int(match.group(1))
+    unit = match.group(2)
+    seconds = {"m": 60, "h": 3600, "d": 86400, "w": 7 * 86400, "mo": 30 * 86400}[unit]
+    return datetime.now(tz=timezone.utc) - timedelta(seconds=amount * seconds)
+
+
 _GIT_EPILOG = (
     "[bold]Examples[/bold]\n\n"
     "  dirplot git . -o history.apng --animate"
@@ -250,6 +275,8 @@ _GIT_EPILOG = (
     "  [dim]# specific local branch[/dim]\n\n"
     "  dirplot git . -o history.mp4 --animate --range v1.0..HEAD"
     "  [dim]# explicit revision range[/dim]\n\n"
+    "  dirplot git . -o history.mp4 --animate --last 30d"
+    "  [dim]# last 30 days of commits[/dim]\n\n"
     "  dirplot git github://owner/repo -o history.mp4 --animate --max-commits 50"
     "  [dim]# GitHub repo[/dim]"
 )
@@ -277,6 +304,13 @@ def git_cmd(
     ),
     max_commits: int | None = typer.Option(
         None, "--max-commits", "-n", help="Maximum number of commits to process"
+    ),
+    last: str | None = typer.Option(
+        None,
+        "--last",
+        help="Show commits within a time period (e.g. 10d, 24h, 2w, 1mo). "
+        "May be combined with --max-commits.",
+        metavar="PERIOD",
     ),
     exclude: list[str] = typer.Option(
         [], "--exclude", "-e", help="Top-level paths to exclude (repeatable)"
@@ -347,6 +381,14 @@ def git_cmd(
     from dirplot.git_scanner import build_node_tree, git_apply_diff, git_initial_files, git_log
     from dirplot.render_png import _draw_highlights
 
+    last_dt: datetime | None = None
+    if last is not None:
+        try:
+            last_dt = parse_last_period(last)
+        except ValueError as exc:
+            typer.echo(f"Error: {exc}", err=True)
+            raise typer.Exit(1) from exc
+
     _tmpdir: tempfile.TemporaryDirectory[str] | None = None
     _gh_owner: str | None = None
     _gh_repo_name: str | None = None
@@ -370,7 +412,12 @@ def git_cmd(
         # sizes locally (fast). Without blobs, git fetches each size lazily over
         # the network, which is slower than just cloning the objects upfront.
         clone_cmd = ["git", "clone", "--quiet"]
-        if max_commits is not None:
+        if last_dt is not None:
+            last_iso = last_dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+            clone_cmd += [f"--shallow-since={last_iso}"]
+            if max_commits is not None:
+                clone_cmd += ["--depth", str(max_commits)]
+        elif max_commits is not None:
             clone_cmd += ["--depth", str(max_commits)]
         if gh_ref:
             clone_cmd += ["--branch", gh_ref]
@@ -411,14 +458,29 @@ def git_cmd(
         height_px = term_h - 3 * row_px
 
     typer.echo(f"Reading git log from {repo} ...", err=True)
-    _shallow_hint = (
-        "\nHint: --max-commits limits the shallow clone depth. "
-        "If --range references a commit beyond that depth, increase --max-commits or drop it."
-        if _tmpdir is not None and revision_range and max_commits is not None
-        else ""
-    )
+    _shallow_hint = ""
+    if _tmpdir is not None and revision_range:
+        if last_dt is not None and max_commits is not None:
+            _shallow_hint = (
+                "\nHint: --last controls the shallow clone cutoff date "
+                "and --max-commits caps the commit count. "
+                "If --range references a commit beyond that window, "
+                "use a wider --last period or increase --max-commits."
+            )
+        elif last_dt is not None:
+            _shallow_hint = (
+                "\nHint: --last controls the shallow clone cutoff date. "
+                "If --range references a commit beyond that window, "
+                "use a wider --last period."
+            )
+        elif max_commits is not None:
+            _shallow_hint = (
+                "\nHint: --max-commits limits the shallow clone depth. "
+                "If --range references a commit beyond that depth, "
+                "increase --max-commits or drop it."
+            )
     try:
-        commits = git_log(repo, revision_range, max_commits)
+        commits = git_log(repo, revision_range, max_commits, last_dt)
     except subprocess.CalledProcessError as exc:
         typer.echo(f"Error reading git log: {exc.stderr.strip()}{_shallow_hint}", err=True)
         raise typer.Exit(1) from exc
@@ -446,9 +508,15 @@ def git_cmd(
             pass
 
     if total_in_repo is not None and total_in_repo > len(commits):
+        _filters = []
+        if last_dt is not None:
+            _filters.append(f"--last {last}")
+        if max_commits is not None:
+            _filters.append(f"--max-commits {max_commits}")
+        _filter_str = " and ".join(_filters) if _filters else "--max-commits"
         typer.echo(
             f"Replaying {len(commits)} of {total_in_repo} commit(s) "
-            f"(increase --max-commits to process more) ...",
+            f"(filtered by {_filter_str}) ...",
             err=True,
         )
     else:

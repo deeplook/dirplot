@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-xx-xx
+
+### Added
+
+- **`--last PERIOD`** for `dirplot git` — filter commits by a relative time period instead
+  of (or in addition to) `--max-commits`. Accepts a number followed by a unit:
+  `m` (minutes), `h` (hours), `d` (days), `w` (weeks), `mo` (months = 30 days).
+  For GitHub URLs, uses `git clone --shallow-since` for an efficient date-bounded shallow
+  clone. `--last` and `--max-commits` may be combined (date filter + count cap both apply).
+  ```bash
+  dirplot git . -o history.mp4 --animate --last 30d
+  dirplot git . -o history.mp4 --animate --last 24h
+  dirplot git github://owner/repo -o history.mp4 --animate --last 2w --max-commits 10
+  ```
+
 ## [0.4.0] - 2026-03-28
 
 ### Added

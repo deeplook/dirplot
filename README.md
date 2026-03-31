@@ -28,7 +28,7 @@
 - **Pipe `tree` or `find` output directly**: `tree src/ | dirplot map` and `find . -name "*.py" | dirplot map` are both supported. The format is auto-detected (`tree -s`, `tree -f`, and plain `find` output all work). Use `--paths-from FILE` to read from a file instead of stdin.
 - **Live watch mode** (`dirplot watch`) — monitors one or more directories and regenerates the treemap automatically. Rapid bursts of events (e.g. `git checkout`) are debounced into a single render after a configurable quiet period (`--debounce`, default 0.5 s). With `--animate`, each render is captured as a frame and the complete APNG or **MP4** is written on Ctrl-C exit; changed tiles receive colour-coded highlight borders. All events can be logged to a JSONL file with `--event-log`.
 - **Event log replay** (`dirplot replay`) — replays a JSONL filesystem event log (produced by `dirplot watch --event-log`) as an animated treemap APNG or **MP4**. Events are grouped into time buckets (one frame per bucket, default 60 s); only files referenced in the log appear in the treemap. Frame durations can be uniform or proportional to real elapsed time between buckets (`--total-duration`). Frames are rendered in parallel.
-- **Git history replay** (`dirplot git`) — renders a git repository's commit history as an animated treemap APNG or **MP4**. Each commit becomes one frame, with colour-coded change highlights. Frame durations can be uniform (`--frame-duration`) or proportional to real elapsed time between commits (`--total-duration`). Frames are rendered in parallel across CPU cores for speed. Accepts a local path (with optional `@ref` suffix), or a **GitHub URL**.
+- **Git history replay** (`dirplot git`) — renders a git repository's commit history as an animated treemap APNG or **MP4**. Each commit becomes one frame, with colour-coded change highlights. Frame durations can be uniform (`--frame-duration`) or proportional to real elapsed time between commits (`--total-duration`). Filter by count (`--max-commits`) or time period (`--last 30d`, `--last 24h`, `--last 1mo`). Frames are rendered in parallel across CPU cores for speed. Accepts a local path (with optional `@ref` suffix), or a **GitHub URL**.
 - **MP4 output** (`--output file.mp4`) — all three animation commands (`watch --animate`, `git --animate`, `replay`) write MP4 video when the output path ends in `.mp4` or `.mov`. Quality is controlled via `--crf` (Constant Rate Factor: 0 = lossless, 51 = worst, default 23) and `--codec` (`libx264` H.264 or `libx265` H.265). MP4 files are typically 10–100× smaller than equivalent APNGs. Requires `ffmpeg` on PATH.
 - Works on macOS, Linux, and Windows; WSL2 fully supported.
 - Scan remote hosts over SSH (`pip install "dirplot[ssh]"`), AWS S3 buckets (`pip install "dirplot[s3]"`), any public/private GitHub repository (including specific branch, tag, commit SHA, or subdirectory), **running Docker containers**, or **Kubernetes pods** — all without extra dependencies beyond the respective CLI/SDK. See [EXAMPLES.md](docs/EXAMPLES.md).
@@ -200,6 +200,12 @@ dirplot git https://github.com/owner/repo --output history.apng --animate --max-
 
 # Same for a specific branch
 dirplot git github://owner/repo@main --output history.apng --animate --max-commits 50
+
+# Last 30 days of commits
+dirplot git . --output history.mp4 --animate --last 30d
+
+# Last 24 hours, capped at 10 commits
+dirplot git github://owner/repo --output history.mp4 --animate --last 24h --max-commits 10
 ```
 
 ### Options
@@ -272,14 +278,16 @@ These options are specific to the `git` subcommand.
 The positional `repo` argument accepts a local path (default: `.`), a local path with an
 optional `@ref` suffix (e.g. `.@my-branch`, `.@v1.0`, `.@abc1234`), or a GitHub URL:
 `github://owner/repo[@branch]` or `https://github.com/owner/repo[/tree/branch]`.
-For GitHub URLs dirplot clones into a temporary directory (shallow when `--max-commits`
-is set, full otherwise) and removes it on exit.
+For GitHub URLs dirplot clones into a temporary directory and removes it on exit.
+The clone is shallow when `--max-commits` is set (`--depth N`) or when `--last` is set
+(`--shallow-since=<date>`), and full otherwise.
 
 | Flag | Default | Description |
 |---|---|---|
 | `--output` / `-o` | required | Output PNG file |
 | `--range` / `-r` | all commits | Git revision range (e.g. `main~50..main`, `v1.0..HEAD`). When using a GitHub URL, `--range` works without `--max-commits`; if both are set, `--max-commits` controls the shallow clone depth and must be large enough to reach the range's base commit. |
 | `--max-commits` / `-n` | — | Maximum number of commits to process |
+| `--last` | — | Show only commits within a relative time period: `30d` (days), `24h` (hours), `2w` (weeks), `1mo` (months), `30m` (minutes). For GitHub URLs uses `--shallow-since` for an efficient date-bounded clone. May be combined with `--max-commits`. |
 | `--animate` / `--no-animate` | off | Build an animated APNG or MP4; without this flag each commit overwrites the output PNG |
 | `--frame-duration` | `1000` | Frame display time in ms (when `--total-duration` is not set) |
 | `--total-duration` | — | Target total animation length in seconds; frame durations scale proportionally to real time gaps between commits |
