@@ -143,17 +143,17 @@ def git_apply_diff(
             fp = path_list[0]
             if fp.split("/")[0] not in exclude:
                 to_add[fp] = new_hash
-                highlights[str(repo / fp)] = "created"
+                highlights[(repo / fp).as_posix()] = "created"
         elif status == "M" and path_list:
             fp = path_list[0]
             if fp.split("/")[0] not in exclude:
                 to_add[fp] = new_hash
-                highlights[str(repo / fp)] = "modified"
+                highlights[(repo / fp).as_posix()] = "modified"
         elif status == "D" and path_list:
             fp = path_list[0]
             if fp.split("/")[0] not in exclude:
                 to_delete.append(fp)
-                highlights[str(repo / fp)] = "deleted"
+                highlights[(repo / fp).as_posix()] = "deleted"
         elif status.startswith("R") and len(path_list) >= 2:
             old_fp, new_fp = path_list[0], path_list[1]
             if old_fp.split("/")[0] not in exclude:
