@@ -52,6 +52,8 @@ dirplot git github://owner/repo -o h.mp4 --animate --last 7d    # GitHub, last w
 
 dirplot watch . --output treemap.png                             # live watch
 dirplot watch . --output treemap.mp4 --animate                   # record as MP4
+
+dirplot demo                                                     # run examples, save to ./demo/
 ```
 
 ## Documentation

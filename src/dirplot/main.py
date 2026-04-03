@@ -1103,6 +1103,133 @@ def read_meta(
         raise typer.Exit(1)
 
 
+@app.command(name="demo")
+def demo_cmd(
+    output: Path = typer.Option(
+        Path("demo"), "--output", "-o", help="Folder for generated output files"
+    ),
+    github_url: str = typer.Option(
+        "https://github.com/deeplook/dirplot",
+        "--github-url",
+        help="GitHub repository URL used for remote examples",
+    ),
+    interactive: bool = typer.Option(
+        False, "--interactive", "-i", help="Ask for confirmation before each command is run"
+    ),
+) -> None:
+    """Run a set of example commands to illustrate dirplot features."""
+    import re
+    import subprocess
+
+    output.mkdir(parents=True, exist_ok=True)
+
+    # Convert https://github.com/owner/repo → github://owner/repo
+    m = re.match(r"https://github\.com/([^/]+/[^/]+?)(?:\.git)?/?$", github_url)
+    gh_path = f"github://{m.group(1)}" if m else github_url
+
+    base_cmd = [sys.executable, "-m", "dirplot"]
+
+    examples: list[tuple[str, list[str]]] = [
+        (
+            "termsize — show current terminal dimensions",
+            ["termsize"],
+        ),
+        (
+            "map local directory (dark mode, PNG)",
+            [
+                "map",
+                ".",
+                "--no-show",
+                "--output",
+                str(output / "map-local.png"),
+                "--size",
+                "800x600",
+            ],
+        ),
+        (
+            "map github repo (dark mode, PNG)",
+            [
+                "map",
+                gh_path,
+                "--no-show",
+                "--output",
+                str(output / "map-github.png"),
+                "--size",
+                "800x600",
+            ],
+        ),
+        (
+            "map local directory (light mode, SVG)",
+            [
+                "map",
+                ".",
+                "--no-show",
+                "--output",
+                str(output / "map-local.svg"),
+                "--size",
+                "800x600",
+                "--light",
+            ],
+        ),
+        (
+            "git — last 5 commits of github repo (static PNG)",
+            [
+                "git",
+                gh_path,
+                "--output",
+                str(output / "git.png"),
+                "--size",
+                "800x600",
+                "--max-commits",
+                "5",
+            ],
+        ),
+        (
+            "git — last 10 commits of github repo (animated MP4)",
+            [
+                "git",
+                gh_path,
+                "--output",
+                str(output / "git.mp4"),
+                "--size",
+                "800x600",
+                "--max-commits",
+                "10",
+                "--animate",
+                "--total-duration",
+                "20",
+            ],
+        ),
+        (
+            "read-meta — metadata embedded in a generated PNG",
+            ["read-meta", str(output / "map-local.png")],
+        ),
+    ]
+
+    skipped = [
+        ("watch", "interactive; watches a directory for changes indefinitely"),
+        ("replay", "interactive; requires a JSONL event log produced by `watch --event-log`"),
+    ]
+
+    sep = "─" * 60
+    typer.echo(f"[demo] Saving outputs to: {output.resolve()}/")
+
+    for label, args in examples:
+        cmd_display = "dirplot " + " ".join(args)
+        typer.echo(f"\n{sep}\n[demo] {label}\n$ {cmd_display}\n{sep}")
+        if interactive and not typer.confirm("Run this command?", default=True):
+            typer.echo("[demo] Skipped.")
+            continue
+        result = subprocess.run(base_cmd + args)
+        if result.returncode != 0:
+            typer.echo(f"[demo] command exited with code {result.returncode}", err=True)
+
+    for cmd_name, reason in skipped:
+        typer.echo(f"\n[demo] Skipping '{cmd_name}': {reason}")
+
+    typer.echo(f"\n[demo] Done — outputs saved to: {output.resolve()}/")
+
+
 @app.command(name="map", epilog=_EPILOG)
 def main(
     roots: list[str] = typer.Argument(
