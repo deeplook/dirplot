@@ -14,8 +14,8 @@
 ## Features
 
 - Squarified treemap layout; file area proportional to size; ~500 extensions mapped to [GitHub Linguist](https://github.com/github/linguist) colours.
-- PNG and interactive SVG output; renders at terminal pixel size or a custom `WIDTHxHEIGHT`.
-- **Animate git history** (`dirplot git`), **watch live filesystems** (`dirplot watch`), and **replay event logs** (`dirplot replay`) — all output APNG or MP4.
+- PNG, animated PNG (APNG), MP4, and MOV output for single frames and animations; interactive SVG for static maps; renders at terminal pixel size or a custom `WIDTHxHEIGHT`.
+- **Animate git history** (`dirplot git`), **watch live filesystems** (`dirplot watch`), and **replay event logs** (`dirplot replay`) — output APNG, MP4, or MOV.
 - Scan **SSH hosts**, **AWS S3**, **GitHub repos** (public and private), **Docker containers**, and **Kubernetes pods** — no extra deps beyond the respective CLI.
 - Read **archives** directly (zip, tar, 7z, rar, jar, whl, …) without unpacking.
 - Works on macOS, Linux, and Windows (WSL2 fully supported).
