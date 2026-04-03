@@ -282,6 +282,7 @@ def _draw_node_svg(
     font_size: int = 12,
     cushion_grad: drawsvg.LinearGradient | None = None,
     root_label: str | None = None,
+    dark: bool = True,
 ) -> None:
     """Recursively draw *node* and its children into *d*."""
     if w < 2 or h < 2:
@@ -357,12 +358,14 @@ def _draw_node_svg(
                 d.append(t)
         return
 
-    # Directory: 1-px white outer border + 1-px black inner border
-    d.append(drawsvg.Rectangle(x, y, w, h, fill="none", stroke="white", stroke_width=1))
+    # Directory: 1-px outer border + 1-px inner border (colours swap in light mode)
+    outer_stroke = "white" if dark else "black"
+    inner_stroke = "black" if dark else "white"
+    d.append(drawsvg.Rectangle(x, y, w, h, fill="none", stroke=outer_stroke, stroke_width=1))
     if w >= 4 and h >= 4:
         d.append(
             drawsvg.Rectangle(
-                x + 1, y + 1, w - 2, h - 2, fill="none", stroke="black", stroke_width=1
+                x + 1, y + 1, w - 2, h - 2, fill="none", stroke=inner_stroke, stroke_width=1
             )
         )
 
@@ -371,12 +374,14 @@ def _draw_node_svg(
         # Header background — also acts as the hover + tooltip target for the dir
         n_children = len(node.children)
         display_size = node.original_size if node.original_size > 0 else node.size
+        hdr_bg = "#1c1c2e" if dark else "#e8e8f0"
+        hdr_text = "#e0e0e0" if dark else "#1c1c2e"
         hdr = drawsvg.Rectangle(
             x + 2,
             y + 2,
             w - 4,
             header_h,
-            fill="#1c1c2e",
+            fill=hdr_bg,
             class_="dir-tile",
             data_name=html.escape(node.name),
             data_size=str(display_size),
@@ -400,7 +405,7 @@ def _draw_node_svg(
                 y + 2 + header_h / 2,
                 text_anchor="middle",
                 dominant_baseline="middle",
-                fill="#e0e0e0",
+                fill=hdr_text,
                 font_family=_FONT_FAMILY,
                 font_weight="bold",
                 clip_path=hclip,
@@ -424,15 +429,16 @@ def _draw_node_svg(
     normed = squarify.normalize_sizes(sizes, iw, ih)
     rects = squarify.squarify(normed, ix, iy, iw, ih)
 
-    # Black background provides 1-px separator between adjacent children
-    d.append(drawsvg.Rectangle(ix, iy, iw, ih, fill="black"))
+    # Background provides 1-px separator between adjacent children
+    sep_fill = "black" if dark else "white"
+    d.append(drawsvg.Rectangle(ix, iy, iw, ih, fill=sep_fill))
 
     for rect, child in zip(rects, positive_children, strict=False):
         rx = round(rect["x"])
         ry = round(rect["y"])
         rw = round(rect["x"] + rect["dx"]) - rx - 1
         rh = round(rect["y"] + rect["dy"]) - ry - 1
-        _draw_node_svg(d, child, rx, ry, rw, rh, color_map, font_size, cushion_grad)
+        _draw_node_svg(d, child, rx, ry, rw, rh, color_map, font_size, cushion_grad, dark=dark)
 
 
 # ---------------------------------------------------------------------------
@@ -449,6 +455,7 @@ def _draw_legend_svg(
     font_size: int,
     corner: str,
     max_rows: int = 20,
+    dark: bool = True,
 ) -> None:
     margin = 4
     char_w = font_size * _CHAR_ASPECT
@@ -475,8 +482,15 @@ def _draw_legend_svg(
     bx = (width_px - box_w - margin) if "right" in corner else margin
     by = (height_px - box_h - margin) if "lower" in corner else margin
 
-    d.append(drawsvg.Rectangle(bx, by, box_w, box_h, fill="#141424"))
-    d.append(drawsvg.Rectangle(bx, by, box_w, box_h, fill="none", stroke="#505050", stroke_width=1))
+    leg_bg = "#141424" if dark else "#f0f0f0"
+    leg_border = "#505050" if dark else "#a0a0a0"
+    leg_ext_text = "#dcdcdc" if dark else "#242424"
+    leg_count_text = "#a0a0a0" if dark else "#606060"
+    leg_swatch_outline = "white" if dark else "black"
+    d.append(drawsvg.Rectangle(bx, by, box_w, box_h, fill=leg_bg))
+    d.append(
+        drawsvg.Rectangle(bx, by, box_w, box_h, fill="none", stroke=leg_border, stroke_width=1)
+    )
 
     for ri, ext in enumerate(top):
         rgba = color_map.get(ext, (0.5, 0.5, 0.5, 1.0))
@@ -486,7 +500,7 @@ def _draw_legend_svg(
         sy = row_mid - SWATCH_PX / 2
         d.append(
             drawsvg.Rectangle(
-                ex, sy, SWATCH_PX, SWATCH_PX, fill=fill, stroke="white", stroke_width=1
+                ex, sy, SWATCH_PX, SWATCH_PX, fill=fill, stroke=leg_swatch_outline, stroke_width=1
             )
         )
         d.append(
@@ -497,7 +511,7 @@ def _draw_legend_svg(
                 row_mid,
                 text_anchor="start",
                 dominant_baseline="middle",
-                fill="#dcdcdc",
+                fill=leg_ext_text,
                 font_family=_FONT_FAMILY,
             )
         )
@@ -509,7 +523,7 @@ def _draw_legend_svg(
                 row_mid,
                 text_anchor="end",
                 dominant_baseline="middle",
-                fill="#a0a0a0",
+                fill=leg_count_text,
                 font_family=_FONT_FAMILY,
             )
         )
@@ -557,6 +571,7 @@ def create_treemap_svg(
     legend: int | None = None,
     cushion: bool = True,
     tree_depth: int | None = None,
+    dark: bool = True,
 ) -> io.BytesIO:
     """Render a nested squarified treemap and return it as SVG in a BytesIO buffer.
 
@@ -609,7 +624,8 @@ def create_treemap_svg(
     d.append_css(_HOVER_CSS)
 
     # 2. Background
-    d.append(drawsvg.Rectangle(0, 0, width_px, height_px, fill="#1a1a2e"))
+    canvas_bg = "#1a1a2e" if dark else "#ffffff"
+    d.append(drawsvg.Rectangle(0, 0, width_px, height_px, fill=canvas_bg))
 
     # 3. Optional cushion gradient (defined once, reused by all tiles)
     cushion_grad: drawsvg.LinearGradient | None = None
@@ -636,6 +652,7 @@ def create_treemap_svg(
         font_size,
         cushion_grad,
         root_label=root_label,
+        dark=dark,
     )
 
     # 5. Optional legend
@@ -643,7 +660,7 @@ def create_treemap_svg(
         overlay_font = max(6, font_size - 2)
         ext_counts = _collect_ext_counts(root_node)
         _draw_legend_svg(
-            d, ext_counts, color_map, width_px, height_px, overlay_font, "lower-right", legend
+            d, ext_counts, color_map, width_px, height_px, overlay_font, "lower-right", legend, dark
         )
 
     # 6. Floating tooltip element — must be last so it renders above all tiles

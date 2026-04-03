@@ -158,6 +158,7 @@ def watch_cmd(
     cushion: bool = typer.Option(
         True, "--cushion/--no-cushion", help="Apply van Wijk cushion shading"
     ),
+    dark: bool = typer.Option(True, "--dark/--light", help="Dark background (default) or light"),
     animate: bool = typer.Option(
         False,
         "--animate/--no-animate",
@@ -253,6 +254,7 @@ def watch_cmd(
         depth=depth,
         crf=crf,
         codec=codec,
+        dark=dark,
     )
 
     observer = Observer()
@@ -363,6 +365,7 @@ def git_cmd(
     cushion: bool = typer.Option(
         True, "--cushion/--no-cushion", help="Apply van Wijk cushion shading"
     ),
+    dark: bool = typer.Option(True, "--dark/--light", help="Dark background (default) or light"),
     animate: bool = typer.Option(
         False,
         "--animate/--no-animate",
@@ -655,6 +658,7 @@ def git_cmd(
                 font_size,
                 colormap,
                 cushion,
+                dark,
             )
             for orig_i, sha, ts, files_copy, cur_hl, _del in snapshots
         ]
@@ -752,6 +756,7 @@ def git_cmd(
                     f"sha:{sha[:8]}  {datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M')}"
                 ),
                 progress=cumulative_ms / total_anim_ms,
+                dark=dark,
             )
             output.write_bytes(png_buf.read())
             typer.echo(f"  Updated {output}", err=True)
@@ -800,6 +805,7 @@ def replay_cmd(
         None, "--size", help="Output size as WIDTHxHEIGHT", metavar="WIDTHxHEIGHT"
     ),
     cushion: bool = typer.Option(True, "--cushion/--no-cushion", help="Apply cushion shading"),
+    dark: bool = typer.Option(True, "--dark/--light", help="Dark background (default) or light"),
     log: bool = typer.Option(False, "--log/--no-log", help="Use log of file sizes for layout"),
     depth: int | None = typer.Option(None, "--depth", help="Maximum directory depth"),
     workers: int | None = typer.Option(
@@ -949,6 +955,7 @@ def replay_cmd(
             font_size,
             colormap,
             cushion,
+            dark,
         )
         for orig_i, ts, files_copy, cur_hl, _del in snapshots
     ]
@@ -1205,6 +1212,7 @@ def main(
         "--cushion/--no-cushion",
         help="Apply van Wijk cushion shading: gives each tile a raised 3-D look.",
     ),
+    dark: bool = typer.Option(True, "--dark/--light", help="Dark background (default) or light"),
     log: bool = typer.Option(
         False,
         "--log/--no-log",
@@ -1523,11 +1531,19 @@ def main(
     t_render_start = time.monotonic()
     if use_svg:
         buf = create_treemap_svg(
-            root_node, width_px, height_px, font_size, colormap, legend, cushion, tree_depth
+            root_node, width_px, height_px, font_size, colormap, legend, cushion, tree_depth, dark
         )
     else:
         buf = create_treemap(
-            root_node, width_px, height_px, font_size, colormap, legend, cushion, tree_depth
+            root_node,
+            width_px,
+            height_px,
+            font_size,
+            colormap,
+            legend,
+            cushion,
+            tree_depth,
+            dark=dark,
         )
     t_render = time.monotonic() - t_render_start
 
