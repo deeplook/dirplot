@@ -263,7 +263,7 @@ def draw_node(
 
     if not node.is_dir:
         if rect_map is not None:
-            rect_map[str(node.path)] = (x, y, w, h)
+            rect_map[node.path.as_posix()] = (x, y, w, h)
         rgba = color_map.get(node.extension, (0.5, 0.5, 0.5, 1.0))
         rgb = (int(rgba[0] * 255), int(rgba[1] * 255), int(rgba[2] * 255))
         draw.rectangle([x, y, x + w - 1, y + h - 1], fill=rgb)
