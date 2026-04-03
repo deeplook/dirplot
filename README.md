@@ -32,6 +32,8 @@ pip install dirplot
 
 Optional extras: `pip install "dirplot[ssh]"`, `"dirplot[s3]"`, `"dirplot[libarchive]"`.
 
+`dirplot watch` uses [watchdog](https://github.com/gorakhargosh/watchdog) for filesystem monitoring — installed automatically as a dependency.
+
 ## Quick start
 
 ```bash
