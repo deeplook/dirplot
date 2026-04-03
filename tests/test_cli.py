@@ -648,3 +648,32 @@ def test_replay_total_duration(tmp_path: Path) -> None:
     )
     assert result.exit_code == 0, result.output
     assert out.exists()
+
+
+def test_demo_help() -> None:
+    result = runner.invoke(app, ["demo", "--help"])
+    assert result.exit_code == 0
+    assert "--output" in result.output
+    assert "--github-url" in result.output
+
+
+def test_demo_runs(tmp_path: Path) -> None:
+    mock_result = MagicMock()
+    mock_result.returncode = 0
+
+    with patch("subprocess.run", return_value=mock_result) as mock_run:
+        result = runner.invoke(
+            app,
+            [
+                "demo",
+                "--output",
+                str(tmp_path / "demo-out"),
+                "--github-url",
+                "https://github.com/deeplook/dirplot",
+            ],
+        )
+
+    assert result.exit_code == 0, result.output
+    assert (tmp_path / "demo-out").is_dir()
+    assert mock_run.call_count == 7  # one call per non-skipped example
+    assert "Done" in result.output
