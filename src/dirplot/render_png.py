@@ -271,8 +271,8 @@ def draw_node(
             _apply_cushion(img, x, y, w, h)
         # 1-px border so adjacent same-colored tiles always have a visible boundary
         if w >= 3 and h >= 3:
-            dark = (max(0, rgb[0] - 60), max(0, rgb[1] - 60), max(0, rgb[2] - 60))
-            draw.rectangle([x, y, x + w - 1, y + h - 1], outline=dark)
+            border = (max(0, rgb[0] - 60), max(0, rgb[1] - 60), max(0, rgb[2] - 60))
+            draw.rectangle([x, y, x + w - 1, y + h - 1], outline=border)
         # Adaptive label: largest font that fits the tile without overflow
         if w > 20 and h > 10:
             # Try horizontal first
@@ -742,6 +742,58 @@ def write_apng(output: Path, frame_bytes: list[bytes], durations_ms: list[int]) 
                         seq += 1
 
         f.write(_apng_make_chunk(b"IEND", b""))
+
+
+def _frames_as_rgba(frame_bytes: list[bytes]) -> list[bytes]:
+    """Re-encode *frame_bytes* as RGBA PNGs (required before adding a transparent fade)."""
+    result = []
+    for fb in frame_bytes:
+        img = Image.open(io.BytesIO(fb)).convert("RGBA")
+        buf = io.BytesIO()
+        img.save(buf, format="PNG")
+        result.append(buf.getvalue())
+    return result
+
+
+def make_fade_out_frames(
+    last_frame: bytes,
+    n_frames: int = 4,
+    duration_ms: int = 1000,
+    target_color: tuple[int, int, int] | tuple[int, int, int, int] = (0, 0, 0),
+) -> tuple[list[bytes], list[int]]:
+    """Return *n_frames* PNG frames that fade *last_frame* toward *target_color*.
+
+    When *target_color* is a 4-tuple whose alpha component is 0 the frames are
+    RGBA PNGs that fade to fully transparent.  All other colours produce RGB
+    frames.  Call :func:`_frames_as_rgba` on the existing animation frames
+    before appending transparent fade frames so that every frame in the APNG
+    shares the same colour type.
+
+    Returns ``(frames, per_frame_durations_ms)`` where durations sum to
+    *duration_ms*.
+    """
+    fade_transparent = len(target_color) == 4 and target_color[3] == 0
+    src = Image.open(io.BytesIO(last_frame)).convert("RGBA")
+
+    frames: list[bytes] = []
+    for i in range(1, n_frames + 1):
+        ratio = i / n_frames  # 0.25 … 1.0
+        if fade_transparent:
+            faded = src.copy()
+            alpha_ch = faded.split()[3].point(lambda a, r=ratio: int(a * (1.0 - r)))
+            faded.putalpha(alpha_ch)
+        else:
+            overlay = Image.new("RGBA", src.size, (*target_color[:3], int(255 * ratio)))
+            faded = Image.alpha_composite(src, overlay).convert("RGB")
+        buf = io.BytesIO()
+        faded.save(buf, format="PNG")
+        frames.append(buf.getvalue())
+
+    frame_dur = max(1, duration_ms // n_frames)
+    durations = [frame_dur] * n_frames
+    # Absorb any rounding residual into the last frame.
+    durations[-1] = max(1, duration_ms - frame_dur * (n_frames - 1))
+    return frames, durations
 
 
 def write_mp4(

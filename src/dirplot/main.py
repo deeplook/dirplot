@@ -98,6 +98,32 @@ def _version_callback(value: bool) -> None:
         raise typer.Exit()
 
 
+def _resolve_fade_color(
+    color_str: str, dark: bool
+) -> tuple[int, int, int] | tuple[int, int, int, int]:
+    """Resolve a --fade-out-color string to an RGB or RGBA tuple.
+
+    ``"auto"`` returns black (dark mode) or white (light mode).
+    ``"transparent"`` returns ``(0, 0, 0, 0)``.
+    Any other string is parsed by PIL's ``ImageColor.getrgb()``.
+    """
+    if color_str == "auto":
+        return (0, 0, 0) if dark else (255, 255, 255)
+    if color_str.lower() == "transparent":
+        return (0, 0, 0, 0)
+    from PIL import ImageColor
+
+    try:
+        return ImageColor.getrgb(color_str)
+    except (ValueError, AttributeError):
+        typer.echo(
+            f"Error: invalid --fade-out-color {color_str!r}. "
+            "Use a colour name, hex code, or 'transparent'.",
+            err=True,
+        )
+        raise typer.Exit(1) from None
+
+
 @app.callback(invoke_without_command=True)
 def _app_callback(
     ctx: typer.Context,
@@ -199,6 +225,31 @@ def watch_cmd(
         help="MP4 video codec: libx264 (H.264, default) or libx265 (H.265, smaller files). "
         "Ignored for APNG output.",
     ),
+    fade_out: bool = typer.Option(
+        False,
+        "--fade-out/--no-fade-out",
+        help="Append a fade-out sequence at the end of the animation (--animate only)",
+    ),
+    fade_out_duration: float = typer.Option(
+        1.0,
+        "--fade-out-duration",
+        help="Total duration of the fade-out in seconds",
+        show_default=True,
+    ),
+    fade_out_frames: int | None = typer.Option(
+        None,
+        "--fade-out-frames",
+        help="Number of equidistant frames in the fade-out (default: 4 per second of duration)",
+    ),
+    fade_out_color: str = typer.Option(
+        "auto",
+        "--fade-out-color",
+        help=(
+            "Target colour for the fade-out: 'auto' (black in dark mode, white in light mode), "
+            "'transparent' (APNG only), a CSS colour name, or a hex code"
+        ),
+        metavar="COLOR",
+    ),
 ) -> None:
     """Watch one or more directories and regenerate the treemap on every file change.
 
@@ -255,6 +306,10 @@ def watch_cmd(
         crf=crf,
         codec=codec,
         dark=dark,
+        fade_out=fade_out,
+        fade_out_duration=fade_out_duration,
+        fade_out_frames=fade_out_frames,
+        fade_out_color=_resolve_fade_color(fade_out_color, dark) if fade_out else (0, 0, 0),
     )
 
     observer = Observer()
@@ -412,6 +467,31 @@ def git_cmd(
         "--github-token",
         envvar="GITHUB_TOKEN",
         help="GitHub personal access token for private repos",
+    ),
+    fade_out: bool = typer.Option(
+        False,
+        "--fade-out/--no-fade-out",
+        help="Append a fade-out sequence at the end of the animation (--animate only)",
+    ),
+    fade_out_duration: float = typer.Option(
+        1.0,
+        "--fade-out-duration",
+        help="Total duration of the fade-out in seconds",
+        show_default=True,
+    ),
+    fade_out_frames: int | None = typer.Option(
+        None,
+        "--fade-out-frames",
+        help="Number of equidistant frames in the fade-out (default: 4 per second of duration)",
+    ),
+    fade_out_color: str = typer.Option(
+        "auto",
+        "--fade-out-color",
+        help=(
+            "Target colour for the fade-out: 'auto' (black in dark mode, white in light mode), "
+            "'transparent' (APNG only), a CSS colour name, or a hex code"
+        ),
+        metavar="COLOR",
     ),
 ) -> None:
     """Replay git history commit-by-commit as an animated treemap."""
@@ -698,6 +778,27 @@ def git_cmd(
             frame_durations.append(commit_durations[orig_i])
 
         # ── Phase 4: write output ─────────────────────────────────────────────
+        if fade_out and frame_bytes:
+            from dirplot.render_png import _frames_as_rgba, make_fade_out_frames
+
+            fade_color = _resolve_fade_color(fade_out_color, dark)
+            fade_transparent = len(fade_color) == 4 and fade_color[3] == 0
+            if fade_transparent and output.suffix.lower() in {".mp4", ".mov"}:
+                fade_color = (0, 0, 0) if dark else (255, 255, 255)
+                fade_transparent = False
+            if fade_transparent:
+                frame_bytes = _frames_as_rgba(frame_bytes)
+            extra, extra_durs = make_fade_out_frames(
+                frame_bytes[-1],
+                n_frames=fade_out_frames
+                if fade_out_frames is not None
+                else max(1, round(fade_out_duration * 4)),
+                duration_ms=int(fade_out_duration * 1000),
+                target_color=fade_color,
+            )
+            frame_bytes.extend(extra)
+            frame_durations.extend(extra_durs)
+
         if output.suffix.lower() in {".mp4", ".mov"}:
             from dirplot.render_png import build_metadata, write_mp4
 
@@ -826,6 +927,31 @@ def replay_cmd(
         "--codec",
         help="MP4 video codec: libx264 (H.264, default) or libx265 (H.265, smaller files). "
         "Ignored for APNG output.",
+    ),
+    fade_out: bool = typer.Option(
+        False,
+        "--fade-out/--no-fade-out",
+        help="Append a fade-out sequence at the end of the animation",
+    ),
+    fade_out_duration: float = typer.Option(
+        1.0,
+        "--fade-out-duration",
+        help="Total duration of the fade-out in seconds",
+        show_default=True,
+    ),
+    fade_out_frames: int | None = typer.Option(
+        None,
+        "--fade-out-frames",
+        help="Number of equidistant frames in the fade-out (default: 4 per second of duration)",
+    ),
+    fade_out_color: str = typer.Option(
+        "auto",
+        "--fade-out-color",
+        help=(
+            "Target colour for the fade-out: 'auto' (black in dark mode, white in light mode), "
+            "'transparent' (APNG only), a CSS colour name, or a hex code"
+        ),
+        metavar="COLOR",
     ),
 ) -> None:
     """Replay a JSONL filesystem event log as an animated treemap."""
@@ -993,6 +1119,28 @@ def replay_cmd(
             frame_bytes[-1] = buf.getvalue()
         frame_bytes.append(raw[orig_i][0])
         final_durations.append(frame_durations[orig_i])
+
+    if fade_out and frame_bytes:
+        from dirplot.render_png import _frames_as_rgba, make_fade_out_frames
+
+        fade_color = _resolve_fade_color(fade_out_color, dark)
+        fade_transparent = len(fade_color) == 4 and fade_color[3] == 0
+        if fade_transparent and output.suffix.lower() in {".mp4", ".mov"}:
+            fade_color = (0, 0, 0) if dark else (255, 255, 255)
+            fade_transparent = False
+        if fade_transparent:
+            frame_bytes = _frames_as_rgba(frame_bytes)
+        n_fo = fade_out_frames
+        if n_fo is None:
+            n_fo = max(1, round(fade_out_duration * 4))
+        extra, extra_durs = make_fade_out_frames(
+            frame_bytes[-1],
+            n_frames=n_fo,
+            duration_ms=int(fade_out_duration * 1000),
+            target_color=fade_color,
+        )
+        frame_bytes.extend(extra)
+        final_durations.extend(extra_durs)
 
     if output.suffix.lower() in {".mp4", ".mov"}:
         from dirplot.render_png import build_metadata, write_mp4
@@ -1177,7 +1325,7 @@ def demo_cmd(
                 "git",
                 gh_path,
                 "--output",
-                str(output / "git.png"),
+                str(output / "git-static.png"),
                 "--size",
                 "800x600",
                 "--max-commits",
@@ -1201,6 +1349,23 @@ def demo_cmd(
             ],
         ),
         (
+            "git — last 10 commits of github repo (animated PNG with fade-out)",
+            [
+                "git",
+                gh_path,
+                "--output",
+                str(output / "git-animated.png"),
+                "--size",
+                "800x600",
+                "--max-commits",
+                "10",
+                "--animate",
+                "--total-duration",
+                "20",
+                "--fade-out",
+            ],
+        ),
+        (
             "read-meta — metadata embedded in a generated PNG",
             ["read-meta", str(output / "map-local.png")],
         ),
@@ -1211,23 +1376,57 @@ def demo_cmd(
         ("replay", "interactive; requires a JSONL event log produced by `watch --event-log`"),
     ]
 
-    sep = "─" * 60
-    typer.echo(f"[demo] Saving outputs to: {output.resolve()}/")
+    from rich.console import Console
+    from rich.panel import Panel
 
-    for label, args in examples:
+    console = Console(highlight=False)
+
+    console.print()
+    console.print(
+        Panel(
+            f"[bold cyan]dirplot demo[/bold cyan]\n[dim]Outputs →[/dim] {output.resolve()}/",
+            border_style="cyan",
+            padding=(0, 2),
+        )
+    )
+
+    n_total = len(examples)
+    for i, (label, args) in enumerate(examples, 1):
         cmd_display = "dirplot " + " ".join(args)
-        typer.echo(f"\n{sep}\n[demo] {label}\n$ {cmd_display}\n{sep}")
-        if interactive and not typer.confirm("Run this command?", default=True):
-            typer.echo("[demo] Skipped.")
-            continue
+        console.print()
+        console.rule(f"[bold]{i}/{n_total}[/bold]  {label}", style="cyan")
+        console.print(f"  [dim]$[/dim] [bold cyan]{cmd_display}[/bold cyan]")
+        console.print()
+
+        if interactive:
+            from rich.prompt import Confirm
+
+            if not Confirm.ask("  Run this command?", default=True, console=console):
+                console.print("  [yellow]⏭  Skipped[/yellow]")
+                continue
+
         result = subprocess.run(base_cmd + args)
-        if result.returncode != 0:
-            typer.echo(f"[demo] command exited with code {result.returncode}", err=True)
 
+        console.print()
+        if result.returncode == 0:
+            console.print("  [bold green]✓  Done[/bold green]")
+        else:
+            console.print(f"  [bold red]✗  Exited with code {result.returncode}[/bold red]")
+
+    console.print()
+    console.rule(style="dim")
     for cmd_name, reason in skipped:
-        typer.echo(f"\n[demo] Skipping '{cmd_name}': {reason}")
+        console.print(f"  [dim]⏭  [bold]{cmd_name}[/bold]: {reason}[/dim]")
 
-    typer.echo(f"\n[demo] Done — outputs saved to: {output.resolve()}/")
+    console.print()
+    console.print(
+        Panel(
+            f"[bold green]✓  Demo complete[/bold green]\n"
+            f"[dim]Outputs saved to:[/dim] {output.resolve()}/",
+            border_style="green",
+            padding=(0, 2),
+        )
+    )
 
 
 @app.command(name="map", epilog=_EPILOG)

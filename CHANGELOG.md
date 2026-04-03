@@ -7,15 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.4.1] - 2026-xx-xx
+## [0.4.1] - 2026-04-03
 
 ### Added
 
-- **Automatic `gh` CLI credential fallback** — if `--github-token` and `GITHUB_TOKEN`
-  are both absent, dirplot silently runs `gh auth token`. Users authenticated with the
-  [GitHub CLI](https://cli.github.com/) (`gh auth login`) can access private repositories
-  with no extra configuration. Token resolution order: `--github-token` →
-  `$GITHUB_TOKEN` → `gh auth token`.
 - **`--last PERIOD`** for `dirplot git` — filter commits by a relative time period instead
   of (or in addition to) `--max-commits`. Accepts a number followed by a unit:
   `m` (minutes), `h` (hours), `d` (days), `w` (weeks), `mo` (months = 30 days).
@@ -27,6 +22,58 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   dirplot git github://owner/repo -o history.mp4 --animate --last 2w --max-commits 10
   ```
 
+- **`dirplot demo` command** — new subcommand that runs a curated set of example commands
+  and saves outputs to a folder. Useful for first-time walkthroughs or verifying that
+  everything works in a given environment. Accepts `--output` (default: `demo/`),
+  `--github-url` (default: `https://github.com/deeplook/dirplot`), and
+  `--interactive` / `-i` to step through and confirm each command individually. Output
+  uses rich formatting with colour, section rules, and status indicators.
+  ```bash
+  dirplot demo                             # run all examples, save to ./demo/
+  dirplot demo --output ~/dp-demo --interactive
+  ```
+
+- **`--fade-out` for animated output** — appends a fade-out sequence at the end of
+  animations produced by `dirplot git --animate`, `dirplot watch --animate`, and
+  `dirplot replay`. Four flags control the effect:
+  - `--fade-out` / `--no-fade-out` — enable/disable (default: off)
+  - `--fade-out-duration SECS` — total fade length in seconds (default: 1.0)
+  - `--fade-out-frames N` — number of blend steps; defaults to 4 per second of duration
+    so longer fades are automatically finer-grained
+  - `--fade-out-color COLOR` — target colour: `auto` (black in dark mode, white in light
+    mode), `transparent` (PNG/APNG only; fades to fully transparent), any CSS colour
+    name, or hex code (e.g. `"#1a1a2e"`)
+  ```bash
+  dirplot git . -o history.png --animate --fade-out
+  dirplot git . -o history.mp4 --animate --fade-out --fade-out-duration 2.0
+  dirplot git . -o history.png --animate --fade-out --fade-out-color transparent
+  ```
+
+- **`--dark` / `--light` mode** for all treemap commands — controls background and border
+  colours. Dark mode (default) uses a near-black canvas with white directory labels; light
+  mode uses a white canvas with black labels. Available on `map`, `git`, `watch`, and
+  `replay`.
+  ```bash
+  dirplot map . --light
+  dirplot git . -o history.mp4 --animate --light
+  ```
+
+- **Metadata in MP4/MOV output** — `dirplot git`, `dirplot watch`, and `dirplot replay`
+  now embed the same dirplot metadata (date, software version, OS, Python version,
+  executed command) into MP4/MOV files that was previously only written to PNG and SVG.
+  `dirplot read-meta` reads it back via `ffprobe`.
+
+- **Automatic `gh` CLI credential fallback** — if `--github-token` and `GITHUB_TOKEN`
+  are both absent, dirplot silently runs `gh auth token`. Users authenticated with the
+  [GitHub CLI](https://cli.github.com/) (`gh auth login`) can access private repositories
+  with no extra configuration. Token resolution order: `--github-token` →
+  `$GITHUB_TOKEN` → `gh auth token`.
+
+### Changed
+
+- `--fade-out-frames` defaults dynamically to `round(fade_out_duration × 4)` rather than
+  a fixed 4, so a 2-second fade automatically uses 8 frames and a 0.5-second fade uses 2.
+
 ### Fixed
 
 - **`--total-duration` overshooting the target length** — when many commits fell within
@@ -35,6 +82,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (e.g. 34 s instead of 30 s). The floor is still applied for readability, but the
   non-floored frames are now scaled down to compensate so the sum always matches
   `--total-duration` exactly.
+
+### Docs
+
+- Added `## dirplot read-meta` section to `docs/CLI.md` (previously undocumented).
+- Documented external tool requirements: `git` (required by `dirplot git`), `ffmpeg`
+  (required for MP4 output), `ffprobe` (required by `read-meta` on MP4 files) — in both
+  `README.md` and `docs/CLI.md`.
 
 ## [0.4.0] - 2026-03-28
 
