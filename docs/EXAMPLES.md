@@ -4,6 +4,8 @@
 
 > **Warning:** Remote trees can contain hundreds of thousands of files. Use `--depth N` to limit how far down the tree dirplot recurses until you have a feel for the size of the target.
 
+> **Tip:** If one large file (a binary, dataset, or build artifact) dominates the layout and squashes everything else into tiny slivers, add `--log` to use log-scaled file sizes instead — this makes small files much more visible.
+
 ---
 
 ## Remote Servers via SSH
@@ -207,11 +209,27 @@ A token is **not required for public repositories** under normal use. Each scan 
 - Running in CI/CD where many processes share the same IP
 - Scanning repeatedly and hitting the unauthenticated rate limit
 
-Tokens are resolved in this order:
+**Option 1 — gh CLI (easiest):** authenticate once and dirplot picks up your credentials automatically:
 
-1. `--github-token` flag
-2. `GITHUB_TOKEN` environment variable
-3. No token — anonymous access (public repos only, 60 req/h)
+```bash
+gh auth login
+dirplot map github://my-org/private-repo
+```
+
+**Option 2 — environment variable:**
+
+```bash
+export GITHUB_TOKEN=ghp_…
+dirplot map github://my-org/private-repo
+```
+
+**Option 3 — flag:**
+
+```bash
+dirplot map github://my-org/private-repo --github-token ghp_…
+```
+
+Token resolution order: `--github-token` → `$GITHUB_TOKEN` → `gh auth token`.
 
 ### Options
 
