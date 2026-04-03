@@ -481,3 +481,26 @@ def test_paths_from_nonexistent_file(sample_tree: Path) -> None:
     )
     assert result.exit_code == 1
     assert "does not exist" in result.output
+
+
+@pytest.mark.skipif(
+    not __import__("shutil").which("ffmpeg") or not __import__("shutil").which("ffprobe"),
+    reason="ffmpeg/ffprobe not found",
+)
+def test_read_meta_mp4(tmp_path: Path) -> None:
+    """read-meta extracts all dirplot metadata fields from an MP4 file."""
+    import io
+
+    from PIL import Image
+
+    from dirplot.render_png import build_metadata, write_mp4
+
+    frame = io.BytesIO()
+    Image.new("RGB", (64, 64), (0, 100, 200)).save(frame, format="PNG")
+    out = tmp_path / "anim.mp4"
+    write_mp4(out, [frame.getvalue()], [500], metadata=build_metadata())
+
+    result = runner.invoke(app, ["read-meta", str(out)])
+    assert result.exit_code == 0
+    for key in ("Date", "Software", "URL", "Python", "OS", "Command"):
+        assert f"{key}:" in result.output
