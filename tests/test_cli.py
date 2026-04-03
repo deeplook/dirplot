@@ -1,5 +1,6 @@
 """Tests for the Typer CLI entry point."""
 
+import re
 from pathlib import Path
 from unittest.mock import ANY, MagicMock, patch
 
@@ -653,8 +654,9 @@ def test_replay_total_duration(tmp_path: Path) -> None:
 def test_demo_help() -> None:
     result = runner.invoke(app, ["demo", "--help"])
     assert result.exit_code == 0
-    assert "--output" in result.output
-    assert "--github-url" in result.output
+    plain = re.sub(r"\x1b\[[0-9;]*m", "", result.output)
+    assert "--output" in plain
+    assert "--github-url" in plain
 
 
 def test_demo_runs(tmp_path: Path) -> None:
