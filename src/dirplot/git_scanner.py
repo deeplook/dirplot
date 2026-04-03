@@ -158,15 +158,15 @@ def git_apply_diff(
             old_fp, new_fp = path_list[0], path_list[1]
             if old_fp.split("/")[0] not in exclude:
                 to_delete.append(old_fp)
-                highlights[str(repo / old_fp)] = "deleted"
+                highlights[(repo / old_fp).as_posix()] = "deleted"
             if new_fp.split("/")[0] not in exclude:
                 to_add[new_fp] = new_hash
-                highlights[str(repo / new_fp)] = "created"
+                highlights[(repo / new_fp).as_posix()] = "created"
         elif status.startswith("C") and len(path_list) >= 2:
             new_fp = path_list[1]
             if new_fp.split("/")[0] not in exclude:
                 to_add[new_fp] = new_hash
-                highlights[str(repo / new_fp)] = "created"
+                highlights[(repo / new_fp).as_posix()] = "created"
 
     # Fetch all new blob sizes in one batch call.
     if to_add:
