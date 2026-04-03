@@ -504,3 +504,147 @@ def test_read_meta_mp4(tmp_path: Path) -> None:
     assert result.exit_code == 0
     for key in ("Date", "Software", "URL", "Python", "OS", "Command"):
         assert f"{key}:" in result.output
+
+
+# ---------------------------------------------------------------------------
+# _proportional_durations
+# ---------------------------------------------------------------------------
+
+
+def test_proportional_durations_basic() -> None:
+    from dirplot.main import _proportional_durations
+
+    durations = _proportional_durations([1.0, 2.0, 3.0], total_ms=6000)
+    assert sum(durations) == 6000
+    assert len(durations) == 3
+    assert all(d >= 200 for d in durations)
+
+
+def test_proportional_durations_floor_applied() -> None:
+    """Very small gaps are raised to floor_ms; total still sums to target."""
+    from dirplot.main import _proportional_durations
+
+    # Many tiny gaps and one large gap
+    gaps = [0.01] * 10 + [100.0]
+    durations = _proportional_durations(gaps, total_ms=5000)
+    assert sum(durations) == 5000
+    assert all(d >= 200 for d in durations)
+
+
+def test_proportional_durations_all_equal() -> None:
+    from dirplot.main import _proportional_durations
+
+    durations = _proportional_durations([1.0, 1.0, 1.0, 1.0], total_ms=4000)
+    assert sum(durations) == 4000
+
+
+# ---------------------------------------------------------------------------
+# replay command
+# ---------------------------------------------------------------------------
+
+
+def _write_jsonl(path: Path, events: list[dict]) -> None:
+    import json
+
+    path.write_text("\n".join(json.dumps(e) for e in events) + "\n")
+
+
+def test_replay_basic(tmp_path: Path) -> None:
+    """replay renders a JSONL event log to an APNG."""
+    root = tmp_path / "root"
+    root.mkdir()
+    (root / "a.py").write_bytes(b"x" * 500)
+    (root / "b.py").write_bytes(b"x" * 300)
+
+    log = tmp_path / "events.jsonl"
+    _write_jsonl(
+        log,
+        [
+            {"timestamp": 1.0, "type": "created", "path": str(root / "a.py")},
+            {"timestamp": 2.0, "type": "modified", "path": str(root / "b.py")},
+            {"timestamp": 70.0, "type": "modified", "path": str(root / "a.py")},
+        ],
+    )
+    out = tmp_path / "replay.apng"
+    result = runner.invoke(
+        app,
+        [
+            "replay",
+            str(log),
+            "--output",
+            str(out),
+            "--size",
+            "200x150",
+            "--workers",
+            "1",
+        ],
+    )
+    assert result.exit_code == 0, result.output
+    assert out.exists()
+
+
+def test_replay_missing_log(tmp_path: Path) -> None:
+    result = runner.invoke(
+        app,
+        [
+            "replay",
+            str(tmp_path / "missing.jsonl"),
+            "--output",
+            str(tmp_path / "out.apng"),
+            "--size",
+            "200x150",
+        ],
+    )
+    assert result.exit_code == 1
+
+
+def test_replay_bad_output_extension(tmp_path: Path) -> None:
+    log = tmp_path / "events.jsonl"
+    log.write_text("{}\n")
+    result = runner.invoke(
+        app,
+        [
+            "replay",
+            str(log),
+            "--output",
+            str(tmp_path / "out.gif"),
+            "--size",
+            "200x150",
+        ],
+    )
+    assert result.exit_code == 1
+
+
+def test_replay_total_duration(tmp_path: Path) -> None:
+    """replay with --total-duration exercises _proportional_durations."""
+    root = tmp_path / "root"
+    root.mkdir()
+    (root / "f.py").write_bytes(b"x" * 200)
+
+    log = tmp_path / "events.jsonl"
+    _write_jsonl(
+        log,
+        [
+            {"timestamp": 0.0, "type": "created", "path": str(root / "f.py")},
+            {"timestamp": 100.0, "type": "modified", "path": str(root / "f.py")},
+            {"timestamp": 300.0, "type": "modified", "path": str(root / "f.py")},
+        ],
+    )
+    out = tmp_path / "replay.apng"
+    result = runner.invoke(
+        app,
+        [
+            "replay",
+            str(log),
+            "--output",
+            str(out),
+            "--size",
+            "200x150",
+            "--total-duration",
+            "3",
+            "--workers",
+            "1",
+        ],
+    )
+    assert result.exit_code == 0, result.output
+    assert out.exists()
