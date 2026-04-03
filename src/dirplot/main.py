@@ -219,7 +219,7 @@ def watch_cmd(
             raise typer.Exit(1)
 
     if animate and output.suffix.lower() == ".svg":
-        typer.echo("Error: --animate requires a PNG or MP4 output file.", err=True)
+        typer.echo("Error: --animate requires a PNG, MP4, or MOV output file.", err=True)
         raise typer.Exit(1)
 
     if size is not None:
@@ -482,7 +482,7 @@ def git_cmd(
             raise typer.Exit(1)
 
     if output.suffix.lower() not in {".png", ".apng", ".mp4", ".mov"}:
-        typer.echo("Error: --output must be a .png, .apng, or .mp4 file.", err=True)
+        typer.echo("Error: --output must be a .png, .apng, .mp4, or .mov file.", err=True)
         raise typer.Exit(1)
 
     if size is not None:
@@ -839,7 +839,7 @@ def replay_cmd(
         raise typer.Exit(1)
 
     if output.suffix.lower() not in {".png", ".apng", ".mp4", ".mov"}:
-        typer.echo("Error: --output must be a .png, .apng, or .mp4 file.", err=True)
+        typer.echo("Error: --output must be a .png, .apng, .mp4, or .mov file.", err=True)
         raise typer.Exit(1)
 
     if size is not None:
