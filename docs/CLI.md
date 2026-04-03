@@ -106,6 +106,8 @@ dirplot map pod://my-pod:/app
 
 Monitors directories and regenerates the treemap on every change. With `--animate`, each debounced render becomes one frame; the complete APNG or MP4 is written on Ctrl-C.
 
+> **Requires** `ffmpeg` on `PATH` for MP4 output.
+
 ```bash
 # Watch and regenerate on every change
 dirplot watch . --output treemap.png
@@ -125,6 +127,11 @@ dirplot watch . --output treemap.png --animate
 dirplot watch . --output treemap.mp4 --animate
 dirplot watch . --output treemap.mp4 --animate --crf 18         # higher quality
 dirplot watch . --output treemap.mp4 --animate --codec libx265  # smaller file
+
+# Fade out to black at the end (default: 1 s, 4 fps)
+dirplot watch . --output treemap.png --animate --fade-out
+dirplot watch . --output treemap.mp4 --animate --fade-out --fade-out-duration 2.0
+dirplot watch . --output treemap.png --animate --fade-out --fade-out-color transparent  # APNG only
 ```
 
 ### Options
@@ -135,6 +142,10 @@ dirplot watch . --output treemap.mp4 --animate --codec libx265  # smaller file
 | `--debounce` | `0.5` | Seconds of quiet before regenerating; `0` disables |
 | `--event-log` | — | Write raw events as JSONL on Ctrl-C exit |
 | `--animate` / `--no-animate` | off | Capture frames and write APNG or MP4 on Ctrl-C |
+| `--fade-out` / `--no-fade-out` | off | Append a fade-out sequence at the end (animate only) |
+| `--fade-out-duration` | `1.0` | Duration of the fade-out in seconds |
+| `--fade-out-frames` | 4 × duration | Number of fade frames; defaults to 4 per second |
+| `--fade-out-color` | `auto` | Fade target: `auto` (black/white per mode), `transparent` (PNG/APNG only), CSS name, or hex |
 | `--crf` | `23` | MP4 quality: 0 = lossless, 51 = worst. Ignored for APNG |
 | `--codec` | `libx264` | MP4 codec: `libx264` (H.264) or `libx265` (H.265) |
 | `--log` / `--no-log` | off | Log scale for file sizes |
@@ -151,6 +162,8 @@ dirplot watch . --output treemap.mp4 --animate --codec libx265  # smaller file
 
 Replays a JSONL event log produced by `dirplot watch --event-log` as an animated treemap. Events are grouped into time buckets (one frame per bucket).
 
+> **Requires** `ffmpeg` on `PATH` for MP4 output.
+
 ```bash
 # Replay as APNG (60-second buckets, 30-second total)
 dirplot replay events.jsonl --output replay.apng --total-duration 30
@@ -162,16 +175,24 @@ dirplot replay events.jsonl --output replay.mp4 --codec libx265  # smaller file
 
 # Fine-grained buckets with fixed frame duration
 dirplot replay events.jsonl --output replay.apng --bucket 10 --frame-duration 200
+
+# Fade out at the end
+dirplot replay events.jsonl --output replay.mp4 --total-duration 30 --fade-out
+dirplot replay events.jsonl --output replay.png --total-duration 30 --fade-out --fade-out-color white
 ```
 
 ### Options
 
 | Flag | Default | Description |
 |---|---|---|
-| `--output` / `-o` | required | Output `.apng` or `.mp4` |
+| `--output` / `-o` | required | Output `.png`, `.apng`, or `.mp4` |
 | `--bucket` | `60.0` | Time bucket size in seconds; one frame per bucket |
 | `--frame-duration` | `500` | Frame display time in ms (when `--total-duration` is not set) |
 | `--total-duration` | — | Target total animation length in seconds; frames scale proportionally to real time gaps |
+| `--fade-out` / `--no-fade-out` | off | Append a fade-out sequence at the end |
+| `--fade-out-duration` | `1.0` | Duration of the fade-out in seconds |
+| `--fade-out-frames` | 4 × duration | Number of fade frames; defaults to 4 per second |
+| `--fade-out-color` | `auto` | Fade target: `auto` (black/white per mode), `transparent` (PNG/APNG only), CSS name, or hex |
 | `--crf` | `23` | MP4 quality: 0 = lossless, 51 = worst. Ignored for APNG |
 | `--codec` | `libx264` | MP4 codec: `libx264` (H.264) or `libx265` (H.265) |
 | `--workers` / `-w` | all CPU cores | Parallel render workers |
@@ -188,6 +209,8 @@ dirplot replay events.jsonl --output replay.apng --bucket 10 --frame-duration 20
 ## `dirplot git` — git history animation
 
 Renders a git repository's commit history as an animated treemap. Each commit becomes one frame; changed tiles are highlighted.
+
+> **Requires** `git` on `PATH`. `ffmpeg` is also required for MP4 output.
 
 The `repo` argument accepts:
 - Local path: `.`, `/path/to/repo`
@@ -222,6 +245,12 @@ dirplot git github://owner/repo@main --output history.apng --animate --max-commi
 dirplot git . --output history.mp4 --animate --last 30d
 dirplot git . --output history.mp4 --animate --last 24h
 dirplot git github://owner/repo --output history.mp4 --animate --last 2w --max-commits 10
+
+# Fade out to black at the end (animate only)
+dirplot git . --output history.png --animate --fade-out
+dirplot git . --output history.mp4 --animate --fade-out --fade-out-duration 2.0
+dirplot git . --output history.png --animate --fade-out --fade-out-color transparent  # APNG/PNG only
+dirplot git . --output history.mp4 --animate --fade-out --fade-out-color "#1a1a2e"
 ```
 
 ### Options
@@ -235,6 +264,10 @@ dirplot git github://owner/repo --output history.mp4 --animate --last 2w --max-c
 | `--last` | — | Time-period filter: `30d`, `24h`, `2w`, `1mo`, `30m`. Uses `--shallow-since` for GitHub URLs |
 | `--frame-duration` | `1000` | Frame display time in ms (when `--total-duration` is not set) |
 | `--total-duration` | — | Target total animation length in seconds; frames scale proportionally to real time gaps between commits |
+| `--fade-out` / `--no-fade-out` | off | Append a fade-out sequence at the end (animate only) |
+| `--fade-out-duration` | `1.0` | Duration of the fade-out in seconds |
+| `--fade-out-frames` | 4 × duration | Number of fade frames; defaults to 4 per second |
+| `--fade-out-color` | `auto` | Fade target: `auto` (black/white per mode), `transparent` (PNG/APNG only), CSS name, or hex |
 | `--crf` | `23` | MP4 quality: 0 = lossless, 51 = worst. Ignored for APNG |
 | `--codec` | `libx264` | MP4 codec: `libx264` (H.264) or `libx265` (~40% smaller at same quality) |
 | `--workers` / `-w` | all CPU cores | Parallel render workers; 4–8 is typically optimal |
@@ -246,6 +279,21 @@ dirplot git github://owner/repo --output history.mp4 --animate --last 2w --max-c
 | `--font-size` | `12` | Directory label font size in pixels |
 | `--cushion` / `--no-cushion` | on | Van Wijk cushion shading |
 | `--github-token` | `$GITHUB_TOKEN` | GitHub personal access token |
+
+---
+
+## `dirplot read-meta` — read embedded metadata
+
+Reads dirplot metadata (date, software version, OS, Python version, executed command) embedded in a PNG, SVG, or MP4/MOV output file.
+
+> **Requires** `ffprobe` on `PATH` (bundled with [ffmpeg](https://ffmpeg.org/)) to read metadata from `.mp4` / `.mov` files.
+
+```bash
+dirplot read-meta treemap.png
+dirplot read-meta treemap.svg
+dirplot read-meta history.mp4
+dirplot read-meta a.png b.png c.svg   # multiple files
+```
 
 ---
 
@@ -272,8 +320,9 @@ Examples produced:
 | `map-local.png` | `dirplot map .` (dark mode, PNG) |
 | `map-github.png` | `dirplot map github://owner/repo` (dark mode, PNG) |
 | `map-local.svg` | `dirplot map .` (light mode, SVG) |
-| `git.png` | `dirplot git github://owner/repo --max-commits 5` (static PNG) |
+| `git-static.png` | `dirplot git github://owner/repo --max-commits 5` (static PNG) |
 | `git.mp4` | `dirplot git github://owner/repo --max-commits 10 --animate --total-duration 20` |
+| `git-animated.png` | `dirplot git github://owner/repo --max-commits 10 --animate --total-duration 20 --fade-out` |
 | *(stdout)* | `dirplot read-meta map-local.png` |
 
 `dirplot watch` and `dirplot replay` are listed but skipped with an explanatory note — both require interactive or pre-recorded input.

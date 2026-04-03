@@ -675,5 +675,5 @@ def test_demo_runs(tmp_path: Path) -> None:
 
     assert result.exit_code == 0, result.output
     assert (tmp_path / "demo-out").is_dir()
-    assert mock_run.call_count == 7  # one call per non-skipped example
+    assert mock_run.call_count == 8  # one call per non-skipped example
     assert "Done" in result.output

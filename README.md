@@ -34,6 +34,8 @@ Optional extras: `pip install "dirplot[ssh]"`, `"dirplot[s3]"`, `"dirplot[libarc
 
 `dirplot watch` uses [watchdog](https://github.com/gorakhargosh/watchdog) for filesystem monitoring — installed automatically as a dependency.
 
+`dirplot git` requires `git` on `PATH`. MP4 output (`dirplot git`, `dirplot watch`, `dirplot replay` with `--animate`) requires [ffmpeg](https://ffmpeg.org/) on `PATH`. `dirplot read-meta` on `.mp4` files also requires `ffprobe` (bundled with ffmpeg).
+
 ## Quick start
 
 ```bash

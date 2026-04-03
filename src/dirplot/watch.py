@@ -39,6 +39,10 @@ class TreemapEventHandler(FileSystemEventHandler):
         crf: int = 23,
         codec: str = "libx264",
         dark: bool = True,
+        fade_out: bool = False,
+        fade_out_duration: float = 1.0,
+        fade_out_frames: int | None = None,
+        fade_out_color: tuple[int, int, int] | tuple[int, int, int, int] = (0, 0, 0),
     ) -> None:
         super().__init__()
         self.roots = roots
@@ -56,6 +60,10 @@ class TreemapEventHandler(FileSystemEventHandler):
         self.crf = crf
         self.codec = codec
         self.animate = animate
+        self.fade_out = fade_out
+        self.fade_out_duration = fade_out_duration
+        self.fade_out_frames = fade_out_frames
+        self.fade_out_color = fade_out_color
         self.log = log
         self.debounce = debounce
         self.event_log = event_log
@@ -229,6 +237,26 @@ class TreemapEventHandler(FileSystemEventHandler):
         elif render_thread is not None:
             render_thread.join()
         if self.animate and self._frame_bytes:
+            if self.fade_out:
+                from dirplot.render_png import _frames_as_rgba, make_fade_out_frames
+
+                fade_color = self.fade_out_color
+                fade_transparent = len(fade_color) == 4 and fade_color[3] == 0
+                if fade_transparent and self.use_mp4:
+                    fade_color = (0, 0, 0) if self.dark else (255, 255, 255)
+                    fade_transparent = False
+                if fade_transparent:
+                    self._frame_bytes = _frames_as_rgba(self._frame_bytes)
+                extra, extra_durs = make_fade_out_frames(
+                    self._frame_bytes[-1],
+                    n_frames=self.fade_out_frames
+                    if self.fade_out_frames is not None
+                    else max(1, round(self.fade_out_duration * 4)),
+                    duration_ms=int(self.fade_out_duration * 1000),
+                    target_color=fade_color,
+                )
+                self._frame_bytes.extend(extra)
+                self._durations.extend(extra_durs)
             if self.use_mp4:
                 self._write_mp4()
             else:

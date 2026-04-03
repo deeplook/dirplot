@@ -9,7 +9,14 @@ import squarify
 from PIL import Image
 
 from dirplot.colors import assign_colors
-from dirplot.render_png import _label_color, build_metadata, create_treemap, write_mp4
+from dirplot.render_png import (
+    _frames_as_rgba,
+    _label_color,
+    build_metadata,
+    create_treemap,
+    make_fade_out_frames,
+    write_mp4,
+)
 from dirplot.scanner import build_tree
 
 
@@ -286,3 +293,68 @@ def test_write_mp4_no_metadata_omits_movflags(tmp_path: Path) -> None:
     write_mp4(out, [_make_png_frame((255, 0, 0))], [500], metadata=None)
     assert out.exists()
     assert out.stat().st_size > 0
+
+
+class TestMakeFadeOutFrames:
+    def test_returns_correct_count(self) -> None:
+        frame = _make_png_frame((100, 150, 200))
+        frames, durs = make_fade_out_frames(frame, n_frames=4, duration_ms=1000)
+        assert len(frames) == 4
+        assert len(durs) == 4
+
+    def test_durations_sum_to_total(self) -> None:
+        frame = _make_png_frame((0, 0, 0))
+        _, durs = make_fade_out_frames(frame, n_frames=4, duration_ms=1000)
+        assert sum(durs) == 1000
+
+    def test_durations_sum_odd_ms(self) -> None:
+        frame = _make_png_frame((0, 0, 0))
+        _, durs = make_fade_out_frames(frame, n_frames=3, duration_ms=1000)
+        assert sum(durs) == 1000
+
+    def test_rgb_output_for_opaque_color(self) -> None:
+        frame = _make_png_frame((255, 255, 255))
+        frames, _ = make_fade_out_frames(frame, target_color=(0, 0, 0))
+        img = Image.open(io.BytesIO(frames[-1]))
+        assert img.mode == "RGB"
+
+    def test_rgba_output_for_transparent_target(self) -> None:
+        frame = _make_png_frame((200, 100, 50))
+        frames, _ = make_fade_out_frames(frame, target_color=(0, 0, 0, 0))
+        img = Image.open(io.BytesIO(frames[-1]))
+        assert img.mode == "RGBA"
+
+    def test_last_frame_is_fully_faded(self) -> None:
+        """Last frame should be fully blended toward target color."""
+        frame = _make_png_frame((255, 0, 0))
+        frames, _ = make_fade_out_frames(frame, n_frames=4, target_color=(0, 0, 0))
+        img = Image.open(io.BytesIO(frames[-1])).convert("RGB")
+        r, g, b = img.getpixel((32, 32))
+        # Should be close to black (target) — allow small rounding tolerance
+        assert r < 10 and g < 10 and b < 10
+
+    def test_last_frame_is_fully_transparent(self) -> None:
+        """Last fade-to-transparent frame should have near-zero alpha."""
+        frame = _make_png_frame((200, 200, 200))
+        frames, _ = make_fade_out_frames(frame, n_frames=4, target_color=(0, 0, 0, 0))
+        img = Image.open(io.BytesIO(frames[-1])).convert("RGBA")
+        *_, a = img.getpixel((32, 32))
+        assert a == 0
+
+    def test_default_frame_count_scales_with_duration(self) -> None:
+        """Without an explicit n_frames the caller should compute 4 * duration."""
+        frame = _make_png_frame((100, 100, 100))
+        # 2-second fade → 8 frames at 4 fps
+        frames, durs = make_fade_out_frames(
+            frame, n_frames=max(1, round(2.0 * 4)), duration_ms=2000
+        )
+        assert len(frames) == 8
+        assert sum(durs) == 2000
+
+    def test_frames_as_rgba_converts_all(self) -> None:
+        rgb_frames = [_make_png_frame((i * 30, 0, 0)) for i in range(3)]
+        rgba_frames = _frames_as_rgba(rgb_frames)
+        assert len(rgba_frames) == 3
+        for fb in rgba_frames:
+            img = Image.open(io.BytesIO(fb))
+            assert img.mode == "RGBA"
