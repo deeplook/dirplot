@@ -251,7 +251,7 @@ def _render_frame_worker(args: tuple[Any, ...]) -> tuple[int, bytes, RectMap]:
     Args:
         args: ``(repo_str, files, current_highlights, sha, ts, orig_i,
                  total_commits, depth, log_scale, width_px, height_px,
-                 font_size, colormap, cushion)``
+                 font_size, colormap, cushion, dark)``
 
     Returns:
         ``(orig_i, png_bytes, rect_map)``
@@ -271,6 +271,7 @@ def _render_frame_worker(args: tuple[Any, ...]) -> tuple[int, bytes, RectMap]:
         font_size,
         colormap,
         cushion,
+        dark,
     ) = args
 
     from datetime import datetime
@@ -298,6 +299,7 @@ def _render_frame_worker(args: tuple[Any, ...]) -> tuple[int, bytes, RectMap]:
         rect_map_out=rect_map,
         title_suffix=f"sha:{sha[:8]}  {dt_str}",
         progress=progress,
+        dark=dark,
     )
     return (orig_i, buf.read(), rect_map)
 

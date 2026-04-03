@@ -140,6 +140,7 @@ def _render_replay_frame_worker(args: tuple[Any, ...]) -> tuple[int, bytes, Rect
         font_size,
         colormap,
         cushion,
+        dark,
     ) = args
 
     from datetime import datetime
@@ -168,5 +169,6 @@ def _render_replay_frame_worker(args: tuple[Any, ...]) -> tuple[int, bytes, Rect
         rect_map_out=rect_map,
         title_suffix=dt_str,
         progress=progress,
+        dark=dark,
     )
     return (orig_i, buf.read(), rect_map)

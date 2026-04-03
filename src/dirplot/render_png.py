@@ -242,6 +242,7 @@ def draw_node(
     img: Image.Image | None = None,
     root_label: str | None = None,
     rect_map: dict[str, tuple[int, int, int, int]] | None = None,
+    dark: bool = True,
 ) -> None:
     """Recursively draw *node* and its children into *draw*.
 
@@ -316,10 +317,12 @@ def draw_node(
     if rect_map is not None:
         rect_map[str(node.path)] = (x, y, w, h)
 
-    # Directory: 1-px white outer border + 1-px black inner border
-    draw.rectangle([x, y, x + w - 1, y + h - 1], outline=(255, 255, 255), width=1)
+    # Directory: 1-px outer border + 1-px inner border (colours swap in light mode)
+    outer_col = (255, 255, 255) if dark else (0, 0, 0)
+    inner_col = (0, 0, 0) if dark else (255, 255, 255)
+    draw.rectangle([x, y, x + w - 1, y + h - 1], outline=outer_col, width=1)
     if w >= 4 and h >= 4:
-        draw.rectangle([x + 1, y + 1, x + w - 2, y + h - 2], outline=(0, 0, 0), width=1)
+        draw.rectangle([x + 1, y + 1, x + w - 2, y + h - 2], outline=inner_col, width=1)
 
     # Header label — height driven by the font size
     header_h = font.size + 4
@@ -327,10 +330,11 @@ def draw_node(
         label = _truncate_breadcrumb(
             root_label if root_label is not None else node.name, draw, font, w - 8
         )
+        header_text_col = (224, 224, 224) if dark else (32, 32, 32)
         draw.text(
             (x + w // 2, y + 2 + header_h // 2),
             label,
-            fill=(224, 224, 224),
+            fill=header_text_col,
             font=font,
             anchor="mm",
             align="center",
@@ -355,8 +359,9 @@ def draw_node(
     normed = squarify.normalize_sizes(sizes, iw, ih)
     rects = squarify.squarify(normed, ix, iy, iw, ih)
 
-    # Black background provides the 1-px separator between adjacent children
-    draw.rectangle([ix, iy, ix + iw - 1, iy + ih - 1], fill=(0, 0, 0))
+    # Background provides the 1-px separator between adjacent children
+    sep_col = (0, 0, 0) if dark else (255, 255, 255)
+    draw.rectangle([ix, iy, ix + iw - 1, iy + ih - 1], fill=sep_col)
 
     for rect, child in zip(rects, positive_children, strict=False):
         rx = round(rect["x"])
@@ -376,6 +381,7 @@ def draw_node(
             cushion,
             img,
             rect_map=rect_map,
+            dark=dark,
         )
 
 
@@ -428,6 +434,7 @@ def _draw_legend(
     corner: str,
     font: ImageFont.FreeTypeFont,
     max_rows: int = 20,
+    dark: bool = True,
 ) -> None:
     margin = 4
     bb = draw.textbbox((0, 0), "Ag", font=font)
@@ -455,8 +462,14 @@ def _draw_legend(
     bx = (width_px - box_w - margin) if "right" in corner else margin
     by = (height_px - box_h - margin) if "lower" in corner else margin
 
-    draw.rectangle([bx, by, bx + box_w - 1, by + box_h - 1], fill=(20, 20, 36))
-    draw.rectangle([bx, by, bx + box_w - 1, by + box_h - 1], outline=(80, 80, 80), width=1)
+    leg_bg = (20, 20, 36) if dark else (240, 240, 240)
+    leg_border = (80, 80, 80) if dark else (160, 160, 160)
+    leg_ext_text = (220, 220, 220) if dark else (40, 40, 40)
+    leg_count_text = (160, 160, 160) if dark else (80, 80, 80)
+    leg_more_text = (120, 120, 120) if dark else (100, 100, 100)
+    leg_swatch_outline = (255, 255, 255) if dark else (0, 0, 0)
+    draw.rectangle([bx, by, bx + box_w - 1, by + box_h - 1], fill=leg_bg)
+    draw.rectangle([bx, by, bx + box_w - 1, by + box_h - 1], outline=leg_border, width=1)
 
     for ri, ext in enumerate(top):
         rgba = color_map.get(ext, (0.5, 0.5, 0.5, 1.0))
@@ -467,20 +480,20 @@ def _draw_legend(
         draw.rectangle(
             [ex, sy, ex + SWATCH_PX - 1, sy + SWATCH_PX - 1],
             fill=rgb,
-            outline=(255, 255, 255),
+            outline=leg_swatch_outline,
             width=1,
         )
         draw.text(
             (ex + SWATCH_PX + LEG_PAD, row_mid),
             ext,
-            fill=(220, 220, 220),
+            fill=leg_ext_text,
             font=font,
             anchor="lm",
         )
         draw.text(
             (bx + box_w - LEG_PAD, row_mid),
             str(ext_counts[ext]),
-            fill=(160, 160, 160),
+            fill=leg_count_text,
             font=font,
             anchor="rm",
         )
@@ -490,7 +503,7 @@ def _draw_legend(
         draw.text(
             (bx + LEG_PAD + SWATCH_PX + LEG_PAD, row_mid),
             more_label,
-            fill=(120, 120, 120),
+            fill=leg_more_text,
             font=font,
             anchor="lm",
         )
@@ -547,6 +560,7 @@ def create_treemap(
     rect_map_out: dict[str, tuple[int, int, int, int]] | None = None,
     title_suffix: str | None = None,
     progress: float | None = None,
+    dark: bool = True,
 ) -> io.BytesIO:
     """Render a nested squarified treemap and return it as a PNG in a BytesIO buffer.
 
@@ -568,7 +582,8 @@ def create_treemap(
     exts = collect_extensions(root_node)
     color_map = assign_colors(exts, colormap)
 
-    img = Image.new("RGB", (width_px, height_px), color=(26, 26, 46))
+    canvas_bg = (26, 26, 46) if dark else (255, 255, 255)
+    img = Image.new("RGB", (width_px, height_px), color=canvas_bg)
     idraw = ImageDraw.Draw(img)
     font = _font(font_size, bold=True)
 
@@ -596,6 +611,7 @@ def create_treemap(
         img,
         root_label=root_label,
         rect_map=_tile_rects,
+        dark=dark,
     )
 
     # Batch cushion: one PIL→numpy→PIL round-trip for all tiles instead of one per tile.
@@ -626,7 +642,7 @@ def create_treemap(
         corner = _best_corner(root_node, width_px, height_px)
         ext_counts = _collect_ext_counts(root_node)
         _draw_legend(
-            idraw, ext_counts, color_map, width_px, height_px, corner, overlay_font, legend
+            idraw, ext_counts, color_map, width_px, height_px, corner, overlay_font, legend, dark
         )
 
     pnginfo = PngImagePlugin.PngInfo()

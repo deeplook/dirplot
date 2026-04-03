@@ -253,6 +253,7 @@ def test_render_replay_frame_worker(tmp_path: Path) -> None:
         12,  # font_size
         "tab20",  # colormap
         False,  # cushion
+        True,  # dark
     )
     orig_i, png_bytes, rect_map = _render_replay_frame_worker(args)
     assert orig_i == 0
@@ -277,7 +278,8 @@ def test_render_replay_frame_worker_log_scale(tmp_path: Path) -> None:
         150,
         12,
         "tab20",
-        False,
+        False,  # cushion
+        True,  # dark
     )
     orig_i, png_bytes, _ = _render_replay_frame_worker(args)
     assert orig_i == 1

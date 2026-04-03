@@ -38,6 +38,7 @@ class TreemapEventHandler(FileSystemEventHandler):
         depth: int | None = None,
         crf: int = 23,
         codec: str = "libx264",
+        dark: bool = True,
     ) -> None:
         super().__init__()
         self.roots = roots
@@ -49,6 +50,7 @@ class TreemapEventHandler(FileSystemEventHandler):
         self.font_size = font_size
         self.colormap = colormap
         self.cushion = cushion
+        self.dark = dark
         self.use_svg = output.suffix.lower() == ".svg"
         self.use_mp4 = output.suffix.lower() in {".mp4", ".mov"}
         self.crf = crf
@@ -142,6 +144,7 @@ class TreemapEventHandler(FileSystemEventHandler):
                     self.colormap,
                     None,
                     self.cushion,
+                    dark=self.dark,
                 )
                 self.output.write_bytes(buf.read())
             elif self.animate:
@@ -155,6 +158,7 @@ class TreemapEventHandler(FileSystemEventHandler):
                     self.cushion,
                     highlights=current_highlights,
                     rect_map_out=rect_map,
+                    dark=self.dark,
                 )
                 self._store_frame(buf.read())
                 print(f"Captured frame {len(self._frame_bytes)}", file=sys.stderr)
@@ -169,6 +173,7 @@ class TreemapEventHandler(FileSystemEventHandler):
                     self.cushion,
                     highlights=current_highlights,
                     rect_map_out=rect_map,
+                    dark=self.dark,
                 )
                 self.output.write_bytes(buf.read())
                 print(f"Updated {self.output}", file=sys.stderr)
