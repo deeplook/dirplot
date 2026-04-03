@@ -91,9 +91,16 @@ class TreemapEventHandler(FileSystemEventHandler):
 
     def _write_mp4(self) -> None:
         """Write all accumulated frames as an MP4 video (called once in flush())."""
-        from dirplot.render_png import write_mp4
+        from dirplot.render_png import build_metadata, write_mp4
 
-        write_mp4(self.output, self._frame_bytes, self._durations, crf=self.crf, codec=self.codec)
+        write_mp4(
+            self.output,
+            self._frame_bytes,
+            self._durations,
+            crf=self.crf,
+            codec=self.codec,
+            metadata=build_metadata(),
+        )
         print(f"Wrote {len(self._frame_bytes)}-frame MP4 → {self.output}", file=sys.stderr)
 
     def _patch_prev_frame_deletions(self, deletions: dict[str, str]) -> None:

@@ -53,6 +53,45 @@ def _worker_ignore_sigint() -> None:
     signal.signal(signal.SIGINT, signal.SIG_IGN)
 
 
+def _proportional_durations(gaps: list[float], total_ms: float, floor_ms: int = 200) -> list[int]:
+    """Convert time *gaps* into integer frame durations that sum to *total_ms*.
+
+    Each frame gets a duration proportional to its gap.  Frames whose
+    proportional share would fall below *floor_ms* are raised to that floor;
+    the remaining frames are scaled down so the total still equals *total_ms*.
+    A final rounding correction is applied to the longest frame so the integer
+    sum matches exactly.
+    """
+    total_gap = sum(gaps)
+    proportional = [g / total_gap * total_ms for g in gaps]
+
+    # Apply floor
+    raw = [max(float(floor_ms), p) for p in proportional]
+
+    # If flooring inflated the total, scale down the non-floored frames to compensate.
+    raw_sum = sum(raw)
+    if raw_sum > total_ms:
+        floored_budget = floor_ms * sum(1 for p in proportional if p < floor_ms)
+        non_floored_sum = sum(v for p, v in zip(proportional, raw, strict=False) if p >= floor_ms)
+        available = total_ms - floored_budget
+        if available > 0 and non_floored_sum > 0:
+            scale = available / non_floored_sum
+            raw = [
+                v if p < floor_ms else v * scale for p, v in zip(proportional, raw, strict=False)
+            ]
+        # else: every frame is at the floor — can't compress further, accept slight overage
+
+    durations = [max(floor_ms, min(65535, round(d))) for d in raw]
+
+    # Absorb integer-rounding residual into the longest frame.
+    residual = round(total_ms) - sum(durations)
+    if residual and durations:
+        idx = max(range(len(durations)), key=lambda i: durations[i])
+        durations[idx] = max(floor_ms, durations[idx] + residual)
+
+    return durations
+
+
 def _version_callback(value: bool) -> None:
     if value:
         typer.echo(__version__)
@@ -535,10 +574,8 @@ def git_cmd(
             max(1.0, float(timestamps[j + 1] - timestamps[j])) for j in range(len(timestamps) - 1)
         ]
         gaps.append(gaps[-1] if gaps else 1.0)
-        total_gap = sum(gaps)
         total_ms = total_duration * 1000
-        # Scale proportionally; enforce a 200 ms floor and APNG uint16 ceiling.
-        commit_durations = [max(200, min(65535, round(g / total_gap * total_ms))) for g in gaps]
+        commit_durations = _proportional_durations(gaps, total_ms)
         min_d, max_d = min(commit_durations), max(commit_durations)
         typer.echo(
             f"  Proportional timing: {min_d}–{max_d} ms/frame"
@@ -658,9 +695,16 @@ def git_cmd(
 
         # ── Phase 4: write output ─────────────────────────────────────────────
         if output.suffix.lower() in {".mp4", ".mov"}:
-            from dirplot.render_png import write_mp4
+            from dirplot.render_png import build_metadata, write_mp4
 
-            write_mp4(output, frame_bytes, frame_durations, crf=crf, codec=codec)
+            write_mp4(
+                output,
+                frame_bytes,
+                frame_durations,
+                crf=crf,
+                codec=codec,
+                metadata=build_metadata(),
+            )
         else:
             from dirplot.render_png import write_apng
 
@@ -857,9 +901,8 @@ def replay_cmd(
             max(1.0, float(timestamps[j + 1] - timestamps[j])) for j in range(len(timestamps) - 1)
         ]
         gaps.append(gaps[-1] if gaps else 1.0)
-        total_gap = sum(gaps)
         total_ms = total_duration * 1000
-        frame_durations = [max(200, min(65535, round(g / total_gap * total_ms))) for g in gaps]
+        frame_durations = _proportional_durations(gaps, total_ms)
         min_d, max_d = min(frame_durations), max(frame_durations)
         typer.echo(
             f"  Proportional timing: {min_d}–{max_d} ms/frame"
@@ -945,9 +988,11 @@ def replay_cmd(
         final_durations.append(frame_durations[orig_i])
 
     if output.suffix.lower() in {".mp4", ".mov"}:
-        from dirplot.render_png import write_mp4
+        from dirplot.render_png import build_metadata, write_mp4
 
-        write_mp4(output, frame_bytes, final_durations, crf=crf, codec=codec)
+        write_mp4(
+            output, frame_bytes, final_durations, crf=crf, codec=codec, metadata=build_metadata()
+        )
     else:
         from dirplot.render_png import write_apng
 
@@ -958,10 +1003,10 @@ def replay_cmd(
 @app.command(name="read-meta")
 def read_meta(
     files: list[Path] = typer.Argument(
-        ..., help="PNG or SVG file(s) to read dirplot metadata from"
+        ..., help="PNG, SVG, or MP4/MOV file(s) to read dirplot metadata from"
     ),
 ) -> None:
-    """Read dirplot metadata embedded in one or more PNG or SVG files."""
+    """Read dirplot metadata embedded in one or more PNG, SVG, or MP4/MOV files."""
     any_error = False
 
     for file in files:
@@ -1011,8 +1056,40 @@ def read_meta(
             for k, v in svg_meta.items():
                 typer.echo(f"{k}: {v}")
 
+        elif suffix in {".mp4", ".mov"}:
+            import json
+            import shutil
+            import subprocess
+
+            if not shutil.which("ffprobe"):
+                typer.echo("Error: ffprobe not found on PATH (install ffmpeg).", err=True)
+                any_error = True
+                continue
+            result = subprocess.run(
+                ["ffprobe", "-v", "quiet", "-print_format", "json", "-show_format", str(file)],
+                capture_output=True,
+            )
+            if result.returncode != 0:
+                typer.echo(
+                    f"Error reading MP4 metadata: {result.stderr.decode(errors='replace')}",
+                    err=True,
+                )
+                any_error = True
+                continue
+            tags = json.loads(result.stdout).get("format", {}).get("tags", {})
+            meta_keys = {"Date", "Software", "URL", "Python", "OS", "Command"}
+            found = {k: v for k, v in tags.items() if k in meta_keys}
+            if not found:
+                typer.echo("No dirplot metadata found in MP4.", err=True)
+                any_error = True
+                continue
+            for k, v in found.items():
+                typer.echo(f"{k}: {v}")
+
         else:
-            typer.echo(f"Unsupported file type: {suffix!r}. Expected .png or .svg", err=True)
+            typer.echo(
+                f"Unsupported file type: {suffix!r}. Expected .png, .svg, or .mp4/.mov", err=True
+            )
             any_error = True
 
     if any_error:

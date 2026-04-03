@@ -734,6 +734,7 @@ def write_mp4(
     durations_ms: list[int],
     crf: int = 23,
     codec: str = "libx264",
+    metadata: dict[str, str] | None = None,
 ) -> None:
     """Write *frame_bytes* as an MP4 video file using ffmpeg.
 
@@ -748,6 +749,8 @@ def write_mp4(
         codec: FFmpeg video codec.  ``"libx264"`` (H.264, default) is the most
             compatible; ``"libx265"`` (H.265/HEVC) gives ~40 % smaller files at
             the same perceived quality.
+        metadata: Optional key/value pairs to embed as MP4 metadata atoms
+            (passed to ffmpeg via ``-metadata key=value``).
 
     Raises:
         RuntimeError: If ffmpeg is not found on PATH or exits non-zero.
@@ -797,8 +800,12 @@ def write_mp4(
             # libx264/libx265 require even dimensions
             "-vf",
             "scale=trunc(iw/2)*2:trunc(ih/2)*2",
-            str(output),
         ]
+        if metadata:
+            cmd += ["-movflags", "use_metadata_tags"]
+            for key, value in metadata.items():
+                cmd += ["-metadata", f"{key}={value}"]
+        cmd.append(str(output))
         result = subprocess.run(cmd, capture_output=True)
         if result.returncode != 0:
             raise RuntimeError(

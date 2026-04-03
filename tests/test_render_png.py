@@ -254,3 +254,35 @@ def test_write_mp4_odd_dimensions(tmp_path: Path) -> None:
     write_mp4(out, frames, [500])
     assert out.exists()
     assert out.stat().st_size > 0
+
+
+@pytest.mark.skipif(
+    not shutil.which("ffmpeg") or not shutil.which("ffprobe"),
+    reason="ffmpeg/ffprobe not found",
+)
+def test_write_mp4_metadata_embedded(tmp_path: Path) -> None:
+    """Metadata passed to write_mp4 is readable via ffprobe."""
+    import json
+    import subprocess
+
+    meta = {"Software": "dirplot test", "URL": "https://example.com", "Command": "dirplot test"}
+    out = tmp_path / "out.mp4"
+    write_mp4(out, [_make_png_frame((0, 128, 0))], [500], metadata=meta)
+
+    result = subprocess.run(
+        ["ffprobe", "-v", "quiet", "-print_format", "json", "-show_format", str(out)],
+        capture_output=True,
+        check=True,
+    )
+    tags = json.loads(result.stdout).get("format", {}).get("tags", {})
+    for key, value in meta.items():
+        assert tags.get(key) == value, f"MP4 missing or wrong metadata for {key!r}"
+
+
+@pytest.mark.skipif(not shutil.which("ffmpeg"), reason="ffmpeg not found")
+def test_write_mp4_no_metadata_omits_movflags(tmp_path: Path) -> None:
+    """write_mp4 without metadata produces a valid file and doesn't break."""
+    out = tmp_path / "out.mp4"
+    write_mp4(out, [_make_png_frame((255, 0, 0))], [500], metadata=None)
+    assert out.exists()
+    assert out.stat().st_size > 0
