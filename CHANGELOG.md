@@ -27,6 +27,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   dirplot git github://owner/repo -o history.mp4 --animate --last 2w --max-commits 10
   ```
 
+### Fixed
+
+- **`--total-duration` overshooting the target length** — when many commits fell within
+  a burst (closely-spaced timestamps), their proportional frame durations would each be
+  raised to the 200 ms floor, inflating the total well beyond the requested duration
+  (e.g. 34 s instead of 30 s). The floor is still applied for readability, but the
+  non-floored frames are now scaled down to compensate so the sum always matches
+  `--total-duration` exactly.
+
 ## [0.4.0] - 2026-03-28
 
 ### Added

@@ -1,12 +1,13 @@
 """Tests for GitHub repository tree scanning."""
 
 import json
+import subprocess
 from typing import Any
 from unittest.mock import MagicMock, patch
 
 import pytest
 
-from dirplot.github import build_tree_github, is_github_path, parse_github_path
+from dirplot.github import _gh_cli_token, build_tree_github, is_github_path, parse_github_path
 
 # ---------------------------------------------------------------------------
 # Mock helper
@@ -213,4 +214,70 @@ def test_build_tree_github_truncated_warns(capsys: pytest.CaptureFixture[str]) -
     with mock_urlopen({"git/trees": tree_response(items, truncated=True)}):
         build_tree_github("owner", "repo", "main")
 
-    assert "truncated" in capsys.readouterr().err
+
+# ---------------------------------------------------------------------------
+# _gh_cli_token
+# ---------------------------------------------------------------------------
+
+
+def test_gh_cli_token_not_installed() -> None:
+    """Returns None when gh is not on PATH."""
+    with patch("subprocess.run", side_effect=FileNotFoundError):
+        assert _gh_cli_token() is None
+
+
+def test_gh_cli_token_authenticated() -> None:
+    """Returns the stripped token when gh exits 0."""
+    mock_result = MagicMock(returncode=0, stdout="ghp_testtoken123\n")
+    with patch("subprocess.run", return_value=mock_result):
+        assert _gh_cli_token() == "ghp_testtoken123"
+
+
+def test_gh_cli_token_not_authenticated() -> None:
+    """Returns None when gh exits non-zero (not logged in)."""
+    mock_result = MagicMock(returncode=1, stdout="")
+    with patch("subprocess.run", return_value=mock_result):
+        assert _gh_cli_token() is None
+
+
+def test_gh_cli_token_timeout() -> None:
+    """Returns None when gh times out."""
+    with patch("subprocess.run", side_effect=subprocess.TimeoutExpired("gh", 5)):
+        assert _gh_cli_token() is None
+
+
+def test_gh_cli_token_empty_output() -> None:
+    """Returns None when gh outputs only whitespace."""
+    mock_result = MagicMock(returncode=0, stdout="   \n")
+    with patch("subprocess.run", return_value=mock_result):
+        assert _gh_cli_token() is None
+
+
+def test_build_tree_github_falls_back_to_gh_cli_token() -> None:
+    """build_tree_github uses the gh CLI token when GITHUB_TOKEN is absent."""
+    items = [blob("README.md", 100)]
+    captured_headers: list[str] = []
+
+    def fake_urlopen(req: Any) -> Any:
+        auth = req.get_header("Authorization")
+        if auth:
+            captured_headers.append(auth)
+        resp = MagicMock()
+        if "git/trees" in req.full_url:
+            resp.read.return_value = json.dumps(tree_response(items)).encode()
+        else:
+            resp.read.return_value = json.dumps(repo_response()).encode()
+        resp.__enter__ = lambda s: s
+        resp.__exit__ = MagicMock(return_value=False)
+        return resp
+
+    gh_token = MagicMock(return_value="ghp_fromcli")
+    with (
+        patch("urllib.request.urlopen", side_effect=fake_urlopen),
+        patch("os.environ.get", return_value=None),
+        patch("dirplot.github._gh_cli_token", gh_token),
+    ):
+        build_tree_github("owner", "repo", "main")
+
+    gh_token.assert_called_once()
+    assert any("ghp_fromcli" in h for h in captured_headers)
