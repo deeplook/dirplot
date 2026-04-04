@@ -1908,3 +1908,8 @@ def main(
             display_inline(buf)
         else:
             display_window(buf, title=_display_title)
+
+
+# Reorder help output regardless of definition order.
+_CMD_ORDER = ["demo", "termsize", "map", "git", "watch", "replay", "read-meta"]
+app.registered_commands.sort(key=lambda c: _CMD_ORDER.index(c.name or ""))
