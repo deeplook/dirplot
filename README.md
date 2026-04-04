@@ -15,7 +15,7 @@
 
 - Squarified treemap layout; file area proportional to size; ~500 extensions mapped to [GitHub Linguist](https://github.com/github/linguist) colours.
 - PNG, animated PNG (APNG), MP4, and MOV output for single frames and animations; interactive SVG for static maps; renders at terminal pixel size or a custom `WIDTHxHEIGHT`.
-- **Animate git history** (`dirplot git`), **watch live filesystems** (`dirplot watch`), and **replay event logs** (`dirplot replay`) — output APNG, MP4, or MOV.
+- **Animate git history** (`dirplot git`), **Mercurial history** (`dirplot hg`), **watch live filesystems** (`dirplot watch`), and **replay event logs** (`dirplot replay`) — output APNG, MP4, or MOV.
 - Scan **SSH hosts**, **AWS S3**, **GitHub repos** (public and private), **Docker containers**, and **Kubernetes pods** — no extra deps beyond the respective CLI.
 - Read **archives** directly (zip, tar, 7z, rar, jar, whl, …) without unpacking.
 - Works on macOS, Linux, and Windows (WSL2 fully supported).
@@ -34,7 +34,7 @@ Optional extras: `pip install "dirplot[ssh]"`, `"dirplot[s3]"`, `"dirplot[libarc
 
 `dirplot watch` uses [watchdog](https://github.com/gorakhargosh/watchdog) for filesystem monitoring — installed automatically as a dependency.
 
-`dirplot git` requires `git` on `PATH`. MP4 output (`dirplot git`, `dirplot watch`, `dirplot replay` with `--animate`) requires [ffmpeg](https://ffmpeg.org/) on `PATH`. `dirplot read-meta` on `.mp4` files also requires `ffprobe` (bundled with ffmpeg).
+`dirplot git` requires `git` on `PATH`; `dirplot hg` requires `hg` (Mercurial) on `PATH`. MP4 output (`dirplot git`, `dirplot watch`, `dirplot replay` with `--animate`) requires [ffmpeg](https://ffmpeg.org/) on `PATH`. `dirplot read-meta` on `.mp4` files also requires `ffprobe` (bundled with ffmpeg).
 
 ## Quick start
 
@@ -51,6 +51,9 @@ tree src/ | dirplot map                                          # pipe tree out
 dirplot git . -o history.mp4 --animate                           # full git history
 dirplot git . -o history.mp4 --animate --last 30d                # last 30 days
 dirplot git github://owner/repo -o h.mp4 --animate --last 7d    # GitHub, last week
+
+dirplot hg /path/to/repo -o history.png --animate               # full hg history
+dirplot hg /path/to/repo@tip -o history.png                     # static, tip only
 
 dirplot watch . --output treemap.png                             # live watch
 dirplot watch . --output treemap.mp4 --animate                   # record as MP4

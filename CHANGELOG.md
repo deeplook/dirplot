@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`dirplot hg` command** — replay Mercurial changeset history as an animated
+  treemap, identical in interface to `dirplot git`. Supports `--animate`,
+  `--max-commits`, `--last`, `--total-duration`, `--frame-duration`, `--fade-out`,
+  `--dark`/`--light`, `--workers`, `--crf`, `--codec`, and all other animation flags.
+  The `@rev` suffix on the repo path passes a revset directly to `hg log`.
+  Requires `hg` on `PATH`. Only local repositories are supported — there is no
+  `hg://` URI scheme because there is no Mercurial equivalent of GitHub.
+  ```bash
+  dirplot hg /path/to/repo --output history.png --animate
+  dirplot hg /path/to/repo@tip --output history.png
+  dirplot hg /path/to/repo --animate --last 30d --output history.mp4
+  ```
+
 ## [0.4.1] - 2026-04-03
 
 ### Added

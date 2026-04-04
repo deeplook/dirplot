@@ -360,6 +360,151 @@ def parse_last_period(value: str) -> _datetime:
     return datetime.now(tz=timezone.utc) - timedelta(seconds=amount * seconds)
 
 
+def _run_vcs_animation(
+    repo: Path,
+    snapshots: list[tuple[int, str, int, dict[str, int], dict[str, str], dict[str, str]]],
+    commit_durations: list[int],
+    output: Path,
+    *,
+    width_px: int,
+    height_px: int,
+    font_size: int,
+    colormap: str,
+    depth: int | None,
+    log_scale: bool,
+    cushion: bool,
+    dark: bool,
+    workers: int | None,
+    crf: int,
+    codec: str,
+    fade_out: bool,
+    fade_out_duration: float,
+    fade_out_frames: int | None,
+    fade_out_color: str,
+) -> None:
+    """Render *snapshots* to an animated APNG or MP4 at *output*.
+
+    Phases 2–4 of the VCS animation pipeline: parallel frame rendering,
+    deletion-highlight patching, and output writing.  Shared by ``git_cmd``
+    and ``hg_cmd``; the VCS-specific Phase 1 (collecting snapshots) is
+    handled by each command.
+    """
+    import io
+    import os
+    from concurrent.futures import ProcessPoolExecutor, as_completed
+
+    from dirplot.git_scanner import _render_frame_worker
+    from dirplot.render_png import _draw_highlights
+
+    # ── Phase 2: parallel render ──────────────────────────────────────────
+    total = len(snapshots)
+    n_workers = min(workers if workers is not None else (os.cpu_count() or 1), total)
+    typer.echo(f"Rendering {total} frame(s) using {n_workers} worker(s) ...", err=True)
+
+    # Per-frame progress: fraction of total animation time elapsed after each
+    # frame plays.  With proportional timing this reflects real bursts; with
+    # fixed durations it is the same as linear.
+    total_anim_ms = sum(commit_durations)
+    cumulative_ms = 0.0
+    frame_progress: dict[int, float] = {}
+    for orig_i, *_ in snapshots:
+        cumulative_ms += commit_durations[orig_i]
+        frame_progress[orig_i] = cumulative_ms / total_anim_ms
+
+    render_args = [
+        (
+            str(repo),
+            files_copy,
+            cur_hl,
+            sha,
+            ts,
+            orig_i,
+            frame_progress[orig_i],
+            depth,
+            log_scale,
+            width_px,
+            height_px,
+            font_size,
+            colormap,
+            cushion,
+            dark,
+        )
+        for orig_i, sha, ts, files_copy, cur_hl, _del in snapshots
+    ]
+
+    # raw[orig_i] = (png_bytes, rect_map) as returned by the worker
+    raw: dict[int, tuple[bytes, dict[str, tuple[int, int, int, int]]]] = {}
+
+    try:
+        with ProcessPoolExecutor(max_workers=n_workers, initializer=_worker_ignore_sigint) as pool:
+            futures = {pool.submit(_render_frame_worker, args): args[5] for args in render_args}
+            for done, future in enumerate(as_completed(futures), 1):
+                orig_i, png_bytes, rect_map = future.result()
+                raw[orig_i] = (png_bytes, rect_map)
+                typer.echo(f"  Rendered {done}/{total}", err=True)
+    except KeyboardInterrupt:
+        typer.echo("\nInterrupted.", err=True)
+        raise typer.Exit(1) from None
+
+    # ── Phase 3: assemble ordered frames, patch deletions ─────────────────
+    frame_bytes: list[bytes] = []
+    frame_durations: list[int] = []
+
+    for j, (orig_i, _sha, _ts, _files, _hl, deletions) in enumerate(snapshots):
+        if deletions and j > 0:
+            # Draw deletion highlights onto the previous frame.
+            prev_bytes, prev_rect = raw[snapshots[j - 1][0]]
+            from PIL import Image, ImageDraw
+
+            prev_img = Image.open(io.BytesIO(prev_bytes)).convert("RGB")
+            _draw_highlights(ImageDraw.Draw(prev_img), prev_rect, deletions)
+            buf = io.BytesIO()
+            prev_img.save(buf, format="PNG")
+            frame_bytes[-1] = buf.getvalue()
+        frame_bytes.append(raw[orig_i][0])
+        frame_durations.append(commit_durations[orig_i])
+
+    # ── Phase 4: write output ─────────────────────────────────────────────
+    if fade_out and frame_bytes:
+        from dirplot.render_png import _frames_as_rgba, make_fade_out_frames
+
+        fade_color = _resolve_fade_color(fade_out_color, dark)
+        fade_transparent = len(fade_color) == 4 and fade_color[3] == 0
+        if fade_transparent and output.suffix.lower() in {".mp4", ".mov"}:
+            fade_color = (0, 0, 0) if dark else (255, 255, 255)
+            fade_transparent = False
+        if fade_transparent:
+            frame_bytes = _frames_as_rgba(frame_bytes)
+        extra, extra_durs = make_fade_out_frames(
+            frame_bytes[-1],
+            n_frames=fade_out_frames
+            if fade_out_frames is not None
+            else max(1, round(fade_out_duration * 4)),
+            duration_ms=int(fade_out_duration * 1000),
+            target_color=fade_color,
+        )
+        frame_bytes.extend(extra)
+        frame_durations.extend(extra_durs)
+
+    if output.suffix.lower() in {".mp4", ".mov"}:
+        from dirplot.render_png import build_metadata, write_mp4
+
+        write_mp4(
+            output,
+            frame_bytes,
+            frame_durations,
+            crf=crf,
+            codec=codec,
+            metadata=build_metadata(),
+        )
+    else:
+        from dirplot.render_png import write_apng
+
+        write_apng(output, frame_bytes, frame_durations)
+    fmt = output.suffix.upper()[1:]
+    typer.echo(f"Wrote {len(frame_bytes)}-frame {fmt} → {output}", err=True)
+
+
 _GIT_EPILOG = (
     "[bold]Examples[/bold]\n\n"
     "  dirplot git . -o history.apng --animate"
@@ -495,8 +640,6 @@ def git_cmd(
     ),
 ) -> None:
     """Replay git history commit-by-commit as an animated treemap."""
-    import io
-    import os
     import shutil
     import subprocess
     import tempfile
@@ -513,7 +656,6 @@ def git_cmd(
         raise typer.Exit(1)
 
     from dirplot.git_scanner import build_node_tree, git_apply_diff, git_initial_files, git_log
-    from dirplot.render_png import _draw_highlights
 
     last_dt: datetime | None = None
     if last is not None:
@@ -713,120 +855,27 @@ def git_cmd(
             typer.echo("No frames captured.", err=True)
             raise typer.Exit(1)
 
-        # ── Phase 2: parallel render ──────────────────────────────────────────
-        import os
-        from concurrent.futures import ProcessPoolExecutor, as_completed
-
-        from dirplot.git_scanner import _render_frame_worker
-
-        total = len(snapshots)
-        n_workers = min(workers if workers is not None else (os.cpu_count() or 1), total)
-        typer.echo(f"Rendering {total} frame(s) using {n_workers} worker(s) ...", err=True)
-
-        # Per-frame progress: fraction of total animation time elapsed after
-        # each frame plays.  With proportional timing this reflects real bursts;
-        # with fixed durations it is the same as linear.
-        total_anim_ms = sum(commit_durations)
-        cumulative_ms = 0.0
-        frame_progress: dict[int, float] = {}
-        for orig_i, *_ in snapshots:
-            cumulative_ms += commit_durations[orig_i]
-            frame_progress[orig_i] = cumulative_ms / total_anim_ms
-
-        render_args = [
-            (
-                str(repo),
-                files_copy,
-                cur_hl,
-                sha,
-                ts,
-                orig_i,
-                frame_progress[orig_i],
-                depth,
-                log,
-                width_px,
-                height_px,
-                font_size,
-                colormap,
-                cushion,
-                dark,
-            )
-            for orig_i, sha, ts, files_copy, cur_hl, _del in snapshots
-        ]
-
-        # raw[orig_i] = (png_bytes, rect_map) as returned by the worker
-        raw: dict[int, tuple[bytes, dict[str, tuple[int, int, int, int]]]] = {}
-
-        try:
-            with ProcessPoolExecutor(
-                max_workers=n_workers, initializer=_worker_ignore_sigint
-            ) as pool:
-                futures = {pool.submit(_render_frame_worker, args): args[5] for args in render_args}
-                for done, future in enumerate(as_completed(futures), 1):
-                    orig_i, png_bytes, rect_map = future.result()
-                    raw[orig_i] = (png_bytes, rect_map)
-                    typer.echo(f"  Rendered {done}/{total}", err=True)
-        except KeyboardInterrupt:
-            typer.echo("\nInterrupted.", err=True)
-            raise typer.Exit(1) from None
-
-        # ── Phase 3: assemble ordered frames, patch deletions ─────────────────
-        frame_bytes: list[bytes] = []
-        frame_durations: list[int] = []
-
-        for j, (orig_i, _sha, _ts, _files, _hl, deletions) in enumerate(snapshots):
-            if deletions and j > 0:
-                # Draw deletion highlights onto the previous frame.
-                prev_bytes, prev_rect = raw[snapshots[j - 1][0]]
-                from PIL import Image, ImageDraw
-
-                prev_img = Image.open(io.BytesIO(prev_bytes)).convert("RGB")
-                _draw_highlights(ImageDraw.Draw(prev_img), prev_rect, deletions)
-                buf = io.BytesIO()
-                prev_img.save(buf, format="PNG")
-                frame_bytes[-1] = buf.getvalue()
-            frame_bytes.append(raw[orig_i][0])
-            frame_durations.append(commit_durations[orig_i])
-
-        # ── Phase 4: write output ─────────────────────────────────────────────
-        if fade_out and frame_bytes:
-            from dirplot.render_png import _frames_as_rgba, make_fade_out_frames
-
-            fade_color = _resolve_fade_color(fade_out_color, dark)
-            fade_transparent = len(fade_color) == 4 and fade_color[3] == 0
-            if fade_transparent and output.suffix.lower() in {".mp4", ".mov"}:
-                fade_color = (0, 0, 0) if dark else (255, 255, 255)
-                fade_transparent = False
-            if fade_transparent:
-                frame_bytes = _frames_as_rgba(frame_bytes)
-            extra, extra_durs = make_fade_out_frames(
-                frame_bytes[-1],
-                n_frames=fade_out_frames
-                if fade_out_frames is not None
-                else max(1, round(fade_out_duration * 4)),
-                duration_ms=int(fade_out_duration * 1000),
-                target_color=fade_color,
-            )
-            frame_bytes.extend(extra)
-            frame_durations.extend(extra_durs)
-
-        if output.suffix.lower() in {".mp4", ".mov"}:
-            from dirplot.render_png import build_metadata, write_mp4
-
-            write_mp4(
-                output,
-                frame_bytes,
-                frame_durations,
-                crf=crf,
-                codec=codec,
-                metadata=build_metadata(),
-            )
-        else:
-            from dirplot.render_png import write_apng
-
-            write_apng(output, frame_bytes, frame_durations)
-        fmt = output.suffix.upper()[1:]
-        typer.echo(f"Wrote {len(frame_bytes)}-frame {fmt} → {output}", err=True)
+        _run_vcs_animation(
+            repo=repo,
+            snapshots=snapshots,
+            commit_durations=commit_durations,
+            output=output,
+            width_px=width_px,
+            height_px=height_px,
+            font_size=font_size,
+            colormap=colormap,
+            depth=depth,
+            log_scale=log,
+            cushion=cushion,
+            dark=dark,
+            workers=workers,
+            crf=crf,
+            codec=codec,
+            fade_out=fade_out,
+            fade_out_duration=fade_out_duration,
+            fade_out_frames=fade_out_frames,
+            fade_out_color=fade_out_color,
+        )
 
     else:
         # ── Non-animate: render and overwrite output file per commit ──────────
@@ -853,7 +902,7 @@ def git_cmd(
                 apply_log_sizes(node)
 
             deletions = {p: v for p, v in all_hl.items() if v == "deleted"}
-            rect_map = {}
+            rect_map: dict[str, tuple[int, int, int, int]] = {}
             png_buf = create_treemap(
                 node,
                 width_px,
@@ -866,6 +915,328 @@ def git_cmd(
                 rect_map_out=rect_map,
                 title_suffix=(
                     f"sha:{sha[:8]}  {datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M')}"
+                ),
+                progress=cumulative_ms / total_anim_ms,
+                dark=dark,
+            )
+            output.write_bytes(png_buf.read())
+            typer.echo(f"  Updated {output}", err=True)
+
+
+_HG_EPILOG = (
+    "[bold]Examples[/bold]\n\n"
+    "  dirplot hg . -o history.apng --animate"
+    "  [dim]# full history, APNG[/dim]\n\n"
+    "  dirplot hg . -o history.mp4 --animate"
+    "  [dim]# full history, MP4 (H.264, CRF 23)[/dim]\n\n"
+    "  dirplot hg .@my-branch -o history.mp4 --animate"
+    "  [dim]# specific revision range[/dim]\n\n"
+    "  dirplot hg . -o history.mp4 --animate --last 30d"
+    "  [dim]# last 30 days of changesets[/dim]"
+)
+
+
+@app.command(name="hg", epilog=_HG_EPILOG)
+def hg_cmd(
+    repo_arg: str = typer.Argument(
+        ".",
+        help="Mercurial repository path (optionally suffixed with @rev, e.g. .@tip)",
+    ),
+    output: Path = typer.Option(..., "--output", "-o", help="Output PNG file"),
+    revision_range: str | None = typer.Option(
+        None,
+        "--range",
+        "-r",
+        help="Mercurial revision range (e.g. 0:tip).  Overrides @rev in the path.",
+    ),
+    max_commits: int | None = typer.Option(
+        None, "--max-commits", "-n", help="Maximum number of changesets to process"
+    ),
+    last: str | None = typer.Option(
+        None,
+        "--last",
+        help="Show changesets within a time period (e.g. 10d, 24h, 2w, 1mo). "
+        "May be combined with --max-commits.",
+        metavar="PERIOD",
+    ),
+    exclude: list[str] = typer.Option(
+        [], "--exclude", "-e", help="Top-level paths to exclude (repeatable)"
+    ),
+    font_size: int = typer.Option(12, "--font-size", help="Directory label font size in pixels"),
+    colormap: str = typer.Option("tab20", "--colormap", "-c", help="Matplotlib colormap"),
+    size: str | None = typer.Option(
+        None, "--size", help="Output size as WIDTHxHEIGHT", metavar="WIDTHxHEIGHT"
+    ),
+    cushion: bool = typer.Option(
+        True, "--cushion/--no-cushion", help="Apply van Wijk cushion shading"
+    ),
+    dark: bool = typer.Option(True, "--dark/--light", help="Dark background (default) or light"),
+    animate: bool = typer.Option(
+        False,
+        "--animate/--no-animate",
+        help="Build an animated APNG or MP4 from all changesets",
+    ),
+    log: bool = typer.Option(False, "--log/--no-log", help="Use log of file sizes for layout"),
+    depth: int | None = typer.Option(None, "--depth", help="Maximum directory depth"),
+    frame_duration: int = typer.Option(
+        1000,
+        "--frame-duration",
+        help="Frame display duration in ms when not using --total-duration",
+    ),
+    total_duration: float | None = typer.Option(
+        None,
+        "--total-duration",
+        help=(
+            "Target total animation length in seconds.  Frames are shown proportionally"
+            " to the real time gaps between changesets.  Overrides --frame-duration."
+        ),
+    ),
+    workers: int | None = typer.Option(
+        None,
+        "--workers",
+        "-w",
+        help="Parallel render workers for animate mode (default: all CPU cores).",
+    ),
+    crf: int = typer.Option(
+        23,
+        "--crf",
+        help="MP4 quality: Constant Rate Factor (0=lossless, 51=worst; default 23). "
+        "Ignored for APNG output.",
+        show_default=True,
+    ),
+    codec: str = typer.Option(
+        "libx264",
+        "--codec",
+        help="MP4 video codec: libx264 (H.264, default) or libx265 (H.265, smaller files). "
+        "Ignored for APNG output.",
+    ),
+    fade_out: bool = typer.Option(
+        False,
+        "--fade-out/--no-fade-out",
+        help="Append a fade-out sequence at the end of the animation (--animate only)",
+    ),
+    fade_out_duration: float = typer.Option(
+        1.0,
+        "--fade-out-duration",
+        help="Total duration of the fade-out in seconds",
+        show_default=True,
+    ),
+    fade_out_frames: int | None = typer.Option(
+        None,
+        "--fade-out-frames",
+        help="Number of equidistant frames in the fade-out (default: 4 per second of duration)",
+    ),
+    fade_out_color: str = typer.Option(
+        "auto",
+        "--fade-out-color",
+        help=(
+            "Target colour for the fade-out: 'auto' (black in dark mode, white in light mode), "
+            "'transparent' (APNG only), a CSS colour name, or a hex code"
+        ),
+        metavar="COLOR",
+    ),
+) -> None:
+    """Replay Mercurial history changeset-by-changeset as an animated treemap."""
+    import shutil
+    import subprocess
+    from datetime import datetime
+
+    if not shutil.which("hg"):
+        typer.echo(
+            "Error: hg not found on PATH.  Install Mercurial to use dirplot hg:\n"
+            "  macOS:  brew install mercurial\n"
+            "  Linux:  apt install mercurial  /  dnf install mercurial\n"
+            "  Windows: https://www.mercurial-scm.org/downloads",
+            err=True,
+        )
+        raise typer.Exit(1)
+
+    from dirplot.git_scanner import build_node_tree
+    from dirplot.hg_scanner import hg_apply_diff, hg_initial_files, hg_log
+
+    last_dt: datetime | None = None
+    if last is not None:
+        try:
+            last_dt = parse_last_period(last)
+        except ValueError as exc:
+            typer.echo(f"Error: {exc}", err=True)
+            raise typer.Exit(1) from exc
+
+    if "@" in repo_arg:
+        repo_path_str, _, inline_ref = repo_arg.partition("@")
+        if revision_range is None:
+            revision_range = inline_ref
+    else:
+        repo_path_str = repo_arg
+    repo = Path(repo_path_str).resolve()
+
+    if not (repo / ".hg").exists():
+        typer.echo(f"Error: not a Mercurial repository: {repo}", err=True)
+        raise typer.Exit(1)
+
+    if output.suffix.lower() not in {".png", ".apng", ".mp4", ".mov"}:
+        typer.echo("Error: --output must be a .png, .apng, .mp4, or .mov file.", err=True)
+        raise typer.Exit(1)
+
+    if size is not None:
+        try:
+            w_str, h_str = size.lower().split("x", 1)
+            width_px, height_px = int(w_str), int(h_str)
+        except ValueError:
+            typer.echo(f"Invalid --size '{size}'. Expected WIDTHxHEIGHT.", err=True)
+            raise typer.Exit(1) from None
+    else:
+        term_w, term_h, row_px = get_terminal_pixel_size()
+        width_px = term_w + 1
+        height_px = term_h - 3 * row_px
+
+    typer.echo(f"Reading hg log from {repo} ...", err=True)
+    try:
+        commits = hg_log(repo, revision_range, max_commits, last_dt)
+    except subprocess.CalledProcessError as exc:
+        typer.echo(f"Error reading hg log: {exc.stderr.strip()}", err=True)
+        raise typer.Exit(1) from exc
+
+    if not commits:
+        typer.echo("No changesets found.", err=True)
+        raise typer.Exit(1)
+
+    try:
+        _r = subprocess.run(
+            ["hg", "log", "-R", str(repo), "--template", "x\n"],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        total_in_repo: int | None = _r.stdout.count("x")
+    except (subprocess.CalledProcessError, ValueError):
+        total_in_repo = None
+
+    if total_in_repo is not None and total_in_repo > len(commits):
+        _filters = []
+        if last_dt is not None:
+            _filters.append(f"--last {last}")
+        if max_commits is not None:
+            _filters.append(f"--max-commits {max_commits}")
+        _filter_str = " and ".join(_filters) if _filters else "--max-commits"
+        typer.echo(
+            f"Replaying {len(commits)} of {total_in_repo} changeset(s) "
+            f"(filtered by {_filter_str}) ...",
+            err=True,
+        )
+    else:
+        typer.echo(f"Replaying {len(commits)} changeset(s) ...", err=True)
+
+    # Pre-compute per-changeset frame durations.
+    if total_duration is not None and animate:
+        if total_duration <= 0:
+            typer.echo("Error: --total-duration must be positive.", err=True)
+            raise typer.Exit(1)
+        timestamps = [ts for _, ts, _ in commits]
+        gaps: list[float] = [
+            max(1.0, float(timestamps[j + 1] - timestamps[j])) for j in range(len(timestamps) - 1)
+        ]
+        gaps.append(gaps[-1] if gaps else 1.0)
+        total_ms = total_duration * 1000
+        commit_durations = _proportional_durations(gaps, total_ms)
+        min_d, max_d = min(commit_durations), max(commit_durations)
+        typer.echo(
+            f"  Proportional timing: {min_d}–{max_d} ms/frame"
+            f" (total ~{sum(commit_durations) / 1000:.1f}s)",
+            err=True,
+        )
+    else:
+        commit_durations = [frame_duration] * len(commits)
+
+    excluded = frozenset(exclude)
+    files: dict[str, int] = {}
+    prev_node: str | None = None
+
+    if animate:
+        # ── Phase 1: fast sequential hg pass ─────────────────────────────────
+        Snapshot = tuple[int, str, int, dict[str, int], dict[str, str], dict[str, str]]
+        snapshots: list[Snapshot] = []
+
+        for i, (node, ts, subject) in enumerate(commits):
+            typer.echo(f"  [{i + 1}/{len(commits)}] {node[:8]}  {subject[:72]}", err=True)
+            try:
+                if prev_node is None:
+                    files = hg_initial_files(repo, node, excluded)
+                    all_hl: dict[str, str] = {}
+                else:
+                    all_hl = hg_apply_diff(repo, files, prev_node, node, excluded)
+            except subprocess.CalledProcessError as exc:
+                typer.echo(f"  Warning: skipping {node[:8]}: {exc.stderr.strip()}", err=True)
+                prev_node = node
+                continue
+            prev_node = node
+            deletions = {p: v for p, v in all_hl.items() if v == "deleted"}
+            cur_hl = {p: v for p, v in all_hl.items() if v != "deleted"}
+            snapshots.append((i, node, ts, dict(files), cur_hl, deletions))
+
+        if not snapshots:
+            typer.echo("No frames captured.", err=True)
+            raise typer.Exit(1)
+
+        _run_vcs_animation(
+            repo=repo,
+            snapshots=snapshots,
+            commit_durations=commit_durations,
+            output=output,
+            width_px=width_px,
+            height_px=height_px,
+            font_size=font_size,
+            colormap=colormap,
+            depth=depth,
+            log_scale=log,
+            cushion=cushion,
+            dark=dark,
+            workers=workers,
+            crf=crf,
+            codec=codec,
+            fade_out=fade_out,
+            fade_out_duration=fade_out_duration,
+            fade_out_frames=fade_out_frames,
+            fade_out_color=fade_out_color,
+        )
+
+    else:
+        # ── Non-animate: render and overwrite output file per changeset ───────
+        total_anim_ms = sum(commit_durations)
+        cumulative_ms = 0.0
+
+        for i, (node, ts, subject) in enumerate(commits):
+            typer.echo(f"  [{i + 1}/{len(commits)}] {node[:8]}  {subject[:72]}", err=True)
+            try:
+                if prev_node is None:
+                    files = hg_initial_files(repo, node, excluded)
+                    all_hl = {}
+                else:
+                    all_hl = hg_apply_diff(repo, files, prev_node, node, excluded)
+            except subprocess.CalledProcessError as exc:
+                typer.echo(f"  Warning: skipping {node[:8]}: {exc.stderr.strip()}", err=True)
+                prev_node = node
+                continue
+            prev_node = node
+            cumulative_ms += commit_durations[i]
+
+            node_tree = build_node_tree(repo, files, depth)
+            if log:
+                apply_log_sizes(node_tree)
+
+            rect_map: dict[str, tuple[int, int, int, int]] = {}
+            png_buf = create_treemap(
+                node_tree,
+                width_px,
+                height_px,
+                font_size,
+                colormap,
+                None,
+                cushion,
+                highlights={p: v for p, v in all_hl.items() if v != "deleted"} or None,
+                rect_map_out=rect_map,
+                title_suffix=(
+                    f"rev:{node[:8]}  {datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M')}"
                 ),
                 progress=cumulative_ms / total_anim_ms,
                 dark=dark,
@@ -1911,5 +2282,5 @@ def main(
 
 
 # Reorder help output regardless of definition order.
-_CMD_ORDER = ["demo", "termsize", "map", "git", "watch", "replay", "read-meta"]
+_CMD_ORDER = ["demo", "termsize", "map", "git", "hg", "watch", "replay", "read-meta"]
 app.registered_commands.sort(key=lambda c: _CMD_ORDER.index(c.name or ""))
