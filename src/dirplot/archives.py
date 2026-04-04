@@ -165,7 +165,17 @@ def _read_tar(path: Path) -> list[tuple[str, int, bool]]:
 
 def _read_rar(path: Path, password: str | None = None) -> list[tuple[str, int, bool]]:
     """Return (member_path, size, is_dir) tuples for a RAR archive."""
+    import shutil
+
     import rarfile
+
+    if not shutil.which(rarfile.UNRAR_TOOL):
+        raise RuntimeError(
+            "unrar not found on PATH.  Install it to read RAR archives:\n"
+            "  macOS:  brew install rar\n"
+            "  Linux:  apt install unrar  /  dnf install unrar\n"
+            "  Windows: https://www.rarlab.com/download.htm"
+        )
 
     entries: list[tuple[str, int, bool]] = []
     try:
