@@ -497,9 +497,20 @@ def git_cmd(
     """Replay git history commit-by-commit as an animated treemap."""
     import io
     import os
+    import shutil
     import subprocess
     import tempfile
     from datetime import datetime
+
+    if not shutil.which("git"):
+        typer.echo(
+            "Error: git not found on PATH.  Install it to use dirplot git:\n"
+            "  macOS:  brew install git  (or install Xcode Command Line Tools)\n"
+            "  Linux:  apt install git  /  dnf install git\n"
+            "  Windows: https://git-scm.com/download/win",
+            err=True,
+        )
+        raise typer.Exit(1)
 
     from dirplot.git_scanner import build_node_tree, git_apply_diff, git_initial_files, git_log
     from dirplot.render_png import _draw_highlights
