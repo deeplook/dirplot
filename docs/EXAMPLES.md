@@ -270,6 +270,64 @@ buf = create_treemap(root, width_px=1920, height_px=1080)
 
 ---
 
+## Git History Animation
+
+Replay a repository's commit history as an animated treemap. Each commit becomes one frame; changed tiles receive colour-coded highlight borders (green = created, blue = modified, red = deleted). Works with local repositories and with `github://` URLs — the repo is cloned into a temporary directory and removed on exit.
+
+### Usage
+
+```bash
+# Animate the full history of a local repo, write APNG
+dirplot git . --animate --output history.png
+
+# Last 50 commits, 30-second animation with time-proportional frame durations
+dirplot git . --animate --max-commits 50 --total-duration 30 --output history.png
+
+# Specific commit range from a GitHub repository, MP4 output, log scale
+dirplot git github://openclaw/openclaw --range 871e8882..8445c9a5 \
+  --animate --log --size 1920x1080 --output openclaw.mp4
+
+# Last 30 days of activity
+dirplot git . --animate --last 30d --output history.mp4
+```
+
+<figure>
+  <video src="openclaw-871e8882..8445c9a5.mp4" autoplay loop muted playsinline width="100%"></video>
+  <figcaption><code>dirplot git github://openclaw/openclaw --range 871e8882..8445c9a5 --animate --log --size 1920x1080 -o openclaw-871e8882..8445c9a5.mp4</code></figcaption>
+</figure>
+
+### Options
+
+| Flag | Default | Description |
+|---|---|---|
+| `--range` | full history | Git revision range passed to `git log` (e.g. `main~50..main`) |
+| `--max-commits` | unlimited | Cap the number of commits processed |
+| `--last` | — | Relative time filter: `30d`, `24h`, `2w`, `3mo` |
+| `--total-duration` | — | Target total animation length in seconds (time-proportional frame durations) |
+| `--frame-duration` | 1000 ms | Fixed frame duration when `--total-duration` is not set |
+| `--workers` | all cores | Number of parallel render workers |
+| `--log` | off | Log-scale file sizes to prevent large files from dominating |
+| `--dark` / `--light` | dark | Background and label colour scheme |
+| `--github-token` | `GITHUB_TOKEN` env var | Token for private repos or to raise rate limits |
+
+### Python API
+
+> **Note:** The programmatic Python API is still evolving and may change between releases without notice. Pin a specific version if you depend on it. The CLI interface is stable.
+
+```python
+from dirplot.github import build_tree_github
+from dirplot.render_png import create_treemap
+import os
+
+root, ref = build_tree_github(
+    "openclaw", "openclaw",
+    token=os.environ.get("GITHUB_TOKEN"),
+)
+buf = create_treemap(root, width_px=1920, height_px=1080, cushion=True)
+```
+
+---
+
 ## Docker Containers
 
 Scan a running Docker container's filesystem using `docker exec`. No extra dependency is required beyond the `docker` CLI being in `PATH`.
