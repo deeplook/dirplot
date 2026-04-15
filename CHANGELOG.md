@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Cushion shading applied to directory tiles** — the batch cushion pass
+  incorrectly treated directory rectangles as file tiles, applying full-strength
+  shading to the entire area of each directory. Directories are now shaded at half
+  strength (scale 0.5) to give broad structural context, while individual file leaf
+  tiles continue to receive full-strength shading. The effect is two-level: directory
+  gradients provide coarse orientation, per-file gradients add local detail — matching
+  the hierarchical intent of van Wijk (1999). Both the PNG and SVG renderers are updated.
+
 ### Added
 
 - **`dirplot hg` command** — replay Mercurial changeset history as an animated
