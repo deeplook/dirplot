@@ -267,7 +267,7 @@ def test_watch_animate_apng() -> None:
 
     # Write sidecar log describing every frame.
     log_path = _DEMO_OUTPUT.with_suffix(".txt")
-    log_path.write_text("\n".join(frame_log) + "\n")
+    log_path.write_text("\n".join(frame_log) + "\n", encoding="utf-8")
 
     n_expected = 20
 
