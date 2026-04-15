@@ -2281,6 +2281,10 @@ def main(
             display_window(buf, title=_display_title)
 
 
+from dirplot._overview import add_overview_command  # noqa: E402
+
+add_overview_command(app)
+
 # Reorder help output regardless of definition order.
-_CMD_ORDER = ["demo", "termsize", "map", "git", "hg", "watch", "replay", "read-meta"]
+_CMD_ORDER = ["demo", "overview", "termsize", "map", "git", "hg", "watch", "replay", "read-meta"]
 app.registered_commands.sort(key=lambda c: _CMD_ORDER.index(c.name or ""))
