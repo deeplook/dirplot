@@ -173,6 +173,15 @@ def test_cli_termsize() -> None:
     assert "×" in result.output
 
 
+def test_overview() -> None:
+    result = runner.invoke(app, ["overview"])
+    assert result.exit_code == 0
+    assert "Application Overview" in result.output
+    assert "dirplot" in result.output
+    assert "map" in result.output
+    assert "git" in result.output
+
+
 def test_read_meta_png(sample_tree: Path, tmp_path: Path) -> None:
     output = tmp_path / "out.png"
     runner.invoke(app, ["map", str(sample_tree), "--no-show", "--output", str(output)])

@@ -21,6 +21,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **`dirplot overview` command** — prints a human-readable summary of all
+  commands, their arguments, options, and global options. Appears at position
+  #2 in the help listing.
+
 - **`dirplot hg` command** — replay Mercurial changeset history as an animated
   treemap, identical in interface to `dirplot git`. Supports `--animate`,
   `--max-commits`, `--last`, `--total-duration`, `--frame-duration`, `--fade-out`,
