@@ -292,7 +292,7 @@ dirplot git . --animate --last 30d --output history.mp4
 ```
 
 <figure>
-  <video src="https://github.com/deeplook/dirplot/raw/main/docs/openclaw-871e8882-8445c9a5.mp4" autoplay loop muted playsinline width="100%"></video>
+  <video src="https://github.com/user-attachments/assets/b30b3434-ff48-4a43-a363-620899b86ebb" autoplay loop muted playsinline width="100%"></video>
   <figcaption><code>dirplot git github://openclaw/openclaw --range 871e8882..8445c9a5 --animate --log --size 1920x1080 -o openclaw-871e8882-8445c9a5.mp4</code></figcaption>
 </figure>
 
