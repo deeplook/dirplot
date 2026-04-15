@@ -20,8 +20,10 @@ LEG_PAD = 3
 # Van Wijk cushion: brightness ranges from ×0.80 (bottom-right) to ×1.20 (top-left).
 # We approximate this with a diagonal overlay: white at opacity=0.20 blends into
 # black at opacity=0.20, with a transparent midpoint so the center is unchanged.
-_CUSHION_HIGHLIGHT = 0.20  # white overlay opacity at top-left
-_CUSHION_SHADOW = 0.20  # black overlay opacity at bottom-right
+_CUSHION_HIGHLIGHT = 0.20  # white overlay opacity at top-left (file tiles)
+_CUSHION_SHADOW = 0.20  # black overlay opacity at bottom-right (file tiles)
+_CUSHION_HIGHLIGHT_DIR = 0.10  # half-strength for directory-level shading
+_CUSHION_SHADOW_DIR = 0.10
 
 # ---------------------------------------------------------------------------
 # Interactive effects: CSS + JS
@@ -193,6 +195,17 @@ def _make_cushion_gradient() -> drawsvg.LinearGradient:
     return grad
 
 
+def _make_cushion_gradient_dir() -> drawsvg.LinearGradient:
+    """Half-strength version of the cushion gradient for directory-level shading."""
+    grad: drawsvg.LinearGradient = drawsvg.LinearGradient(
+        0, 0, 1, 1, gradientUnits="objectBoundingBox"
+    )
+    grad.add_stop(0.0, "white", _CUSHION_HIGHLIGHT_DIR)
+    grad.add_stop(0.5, "black", 0.0)
+    grad.add_stop(1.0, "black", _CUSHION_SHADOW_DIR)
+    return grad
+
+
 # ---------------------------------------------------------------------------
 # Colour helpers
 # ---------------------------------------------------------------------------
@@ -281,6 +294,7 @@ def _draw_node_svg(
     color_map: dict[str, RGBAColor],
     font_size: int = 12,
     cushion_grad: drawsvg.LinearGradient | None = None,
+    cushion_dir_grad: drawsvg.LinearGradient | None = None,
     root_label: str | None = None,
     dark: bool = True,
 ) -> None:
@@ -438,7 +452,24 @@ def _draw_node_svg(
         ry = round(rect["y"])
         rw = round(rect["x"] + rect["dx"]) - rx - 1
         rh = round(rect["y"] + rect["dy"]) - ry - 1
-        _draw_node_svg(d, child, rx, ry, rw, rh, color_map, font_size, cushion_grad, dark=dark)
+        _draw_node_svg(
+            d,
+            child,
+            rx,
+            ry,
+            rw,
+            rh,
+            color_map,
+            font_size,
+            cushion_grad,
+            cushion_dir_grad,
+            dark=dark,
+        )
+
+    # Directory-level cushion overlay (half strength) drawn after children so it
+    # sits on top as a transparent wash, giving large directories structural shading.
+    if cushion_dir_grad is not None and w >= 4 and h >= 4:
+        d.append(drawsvg.Rectangle(x, y, w, h, fill=cushion_dir_grad, pointer_events="none"))
 
 
 # ---------------------------------------------------------------------------
@@ -627,11 +658,14 @@ def create_treemap_svg(
     canvas_bg = "#1a1a2e" if dark else "#ffffff"
     d.append(drawsvg.Rectangle(0, 0, width_px, height_px, fill=canvas_bg))
 
-    # 3. Optional cushion gradient (defined once, reused by all tiles)
+    # 3. Optional cushion gradients (defined once each, reused by all tiles)
     cushion_grad: drawsvg.LinearGradient | None = None
+    cushion_dir_grad: drawsvg.LinearGradient | None = None
     if cushion:
         cushion_grad = _make_cushion_gradient()
         d.append(cushion_grad)
+        cushion_dir_grad = _make_cushion_gradient_dir()
+        d.append(cushion_dir_grad)
 
     # 4. Treemap tiles
     n_files, n_dirs = count_nodes(root_node)
@@ -651,6 +685,7 @@ def create_treemap_svg(
         color_map,
         font_size,
         cushion_grad,
+        cushion_dir_grad,
         root_label=root_label,
         dark=dark,
     )

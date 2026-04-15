@@ -384,11 +384,11 @@ def test_cushion_off_omits_linearGradient(sample_tree: Path) -> None:
 
 
 def test_cushion_gradient_is_defined_once(sample_tree: Path) -> None:
-    """The cushion gradient must be defined exactly once in <defs> regardless of tile count."""
+    """Two gradients (file + dir) each defined once in <defs> regardless of tile count."""
     root = build_tree(sample_tree)
     buf = create_treemap_svg(root, width_px=400, height_px=300, cushion=True)
     content = buf.read().decode("utf-8")
-    assert content.count("linearGradient") == 2  # one open tag, one close tag
+    assert content.count("linearGradient") == 4  # two gradients × (open + close tag)
 
 
 def test_cushion_no_cushion_same_structure(sample_tree: Path) -> None:
