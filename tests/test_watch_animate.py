@@ -1,7 +1,9 @@
 """Integration test: watch + animate mode produces a valid multi-frame APNG.
 
-The output is written to tests/animation/watch_demo.png and kept after the
-test so it can be inspected visually in Safari, Firefox, or Preview.
+Outputs written to tests/animation/ and kept after the test:
+  watch_demo.png  — animated PNG, open in Safari/Firefox/Preview
+  watch_demo.txt  — sidecar log describing each frame (frame N: description)
+  project/        — final working-directory state after all teardown frames
 """
 
 import shutil
@@ -27,17 +29,28 @@ except ImportError:
     _watchdog_available = False
 
 _DEMO_OUTPUT = Path(__file__).parent / "animation" / "watch_demo.png"
+_WORK_DIR = Path(__file__).parent / "animation" / "project"
 
 
-def test_watch_animate_apng(tmp_path: Path) -> None:
+def test_watch_animate_apng() -> None:
     """Watch a directory through several distinct file-system states and verify
-    the resulting APNG has one frame per state with sane frame durations."""
+    the resulting APNG has one frame per state with sane frame durations.
+
+    Working files are kept in tests/animation/project/ after the test so the
+    final directory state can be inspected.  A sidecar log is written to
+    tests/animation/watch_demo.txt describing each frame.
+    """
 
     _DEMO_OUTPUT.parent.mkdir(parents=True, exist_ok=True)
     _DEMO_OUTPUT.unlink(missing_ok=True)
 
+    # Clean and repopulate the persistent work directory on each run.
+    if _WORK_DIR.exists():
+        shutil.rmtree(_WORK_DIR)
+    _WORK_DIR.mkdir(parents=True)
+
     handler = TreemapEventHandler(
-        [tmp_path],
+        [_WORK_DIR],
         _DEMO_OUTPUT,
         width_px=800,
         height_px=600,
@@ -50,40 +63,51 @@ def test_watch_animate_apng(tmp_path: Path) -> None:
     def _h(path: Path, verb: str) -> None:
         handler._pending_highlights[str(path)] = verb
 
+    frame_log: list[str] = []
+    frame_n = 0
+
+    def emit(desc: str) -> None:
+        nonlocal frame_n
+        frame_n += 1
+        entry = f"Frame {frame_n:02d}: {desc}"
+        frame_log.append(entry)
+        print(f"\n  {entry}")
+        handler._regenerate()
+
     PAUSE = 2.0
 
     # ── frame 1: empty directory ─────────────────────────────────────────
-    handler._regenerate()
+    emit("empty directory")
     time.sleep(PAUSE)
 
     # ── frame 2: create src/ with two files ──────────────────────────────
-    src = tmp_path / "src"
+    src = _WORK_DIR / "src"
     src.mkdir()
     (src / "main.py").write_bytes(b"x" * 5_000)
     _h(src / "main.py", "created")
     (src / "utils.py").write_bytes(b"x" * 3_000)
     _h(src / "utils.py", "created")
-    handler._regenerate()
+    emit("create src/main.py (5 KB) + src/utils.py (3 KB)")
     time.sleep(PAUSE)
 
     # ── frame 3: add docs/ ───────────────────────────────────────────────
-    docs = tmp_path / "docs"
+    docs = _WORK_DIR / "docs"
     docs.mkdir()
     (docs / "README.md").write_bytes(b"x" * 2_000)
     _h(docs / "README.md", "created")
     (docs / "api.md").write_bytes(b"x" * 1_500)
     _h(docs / "api.md", "created")
-    handler._regenerate()
+    emit("create docs/README.md (2 KB) + docs/api.md (1.5 KB)")
     time.sleep(PAUSE)
 
     # ── frame 4: add tests/ ──────────────────────────────────────────────
-    tests = tmp_path / "tests"
+    tests = _WORK_DIR / "tests"
     tests.mkdir()
     for i in range(4):
         p = tests / f"test_{i}.py"
         p.write_bytes(b"x" * (1_000 + i * 500))
         _h(p, "created")
-    handler._regenerate()
+    emit("create tests/test_0..3.py (1–2.5 KB each)")
     time.sleep(PAUSE)
 
     # ── frame 5: grow src/ + modify main.py ──────────────────────────────
@@ -93,41 +117,41 @@ def test_watch_animate_apng(tmp_path: Path) -> None:
         _h(p, "created")
     (src / "main.py").write_bytes(b"x" * 8_000)
     _h(src / "main.py", "modified")
-    handler._regenerate()
+    emit("add src/models.py (10 KB), api.py (7 KB), database.py (15 KB); grow main.py → 8 KB")
     time.sleep(PAUSE)
 
-    # ── frame 6: tweak src/ sizes ──────────────────────────────────────────
+    # ── frame 6: tweak src/ sizes ─────────────────────────────────────────
     (src / "main.py").write_bytes(b"x" * 8_500)
     _h(src / "main.py", "modified")
     (src / "utils.py").write_bytes(b"x" * 3_400)
     _h(src / "utils.py", "modified")
-    handler._regenerate()
+    emit("tweak src/main.py → 8.5 KB, src/utils.py → 3.4 KB")
     time.sleep(PAUSE)
 
     # ── frame 7: add data/ with large files ──────────────────────────────
-    data = tmp_path / "data"
+    data = _WORK_DIR / "data"
     data.mkdir()
     for name, sz in [("dataset.csv", 60_000), ("model.pkl", 40_000), ("config.json", 5_000)]:
         p = data / name
         p.write_bytes(b"x" * sz)
         _h(p, "created")
-    handler._regenerate()
+    emit("create data/ with dataset.csv (60 KB), model.pkl (40 KB), config.json (5 KB)")
     time.sleep(PAUSE)
 
-    # ── frame 8: small edits to data/ and docs/ ─────────────────────────
+    # ── frame 8: small edits to data/ and docs/ ──────────────────────────
     (data / "config.json").write_bytes(b"x" * 5_800)
     _h(data / "config.json", "modified")
     (docs / "README.md").write_bytes(b"x" * 2_300)
     _h(docs / "README.md", "modified")
     (data / "dataset.csv").write_bytes(b"x" * 62_000)
     _h(data / "dataset.csv", "modified")
-    handler._regenerate()
+    emit("modify data/config.json → 5.8 KB, docs/README.md → 2.3 KB, dataset.csv → 62 KB")
     time.sleep(PAUSE)
 
-    # ── frame 9: delete README.md, add vendor/ ────────────────────────────
+    # ── frame 9: delete README.md, add vendor/ ───────────────────────────
     (docs / "README.md").unlink()
     _h(docs / "README.md", "deleted")
-    vendor = tmp_path / "vendor"
+    vendor = _WORK_DIR / "vendor"
     vendor.mkdir()
     for name in ["requests", "flask", "sqlalchemy"]:
         lib = vendor / name
@@ -135,7 +159,7 @@ def test_watch_animate_apng(tmp_path: Path) -> None:
         p = lib / "__init__.py"
         p.write_bytes(b"x" * (8_000 + len(name) * 1_000))
         _h(p, "created")
-    handler._regenerate()
+    emit("delete docs/README.md; create vendor/{requests,flask,sqlalchemy}/__init__.py")
     time.sleep(PAUSE)
 
     # ── frame 10: delete all test files ──────────────────────────────────
@@ -143,7 +167,7 @@ def test_watch_animate_apng(tmp_path: Path) -> None:
         p = tests / f"test_{i}.py"
         p.unlink()
         _h(p, "deleted")
-    handler._regenerate()
+    emit("delete tests/test_0..3.py")
     time.sleep(PAUSE)
 
     # ── frame 11: rename database.py → db.py, api.py → server.py ────────
@@ -153,7 +177,7 @@ def test_watch_animate_apng(tmp_path: Path) -> None:
         old.rename(new)
         _h(old, "deleted")
         _h(new, "created")
-    handler._regenerate()
+    emit("rename src/database.py → db.py, src/api.py → server.py")
     time.sleep(PAUSE)
 
     # ── frame 12: small edits to several files ───────────────────────────
@@ -163,7 +187,7 @@ def test_watch_animate_apng(tmp_path: Path) -> None:
     _h(src / "db.py", "modified")
     (data / "config.json").write_bytes(b"x" * 6_200)
     _h(data / "config.json", "modified")
-    handler._regenerate()
+    emit("modify src/models.py → 10.8 KB, src/db.py → 14.2 KB, data/config.json → 6.2 KB")
     time.sleep(PAUSE)
 
     # ── frame 13: delete model.pkl, modify dataset.csv ───────────────────
@@ -171,7 +195,7 @@ def test_watch_animate_apng(tmp_path: Path) -> None:
     _h(data / "model.pkl", "deleted")
     (data / "dataset.csv").write_bytes(b"x" * 80_000)
     _h(data / "dataset.csv", "modified")
-    handler._regenerate()
+    emit("delete data/model.pkl; grow dataset.csv → 80 KB")
     time.sleep(PAUSE)
 
     # ── frame 14: move flask to src/, delete requests ────────────────────
@@ -184,7 +208,7 @@ def test_watch_animate_apng(tmp_path: Path) -> None:
     _h(new_flask, "created")
     (vendor / "requests" / "__init__.py").unlink()
     _h(vendor / "requests" / "__init__.py", "deleted")
-    handler._regenerate()
+    emit("move vendor/flask → src/flask_app; delete vendor/requests/__init__.py")
     time.sleep(PAUSE)
 
     # ── frame 15: modify remaining vendor + src files ────────────────────
@@ -194,31 +218,31 @@ def test_watch_animate_apng(tmp_path: Path) -> None:
     _h(src / "main.py", "modified")
     (src / "server.py").write_bytes(b"x" * 7_600)
     _h(src / "server.py", "modified")
-    handler._regenerate()
+    emit("grow vendor/sqlalchemy → 20 KB, src/main.py → 9.2 KB, src/server.py → 7.6 KB")
     time.sleep(PAUSE)
 
     # ── frame 16: delete remaining docs, add config files ────────────────
     (docs / "api.md").unlink()
     _h(docs / "api.md", "deleted")
-    (tmp_path / "Makefile").write_bytes(b"x" * 500)
-    _h(tmp_path / "Makefile", "created")
-    (tmp_path / ".gitignore").write_bytes(b"x" * 200)
-    _h(tmp_path / ".gitignore", "created")
-    handler._regenerate()
+    (_WORK_DIR / "Makefile").write_bytes(b"x" * 500)
+    _h(_WORK_DIR / "Makefile", "created")
+    (_WORK_DIR / ".gitignore").write_bytes(b"x" * 200)
+    _h(_WORK_DIR / ".gitignore", "created")
+    emit("delete docs/api.md; create Makefile (500 B) + .gitignore (200 B)")
     time.sleep(PAUSE)
 
     # ── frames 17–20: tear everything down to empty ──────────────────────
     for f in data.iterdir():
         f.unlink()
         _h(f, "deleted")
-    handler._regenerate()
+    emit("delete all files in data/")
     time.sleep(PAUSE)
 
     for lib_dir in list(vendor.iterdir()):
         for f in lib_dir.iterdir():
             f.unlink()
             _h(f, "deleted")
-    handler._regenerate()
+    emit("delete all vendor library files")
     time.sleep(PAUSE)
 
     for f in list(src.iterdir()):
@@ -229,17 +253,21 @@ def test_watch_animate_apng(tmp_path: Path) -> None:
             for ff in f.iterdir():
                 ff.unlink()
                 _h(ff, "deleted")
-    handler._regenerate()
+    emit("delete all src/ files (including flask_app/)")
     time.sleep(PAUSE)
 
-    for f in tmp_path.iterdir():
+    for f in _WORK_DIR.iterdir():
         if f.is_file():
             f.unlink()
             _h(f, "deleted")
-    handler._regenerate()
+    emit("delete remaining root files (Makefile, .gitignore)")
 
     # ── write APNG ────────────────────────────────────────────────────────
     handler.flush()
+
+    # Write sidecar log describing every frame.
+    log_path = _DEMO_OUTPUT.with_suffix(".txt")
+    log_path.write_text("\n".join(frame_log) + "\n")
 
     n_expected = 20
 
@@ -249,11 +277,13 @@ def test_watch_animate_apng(tmp_path: Path) -> None:
     assert getattr(img, "is_animated", False), "output is not an animated PNG"
     assert n_frames == n_expected, f"expected {n_expected} frames, got {n_frames}"
 
-    for i, frame in enumerate(list(ImageSequence.Iterator(img))[:-1]):
-        d = frame.info.get("duration", 0)
+    for i, frm in enumerate(list(ImageSequence.Iterator(img))[:-1]):
+        d = frm.info.get("duration", 0)
         assert d >= 500, f"frame {i} has suspicious duration {d} ms"
 
     print(f"\n  APNG: {_DEMO_OUTPUT} ({n_frames} frames)")
+    print(f"  Log:  {log_path}")
+    print(f"  Tree: {_WORK_DIR}")
     print("  Open in Safari, Firefox, or Preview to view the animation.")
 
 
