@@ -183,12 +183,12 @@ def _truncate_breadcrumb(
     return _truncate(candidate, draw, font, max_w)
 
 
-def _cushion_brightness(w: int, h: int) -> NDArray[np.float32]:
+def _cushion_brightness(w: int, h: int, scale: float = 1.0) -> NDArray[np.float32]:
     """Return a (h, w) float32 brightness map for van Wijk cushion shading."""
     xs = np.arange(w, dtype=np.float32)
     ys = np.arange(h, dtype=np.float32)
     gx, gy = np.meshgrid(xs, ys)
-    Ix, Iy = 0.12 / w, 0.12 / h
+    Ix, Iy = 0.12 * scale / w, 0.12 * scale / h
     nx = Ix * (w - 1 - 2 * gx)
     ny = Iy * (h - 1 - 2 * gy)
     lx, ly, lz = 1.0, 1.0, 1.2
@@ -212,7 +212,9 @@ def _apply_cushion(img: Image.Image, x: int, y: int, w: int, h: int) -> None:
     img.paste(Image.fromarray(arr.astype(np.uint8)), (x, y))
 
 
-def _apply_cushion_inplace(arr: np.ndarray, x: int, y: int, w: int, h: int) -> None:
+def _apply_cushion_inplace(
+    arr: np.ndarray, x: int, y: int, w: int, h: int, scale: float = 1.0
+) -> None:
     """Apply van Wijk cushion shading directly to a region of a numpy (H, W, 3) array.
 
     Avoids the PIL crop/paste round-trip of :func:`_apply_cushion`.  Call this
@@ -221,7 +223,7 @@ def _apply_cushion_inplace(arr: np.ndarray, x: int, y: int, w: int, h: int) -> N
     """
     if w < 4 or h < 4:
         return
-    brightness = _cushion_brightness(w, h)
+    brightness = _cushion_brightness(w, h, scale)
     region = arr[y : y + h, x : x + w].astype(np.float32)
     region *= brightness[:, :, np.newaxis]
     np.clip(region, 0, 255, out=region)
@@ -242,6 +244,7 @@ def draw_node(
     img: Image.Image | None = None,
     root_label: str | None = None,
     rect_map: dict[str, tuple[int, int, int, int]] | None = None,
+    dir_rect_map: dict[str, tuple[int, int, int, int]] | None = None,
     dark: bool = True,
 ) -> None:
     """Recursively draw *node* and its children into *draw*.
@@ -314,8 +317,8 @@ def draw_node(
                 )
         return
 
-    if rect_map is not None:
-        rect_map[str(node.path)] = (x, y, w, h)
+    if dir_rect_map is not None:
+        dir_rect_map[str(node.path)] = (x, y, w, h)
 
     # Directory: 1-px outer border + 1-px inner border (colours swap in light mode)
     outer_col = (255, 255, 255) if dark else (0, 0, 0)
@@ -381,6 +384,7 @@ def draw_node(
             cushion,
             img,
             rect_map=rect_map,
+            dir_rect_map=dir_rect_map,
             dark=dark,
         )
 
@@ -597,6 +601,7 @@ def create_treemap(
     )
     # Always collect tile positions — needed for batch cushion and/or highlights.
     _tile_rects: dict[str, tuple[int, int, int, int]] = {}
+    _dir_rects: dict[str, tuple[int, int, int, int]] = {}
     draw_node(
         idraw,
         root_node,
@@ -611,12 +616,16 @@ def create_treemap(
         img,
         root_label=root_label,
         rect_map=_tile_rects,
+        dir_rect_map=_dir_rects,
         dark=dark,
     )
 
-    # Batch cushion: one PIL→numpy→PIL round-trip for all tiles instead of one per tile.
-    if cushion and _tile_rects:
+    # Batch cushion: directories first at half strength (broad, structural shading),
+    # then leaf file tiles at full strength (per-file detail).
+    if cushion and (_tile_rects or _dir_rects):
         arr = np.array(img)
+        for tx, ty, tw, th in _dir_rects.values():
+            _apply_cushion_inplace(arr, tx, ty, tw, th, scale=0.5)
         for tx, ty, tw, th in _tile_rects.values():
             _apply_cushion_inplace(arr, tx, ty, tw, th)
         img = Image.fromarray(arr)
@@ -624,9 +633,10 @@ def create_treemap(
 
     if rect_map_out is not None:
         rect_map_out.update(_tile_rects)
+        rect_map_out.update(_dir_rects)
 
     if highlights:
-        _draw_highlights(idraw, _tile_rects, highlights)
+        _draw_highlights(idraw, {**_tile_rects, **_dir_rects}, highlights)
 
     if progress is not None:
         clipped = max(0.0, min(1.0, progress))
