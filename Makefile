@@ -31,6 +31,7 @@ clean:  ## Remove build artifacts and caches
 	rm -rf .pytest_cache .mypy_cache .ruff_cache
 	rm -rf htmlcov .coverage coverage.xml
 	find . -type d -name __pycache__ -exec rm -rf {} +
+	find . -type f -name .DS_Store -exec rm {} +
 
 publish-test:  ## Build and publish to TestPyPI
 	uv build
