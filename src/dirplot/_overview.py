@@ -17,6 +17,7 @@ Note:
     to ensure they appear in the overview output.
 """
 
+from importlib import metadata
 from typing import Any
 
 import click
@@ -53,17 +54,21 @@ def _print_overview(app: typer.Typer) -> None:
     # Build the Click command/group from the Typer app.
     click_group = typer.main.get_command(app)
 
-    # Extract app metadata from the Click group
-    app_name = click_group.name or "(unnamed)"
-    app_help = click_group.help or "(no description)"
+    app_name, app_description, app_version = _resolve_app_metadata(app, click_group)
+    commands = getattr(click_group, "commands", {}) or {}
+    global_params = getattr(click_group, "params", []) or []
+    global_option_count = sum(isinstance(param, click.Option) for param in global_params)
 
     typer.echo("\nApplication")
-    typer.echo(f"  Name : {app_name}")
-    typer.echo(f"  Help : {app_help}")
+    typer.echo(f"  Name        : {app_name}")
+    typer.echo(f"  Description : {app_description}")
+    if app_version:
+        typer.echo(f"  Version     : {app_version}")
+    typer.echo(f"  Commands    : {len(commands)} top-level")
+    typer.echo(f"  Global opts : {global_option_count}")
 
     # Global options (from callback / group params)
     typer.echo("\nGlobal Options")
-    global_params = getattr(click_group, "params", []) or []
     if global_params:
         for param in global_params:
             _print_param(param, is_global=True)
@@ -173,3 +178,53 @@ def _print_param(param: Any, is_global: bool = False, indent: int = 3) -> None:
         line += f"  — {help_text}"
 
     typer.echo(prefix + line)
+
+
+def _resolve_app_metadata(
+    app: typer.Typer, click_group: click.Command
+) -> tuple[str, str, str | None]:
+    """Return a best-effort (name, description, version) tuple for the app."""
+    app_name = _clean_text(getattr(click_group, "name", None))
+    app_description = _clean_text(getattr(click_group, "help", None))
+    app_version: str | None = None
+
+    package_name = _infer_package_name(app)
+    if package_name:
+        app_name = app_name or package_name
+        dist_names = metadata.packages_distributions().get(package_name, [package_name])
+        for dist_name in dist_names:
+            try:
+                meta = metadata.metadata(dist_name)
+                app_name = app_name or _clean_text(meta.get("Name"))
+                app_description = app_description or _clean_text(meta.get("Summary"))
+                app_version = metadata.version(dist_name)
+                break
+            except metadata.PackageNotFoundError:
+                continue
+
+    return app_name or "(unnamed)", app_description or "(no description)", app_version
+
+
+def _infer_package_name(app: typer.Typer) -> str | None:
+    """Infer the top-level package name from the app callback or commands."""
+    callback_info = getattr(app, "registered_callback", None)
+    callback = getattr(callback_info, "callback", None)
+    module_name = getattr(callback, "__module__", None)
+    if isinstance(module_name, str) and module_name and module_name != "__main__":
+        return module_name.split(".", 1)[0]
+
+    for command_info in getattr(app, "registered_commands", []):
+        command_callback = getattr(command_info, "callback", None)
+        module_name = getattr(command_callback, "__module__", None)
+        if isinstance(module_name, str) and module_name and module_name != "__main__":
+            return module_name.split(".", 1)[0]
+
+    return None
+
+
+def _clean_text(value: Any) -> str | None:
+    """Normalise help text for compact single-line overview output."""
+    if not isinstance(value, str):
+        return None
+    cleaned = " ".join(value.split())
+    return cleaned or None
