@@ -177,7 +177,11 @@ def test_overview() -> None:
     result = runner.invoke(app, ["overview"])
     assert result.exit_code == 0
     assert "Application Overview" in result.output
-    assert "dirplot" in result.output
+    assert "Name        : dirplot" in result.output
+    assert "Nested treemap visualizations for directory trees and archives" in result.output
+    assert "Version     :" in result.output
+    assert "(unnamed)" not in result.output
+    assert "(no description)" not in result.output
     assert "map" in result.output
     assert "git" in result.output
 
