@@ -687,7 +687,7 @@ def git_cmd(
         # Always clone with blobs so git ls-tree --long and git cat-file resolve
         # sizes locally (fast). Without blobs, git fetches each size lazily over
         # the network, which is slower than just cloning the objects upfront.
-        clone_cmd = ["git", "clone", "--quiet"]
+        clone_cmd = ["git", "-c", "credential.helper=", "clone", "--quiet"]
         if last_dt is not None:
             last_iso = last_dt.strftime("%Y-%m-%dT%H:%M:%SZ")
             clone_cmd += [f"--shallow-since={last_iso}"]

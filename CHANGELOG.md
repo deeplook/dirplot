@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **`dirplot overview` command** — Resolves app name/description/version from
+  `importlib.metadata` so the overview output shows richer context without requiring
+  manual wiring.
+
+- **macOS Keychain error during git clone** — `git clone` is now invoked with
+  `-c credential.helper=` to suppress the system credential helper. This prevents
+  the `-25308` Keychain error in non-interactive environments (CI, sandboxed runs).
+  Private repos are unaffected because the GitHub token is embedded directly in the
+  clone URL, so no credential helper is needed regardless.
+
 ## [0.4.2] - 2026-04-15
 
 ### Fixed
