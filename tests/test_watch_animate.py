@@ -345,7 +345,7 @@ def test_watch_svg_output(tmp_path: Path) -> None:
 
 
 def test_watch_log_scale(tmp_path: Path) -> None:
-    """_regenerate with log=True does not crash and produces a PNG."""
+    """_regenerate with logscale > 1 does not crash and produces a PNG."""
     out = tmp_path / "treemap.png"
     (tmp_path / "big.py").write_bytes(b"x" * 100_000)
     (tmp_path / "tiny.py").write_bytes(b"x" * 1)
@@ -358,7 +358,7 @@ def test_watch_log_scale(tmp_path: Path) -> None:
         font_size=12,
         colormap="tab20",
         cushion=False,
-        log=True,
+        logscale=4.0,
     )
     handler._regenerate()
 

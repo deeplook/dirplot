@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **`--log`/`--logscale` merged into a single `--logscale` parameter** — the
+  boolean `--log/--no-log` flag has been removed from all commands (`map`, `watch`,
+  `git`, `hg`, `replay`). Pass `--logscale <ratio>` (any value > 1) to enable
+  log-scale layout compression; omit it or pass `0` to disable. The default is `0`
+  (disabled). The ratio controls the max/min layout-size ratio of leaf files after
+  transformation.
+
 ### Fixed
 
 - **`dirplot overview` command** — Resolves app name/description/version from
