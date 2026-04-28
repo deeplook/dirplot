@@ -247,7 +247,7 @@ def test_render_replay_frame_worker(tmp_path: Path) -> None:
         0,  # orig_i
         0.5,  # progress
         None,  # depth
-        False,  # log_scale
+        0.0,  # logscale (disabled)
         200,  # width_px
         150,  # height_px
         12,  # font_size
@@ -273,7 +273,7 @@ def test_render_replay_frame_worker_log_scale(tmp_path: Path) -> None:
         1,
         1.0,
         None,
-        True,  # log_scale
+        4.0,  # logscale
         200,
         150,
         12,

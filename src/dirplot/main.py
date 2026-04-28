@@ -190,10 +190,11 @@ def watch_cmd(
         "--animate/--no-animate",
         help="Build an animated APNG or MP4 by appending each new frame",
     ),
-    log: bool = typer.Option(
-        False,
-        "--log/--no-log",
-        help="Use log of file sizes for layout, making small files more visible",
+    logscale: float = typer.Option(
+        0.0,
+        "--logscale",
+        help="Log-scale compression ratio (max/min ratio). 0 disables; must be > 1 to enable.",
+        show_default=True,
     ),
     depth: int | None = typer.Option(
         None,
@@ -299,7 +300,7 @@ def watch_cmd(
         colormap=colormap,
         cushion=cushion,
         animate=animate,
-        log=log,
+        logscale=logscale,
         debounce=debounce,
         event_log=event_log,
         depth=depth,
@@ -371,7 +372,7 @@ def _run_vcs_animation(
     font_size: int,
     colormap: str,
     depth: int | None,
-    log_scale: bool,
+    logscale: float,
     cushion: bool,
     dark: bool,
     workers: int | None,
@@ -421,7 +422,7 @@ def _run_vcs_animation(
             orig_i,
             frame_progress[orig_i],
             depth,
-            log_scale,
+            logscale,
             width_px,
             height_px,
             font_size,
@@ -571,7 +572,12 @@ def git_cmd(
         "--animate/--no-animate",
         help="Build an animated APNG or MP4 from all commits",
     ),
-    log: bool = typer.Option(False, "--log/--no-log", help="Use log of file sizes for layout"),
+    logscale: float = typer.Option(
+        0.0,
+        "--logscale",
+        help="Log-scale compression ratio (max/min ratio). 0 disables; must be > 1 to enable.",
+        show_default=True,
+    ),
     depth: int | None = typer.Option(None, "--depth", help="Maximum directory depth"),
     frame_duration: int = typer.Option(
         1000,
@@ -865,7 +871,7 @@ def git_cmd(
             font_size=font_size,
             colormap=colormap,
             depth=depth,
-            log_scale=log,
+            logscale=logscale,
             cushion=cushion,
             dark=dark,
             workers=workers,
@@ -898,8 +904,8 @@ def git_cmd(
             cumulative_ms += commit_durations[i]
 
             node = build_node_tree(repo, files, depth)
-            if log:
-                apply_log_sizes(node)
+            if logscale > 1:
+                apply_log_sizes(node, logscale)
 
             deletions = {p: v for p, v in all_hl.items() if v == "deleted"}
             rect_map: dict[str, tuple[int, int, int, int]] = {}
@@ -918,6 +924,7 @@ def git_cmd(
                 ),
                 progress=cumulative_ms / total_anim_ms,
                 dark=dark,
+                logscale=logscale,
             )
             output.write_bytes(png_buf.read())
             typer.echo(f"  Updated {output}", err=True)
@@ -976,7 +983,12 @@ def hg_cmd(
         "--animate/--no-animate",
         help="Build an animated APNG or MP4 from all changesets",
     ),
-    log: bool = typer.Option(False, "--log/--no-log", help="Use log of file sizes for layout"),
+    logscale: float = typer.Option(
+        0.0,
+        "--logscale",
+        help="Log-scale compression ratio (max/min ratio). 0 disables; must be > 1 to enable.",
+        show_default=True,
+    ),
     depth: int | None = typer.Option(None, "--depth", help="Maximum directory depth"),
     frame_duration: int = typer.Option(
         1000,
@@ -1188,7 +1200,7 @@ def hg_cmd(
             font_size=font_size,
             colormap=colormap,
             depth=depth,
-            log_scale=log,
+            logscale=logscale,
             cushion=cushion,
             dark=dark,
             workers=workers,
@@ -1221,8 +1233,8 @@ def hg_cmd(
             cumulative_ms += commit_durations[i]
 
             node_tree = build_node_tree(repo, files, depth)
-            if log:
-                apply_log_sizes(node_tree)
+            if logscale > 1:
+                apply_log_sizes(node_tree, logscale)
 
             rect_map: dict[str, tuple[int, int, int, int]] = {}
             png_buf = create_treemap(
@@ -1240,6 +1252,7 @@ def hg_cmd(
                 ),
                 progress=cumulative_ms / total_anim_ms,
                 dark=dark,
+                logscale=logscale,
             )
             output.write_bytes(png_buf.read())
             typer.echo(f"  Updated {output}", err=True)
@@ -1289,7 +1302,12 @@ def replay_cmd(
     ),
     cushion: bool = typer.Option(True, "--cushion/--no-cushion", help="Apply cushion shading"),
     dark: bool = typer.Option(True, "--dark/--light", help="Dark background (default) or light"),
-    log: bool = typer.Option(False, "--log/--no-log", help="Use log of file sizes for layout"),
+    logscale: float = typer.Option(
+        0.0,
+        "--logscale",
+        help="Log-scale compression ratio (max/min ratio). 0 disables; must be > 1 to enable.",
+        show_default=True,
+    ),
     depth: int | None = typer.Option(None, "--depth", help="Maximum directory depth"),
     workers: int | None = typer.Option(
         None,
@@ -1457,7 +1475,7 @@ def replay_cmd(
             orig_i,
             frame_progress[orig_i],
             depth,
-            log,
+            logscale,
             width_px,
             height_px,
             font_size,
@@ -1921,10 +1939,11 @@ def main(
         help="Apply van Wijk cushion shading: gives each tile a raised 3-D look.",
     ),
     dark: bool = typer.Option(True, "--dark/--light", help="Dark background (default) or light"),
-    log: bool = typer.Option(
-        False,
-        "--log/--no-log",
-        help="Use log of file sizes for layout, making small files more visible.",
+    logscale: float = typer.Option(
+        0.0,
+        "--logscale",
+        help="Log-scale compression ratio (max/min ratio). 0 disables; must be > 1 to enable.",
+        show_default=True,
     ),
     password: str | None = typer.Option(
         None,
@@ -2199,8 +2218,8 @@ def main(
         root_node = apply_breadcrumbs(root_node)
 
     t_scan = time.monotonic() - t_scan_start
-    if log:
-        apply_log_sizes(root_node)
+    if logscale > 1:
+        apply_log_sizes(root_node, logscale)
     total_files = len(collect_extensions(root_node))
     if header:
         _f = "file" if total_files == 1 else "files"
@@ -2252,6 +2271,7 @@ def main(
             cushion,
             tree_depth,
             dark=dark,
+            logscale=logscale,
         )
     t_render = time.monotonic() - t_render_start
 

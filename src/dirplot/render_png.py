@@ -551,6 +551,48 @@ def _draw_highlights(
             )
 
 
+def _build_root_label(
+    name: str,
+    n_files: int,
+    n_dirs: int,
+    total_bytes: int,
+    depth: int,
+    logscale: float,
+    title_suffix: str | None,
+    draw: "ImageDraw.ImageDraw",
+    font: "ImageFont.FreeTypeFont",
+    max_w: int,
+) -> str:
+    """Return the longest root-header label that fits within *max_w* pixels.
+
+    Fields are dropped in order of decreasing priority until the text fits:
+    1. Full label with raw bytes, logscale, and title_suffix
+    2. Drop raw byte count
+    3. Drop logscale indicator
+    4. Drop title_suffix
+    5. Drop depth
+    6. Drop dir count
+    7. Fallback plain truncation
+    """
+    human = _human_bytes(total_bytes)
+    ls = f"  logscale:{logscale:g}×" if logscale > 1 else ""
+    sf = f"  [{title_suffix}]" if title_suffix else ""
+
+    candidates = [
+        f"{name} \u2014 {n_files:,} files, {n_dirs:,} dirs,"
+        f" {human} ({total_bytes:,} bytes), depth: {depth}{ls}{sf}",
+        f"{name} \u2014 {n_files:,} files, {n_dirs:,} dirs, {human}, depth: {depth}{ls}{sf}",
+        f"{name} \u2014 {n_files:,} files, {n_dirs:,} dirs, {human}, depth: {depth}{sf}",
+        f"{name} \u2014 {n_files:,} files, {n_dirs:,} dirs, {human}, depth: {depth}",
+        f"{name} \u2014 {n_files:,} files, {n_dirs:,} dirs, {human}",
+        f"{name} \u2014 {n_files:,} files, {human}",
+    ]
+    for candidate in candidates:
+        if _text_w(draw, candidate, font) <= max_w:
+            return candidate
+    return _truncate(candidates[-1], draw, font, max_w)
+
+
 def create_treemap(
     root_node: Node,
     width_px: int,
@@ -565,6 +607,7 @@ def create_treemap(
     title_suffix: str | None = None,
     progress: float | None = None,
     dark: bool = True,
+    logscale: float = 0.0,
 ) -> io.BytesIO:
     """Render a nested squarified treemap and return it as a PNG in a BytesIO buffer.
 
@@ -594,10 +637,17 @@ def create_treemap(
     n_files, n_dirs = count_nodes(root_node)
     total_bytes = root_node.original_size if root_node.original_size > 0 else root_node.size
     depth = tree_depth if tree_depth is not None else max_depth(root_node)
-    root_label = (
-        f"{root_node.name} \u2014 {n_files:,} files, {n_dirs:,} dirs,"
-        f" {_human_bytes(total_bytes)} ({total_bytes:,} bytes), depth: {depth}"
-        + (f"  [{title_suffix}]" if title_suffix else "")
+    root_label = _build_root_label(
+        root_node.name,
+        n_files,
+        n_dirs,
+        total_bytes,
+        depth,
+        logscale,
+        title_suffix,
+        idraw,
+        font,
+        width_px - 8,
     )
     # Always collect tile positions — needed for batch cushion and/or highlights.
     _tile_rects: dict[str, tuple[int, int, int, int]] = {}

@@ -250,7 +250,7 @@ def _render_frame_worker(args: tuple[Any, ...]) -> tuple[int, bytes, RectMap]:
 
     Args:
         args: ``(repo_str, files, current_highlights, sha, ts, orig_i,
-                 total_commits, depth, log_scale, width_px, height_px,
+                 total_commits, depth, logscale, width_px, height_px,
                  font_size, colormap, cushion, dark)``
 
     Returns:
@@ -265,7 +265,7 @@ def _render_frame_worker(args: tuple[Any, ...]) -> tuple[int, bytes, RectMap]:
         orig_i,
         progress,
         depth,
-        log_scale,
+        logscale,
         width_px,
         height_px,
         font_size,
@@ -282,8 +282,8 @@ def _render_frame_worker(args: tuple[Any, ...]) -> tuple[int, bytes, RectMap]:
 
     repo = Path(repo_str)
     node = build_node_tree(repo, files, depth)
-    if log_scale:
-        apply_log_sizes(node)
+    if logscale > 1:
+        apply_log_sizes(node, logscale)
 
     rect_map: dict[str, tuple[int, int, int, int]] = {}
     dt_str = datetime.fromtimestamp(ts).strftime("%Y-%m-%d %H:%M")
@@ -300,6 +300,7 @@ def _render_frame_worker(args: tuple[Any, ...]) -> tuple[int, bytes, RectMap]:
         title_suffix=f"sha:{sha[:8]}  {dt_str}",
         progress=progress,
         dark=dark,
+        logscale=logscale,
     )
     return (orig_i, buf.read(), rect_map)
 
