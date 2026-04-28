@@ -195,8 +195,8 @@ def _resolve_app_metadata(
         for dist_name in dist_names:
             try:
                 meta = metadata.metadata(dist_name)
-                app_name = app_name or _clean_text(meta.get("Name"))
-                app_description = app_description or _clean_text(meta.get("Summary"))
+                app_name = app_name or _clean_text(meta.get("Name"))  # type: ignore[attr-defined]
+                app_description = app_description or _clean_text(meta.get("Summary"))  # type: ignore[attr-defined]
                 app_version = metadata.version(dist_name)
                 break
             except metadata.PackageNotFoundError:
