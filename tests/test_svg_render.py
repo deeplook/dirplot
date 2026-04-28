@@ -254,7 +254,7 @@ def test_log_mode_tooltip_shows_original_size(tmp_path: Path) -> None:
     (tmp_path / "big.py").write_bytes(b"x" * size)
     root = build_tree(tmp_path)
     apply_log_sizes(root)
-    # After log transform, node.size is a small integer (~11); original_size stays 100_000
+    # After log transform, node.size is around 1000; original_size stays 100_000
     buf = create_treemap_svg(root, width_px=400, height_px=300)
     content = buf.read().decode("utf-8")
     assert f'data-size="{size}"' in content, "tooltip must show original bytes, not log value"

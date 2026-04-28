@@ -4,7 +4,8 @@
 
 > **Warning:** Remote trees can contain hundreds of thousands of files. Use `--depth N` to limit how far down the tree dirplot recurses until you have a feel for the size of the target.
 
-> **Tip:** If one large file (a binary, dataset, or build artifact) dominates the layout and squashes everything else into tiny slivers, add `--log` to use log-scaled file sizes instead — this makes small files much more visible.
+> **Tip:** If one large file (a binary, dataset, or build artifact) dominates the layout and squashes everything else into tiny slivers, add `--logscale 4` to use log-scaled file sizes instead — this makes small files much more visible.
+> The value controls the max/min layout-size ratio after compression: `--logscale 4` means the largest file's tile is at most 4× the smallest. Values in the range **2–10** are most useful; below 2 the effect is subtle, and above ~10 you get diminishing returns toward raw log scaling where the ratio loses its intuitive meaning.
 
 ---
 
@@ -285,7 +286,7 @@ dirplot git . --animate --max-commits 50 --total-duration 30 --output history.pn
 
 # Specific commit range from a GitHub repository, MP4 output, log scale
 dirplot git github://openclaw/openclaw --range 871e8882..8445c9a5 \
-  --animate --log --size 1920x1080 --output openclaw.mp4
+  --animate --logscale 4 --size 1920x1080 --output openclaw.mp4
 
 # Last 30 days of activity
 dirplot git . --animate --last 30d --output history.mp4
@@ -293,7 +294,7 @@ dirplot git . --animate --last 30d --output history.mp4
 
 <figure>
   <video src="https://github.com/user-attachments/assets/b30b3434-ff48-4a43-a363-620899b86ebb" autoplay loop muted playsinline width="100%"></video>
-  <figcaption><code>dirplot git github://openclaw/openclaw --range 871e8882..8445c9a5 --animate --log --size 1920x1080 -o openclaw-871e8882-8445c9a5.mp4</code></figcaption>
+  <figcaption><code>dirplot git github://openclaw/openclaw --range 871e8882..8445c9a5 --animate --logscale 4 --size 1920x1080 -o openclaw-871e8882-8445c9a5.mp4</code></figcaption>
 </figure>
 
 ### Options
@@ -306,7 +307,7 @@ dirplot git . --animate --last 30d --output history.mp4
 | `--total-duration` | — | Target total animation length in seconds (time-proportional frame durations) |
 | `--frame-duration` | 1000 ms | Fixed frame duration when `--total-duration` is not set |
 | `--workers` | all cores | Number of parallel render workers |
-| `--log` | off | Log-scale file sizes to prevent large files from dominating |
+| `--logscale` | 0 (off) | Log-scale compression ratio; any value > 1 enables it (e.g. `4` means largest tile is at most 4× the smallest) |
 | `--dark` / `--light` | dark | Background and label colour scheme |
 | `--github-token` | `GITHUB_TOKEN` env var | Token for private repos or to raise rate limits |
 
@@ -352,7 +353,7 @@ docker rm -f pg-demo
 
 <figure>
   <img src="docker.png" alt="Postgres container /usr treemap">
-  <figcaption><code>dirplot map docker://pg-demo:/usr --log</code></figcaption>
+  <figcaption><code>dirplot map docker://pg-demo:/usr --logscale 4</code></figcaption>
 </figure>
 
 ### Requirements

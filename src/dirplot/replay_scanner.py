@@ -134,7 +134,7 @@ def _render_replay_frame_worker(args: tuple[Any, ...]) -> tuple[int, bytes, Rect
         orig_i,
         progress,
         depth,
-        log_scale,
+        logscale,
         width_px,
         height_px,
         font_size,
@@ -152,8 +152,8 @@ def _render_replay_frame_worker(args: tuple[Any, ...]) -> tuple[int, bytes, Rect
 
     root = Path(root_str)
     node = build_node_tree(root, files, depth)
-    if log_scale:
-        apply_log_sizes(node)
+    if logscale > 1:
+        apply_log_sizes(node, logscale)
 
     rect_map: RectMap = {}
     dt_str = datetime.fromtimestamp(ts).strftime("%Y-%m-%d %H:%M:%S")
@@ -170,5 +170,6 @@ def _render_replay_frame_worker(args: tuple[Any, ...]) -> tuple[int, bytes, Rect
         title_suffix=dt_str,
         progress=progress,
         dark=dark,
+        logscale=logscale,
     )
     return (orig_i, buf.read(), rect_map)
