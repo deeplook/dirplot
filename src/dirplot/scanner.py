@@ -158,20 +158,52 @@ def build_tree_multi(
     return _combine(common, scanned)
 
 
-def apply_log_sizes(node: Node) -> None:
-    """Replace file sizes with their natural log in-place, then recompute directory totals.
+def apply_log_sizes(node: Node, logscale: float = 4.0) -> None:
+    """Replace file sizes with log-scaled values in-place, then recompute directory totals.
 
     The original byte count is preserved in ``node.original_size`` so that renderers
     can display the real size rather than the log-transformed layout value.
+
+    Args:
+        node: The root node of the tree to transform.
+        logscale: Controls the compression ratio. After transformation the ratio of
+            the largest to smallest file-size layout value equals *logscale*.  Must
+            be greater than 1.  Default is 4.
     """
-    if not node.is_dir:
-        node.original_size = node.size
-        node.size = max(1, round(math.log(max(1, node.size))))
+    # First pass: collect all leaf sizes to determine the transformation parameters.
+    leaf_sizes: list[int] = []
+
+    def _collect(n: Node) -> None:
+        if not n.is_dir:
+            leaf_sizes.append(max(1, n.size))
+        else:
+            for c in n.children:
+                _collect(c)
+
+    _collect(node)
+
+    if not leaf_sizes:
         return
-    node.original_size = node.size  # save real total before recomputing
-    for child in node.children:
-        apply_log_sizes(child)
-    node.size = sum(c.size for c in node.children)
+
+    min_s = min(leaf_sizes)
+    max_s = max(leaf_sizes)
+    log_range = math.log(max_s) - math.log(min_s) if max_s > min_s else 1.0
+    # Scale factor: normalise log values to [1, logscale], then multiply by 1000
+    # to keep layout values in a similar integer magnitude to the old implementation.
+    scale = 1000.0 * (logscale - 1) / log_range if log_range > 0 else 1.0
+
+    def _apply(n: Node) -> None:
+        if not n.is_dir:
+            n.original_size = n.size
+            log_val = math.log(max(1, n.size)) - math.log(min_s)
+            n.size = max(1, round(1000 + log_val * scale))
+            return
+        n.original_size = n.size
+        for c in n.children:
+            _apply(c)
+        n.size = sum(c.size for c in n.children)
+
+    _apply(node)
 
 
 def count_nodes(node: Node) -> tuple[int, int]:

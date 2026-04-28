@@ -32,7 +32,7 @@ class TreemapEventHandler(FileSystemEventHandler):
         colormap: str,
         cushion: bool,
         animate: bool = False,
-        log: bool = False,
+        logscale: float = 0.0,
         debounce: float = 0.0,
         event_log: Path | None = None,
         depth: int | None = None,
@@ -64,7 +64,7 @@ class TreemapEventHandler(FileSystemEventHandler):
         self.fade_out_duration = fade_out_duration
         self.fade_out_frames = fade_out_frames
         self.fade_out_color = fade_out_color
-        self.log = log
+        self.logscale = logscale
         self.debounce = debounce
         self.event_log = event_log
         self._events: list[dict[str, Any]] = []
@@ -140,8 +140,8 @@ class TreemapEventHandler(FileSystemEventHandler):
 
         try:
             node = build_tree_multi(self.roots, self.exclude, self.depth)
-            if self.log:
-                apply_log_sizes(node)
+            if self.logscale > 1:
+                apply_log_sizes(node, self.logscale)
             rect_map: dict[str, tuple[int, int, int, int]] = {}
             if self.use_svg:
                 buf = create_treemap_svg(
@@ -167,6 +167,7 @@ class TreemapEventHandler(FileSystemEventHandler):
                     highlights=current_highlights,
                     rect_map_out=rect_map,
                     dark=self.dark,
+                    logscale=self.logscale,
                 )
                 self._store_frame(buf.read())
                 print(f"Captured frame {len(self._frame_bytes)}", file=sys.stderr)
@@ -182,6 +183,7 @@ class TreemapEventHandler(FileSystemEventHandler):
                     highlights=current_highlights,
                     rect_map_out=rect_map,
                     dark=self.dark,
+                    logscale=self.logscale,
                 )
                 self.output.write_bytes(buf.read())
                 print(f"Updated {self.output}", file=sys.stderr)

@@ -42,7 +42,7 @@ Optional extras: `pip install "dirplot[ssh]"`, `"dirplot[s3]"`, `"dirplot[libarc
 dirplot map .                                                    # current directory
 dirplot map . --inline                                           # display in terminal
 dirplot map . --output treemap.png --no-show                     # save to file
-dirplot map . --log --inline                                     # log scale, inline
+dirplot map . --logscale 4 --inline                              # log scale (4× ratio), inline
 dirplot map github://pallets/flask                               # GitHub repo
 dirplot map docker://my-container:/app                           # Docker container
 dirplot map project.zip                                          # archive file
@@ -50,10 +50,10 @@ tree src/ | dirplot map                                          # pipe tree out
 
 dirplot git . -o history.mp4 --animate                           # full git history
 dirplot git . -o history.mp4 --animate --last 30d                # last 30 days
-dirplot git github://owner/repo -o h.mp4 --animate --last 7d    # GitHub, last week
+dirplot git github://owner/repo -o h.mp4 --animate --last 7d     # GitHub, last week
 
-dirplot hg /path/to/repo -o history.png --animate               # full hg history
-dirplot hg /path/to/repo@tip -o history.png                     # static, tip only
+dirplot hg /path/to/repo -o history.png --animate                # full hg history
+dirplot hg /path/to/repo@tip -o history.png                      # static, tip only
 
 dirplot watch . --output treemap.png                             # live watch
 dirplot watch . --output treemap.mp4 --animate                   # record as MP4
