@@ -23,8 +23,11 @@
 ## Installation
 
 ```bash
-# Standalone tool (recommended)
+# Recommended: isolated tool install via uv (fastest)
 uv tool install dirplot
+
+# Alternative: pipx (install pipx first if needed: brew install pipx on macOS)
+pipx install dirplot
 
 # Into the current environment
 pip install dirplot
