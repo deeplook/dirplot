@@ -3,6 +3,31 @@
 import math
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import TypedDict
+
+
+class _ExtEntry(TypedDict):
+    ext: str
+    count: int
+    size_bytes: int
+
+
+class _FileEntry(TypedDict):
+    path: str
+    size_bytes: int
+    pct: float
+
+
+class TreeMetricsDict(TypedDict):
+    files: int
+    dirs: int
+    empty_dirs: int
+    total_size_bytes: int
+    depth: int
+    scan_time_s: float
+    top_extensions: list[_ExtEntry]
+    largest_files: list[_FileEntry]
+    largest_dirs: list[_FileEntry]
 
 
 @dataclass
@@ -304,7 +329,7 @@ def tree_metrics_dict(
     t_scan: float,
     top_n: int = 10,
     sort_by: str = "count",
-) -> dict:
+) -> TreeMetricsDict:
     """Return a dict of metrics for the scanned tree.
 
     *sort_by* controls extension ordering: ``"count"`` (default) or ``"size"``.
@@ -330,12 +355,12 @@ def tree_metrics_dict(
     else:
         sorted_exts = [(e, ext_sizes[e]) for e, _ in ext_counts_raw.most_common(top_n)]
 
-    top_extensions = [
-        {
-            "ext": ext if ext else "(no ext)",
-            "count": ext_counts_raw[ext],
-            "size_bytes": ext_sizes[ext],
-        }
+    top_extensions: list[_ExtEntry] = [
+        _ExtEntry(
+            ext=ext if ext else "(no ext)",
+            count=ext_counts_raw[ext],
+            size_bytes=ext_sizes[ext],
+        )
         for ext, _ in sorted_exts
     ]
 
