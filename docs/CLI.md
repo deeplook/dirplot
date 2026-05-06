@@ -94,11 +94,81 @@ dirplot map pod://my-pod:/app
 | `--cushion/--no-cushion` | | `--cushion` | Van Wijk cushion shading for a raised 3-D look |
 | `--log/--no-log` | | `--no-log` | Log scale for file sizes; useful when one large file dominates the layout |
 | `--breadcrumbs/--no-breadcrumbs` | `-b`/`-B` | `--breadcrumbs` | Collapse single-child chains into `foo / bar / baz` labels |
+| `--metrics/--no-metrics` | | off | Print detailed metrics after scanning (same output as `dirplot metrics`) |
 | `--password` | | — | Archive password; prompted interactively if not supplied |
 | `--github-token` | | `$GITHUB_TOKEN` | GitHub personal access token |
 | `--ssh-key` | | `~/.ssh/id_rsa` | SSH private key path |
 | `--aws-profile` | | `$AWS_PROFILE` | Named AWS profile |
 | `--no-sign` | | off | Anonymous access for public S3 buckets |
+
+---
+
+## `dirplot metrics` — directory metrics
+
+Scans a directory tree and prints a structured text summary: file/directory counts, total size, tree depth, scan time, top file extensions (by count or size), and the largest files and directories with their share of total size. All remote sources supported by `dirplot map` are accepted.
+
+```bash
+# Basic metrics for the current directory
+dirplot metrics .
+
+# Remote sources work identically to `dirplot map`
+dirplot metrics github://pallets/flask
+dirplot metrics s3://my-bucket --no-sign
+dirplot metrics project.zip
+
+# Sort top extensions by total bytes instead of file count
+dirplot metrics . --sort-by size
+
+# Show only top 5 entries in each list
+dirplot metrics . --top 5
+
+# JSON output — pipe into jq, scripts, or monitoring tools
+dirplot metrics . --json
+dirplot metrics . --json | jq '.largest_files[0]'
+
+# Combine with map to get treemap + metrics in one pass
+dirplot map . --metrics --no-show
+```
+
+### Output fields
+
+```
+  Files:      1,011
+  Dirs:       70  (0 empty)
+  Total size: 4.5 MB
+  Depth:      7
+  Scan time:  1.28s
+  Top extensions (10) [by count]:
+    .py                    962    2.3 MB
+    .json                   19    48.2 KB
+    …
+  Largest files:
+    671.6 KB     14.9%  uv.lock
+    191.8 KB      4.3%  CHANGELOG.md
+    …
+  Largest dirs:
+    2.3 MB       51.1%  src
+    …
+```
+
+### Options
+
+| Flag | Short | Default | Description |
+|---|---|---|---|
+| `--top` | `-n` | `10` | Number of entries to show in each list |
+| `--sort-by` | | `count` | Sort top extensions by `count` (files) or `size` (bytes) |
+| `--json` / `--no-json` | | off | Output all metrics as JSON |
+| `--exclude` | `-e` | — | Path to exclude (repeatable) |
+| `--depth` | | unlimited | Maximum recursion depth |
+| `--paths-from` | | — | File with path list (`tree`/`find` output); `-` for stdin |
+| `--password` | | — | Archive password; prompted interactively if needed |
+| `--github-token` | | `$GITHUB_TOKEN` | GitHub personal access token |
+| `--ssh-key` | | `~/.ssh/id_rsa` | SSH private key path |
+| `--ssh-password` | | `$SSH_PASSWORD` | SSH password |
+| `--aws-profile` | | `$AWS_PROFILE` | Named AWS profile |
+| `--no-sign` | | off | Anonymous access for public S3 buckets |
+| `--k8s-namespace` | `-N` | — | Kubernetes namespace |
+| `--k8s-container` | | — | Container name for multi-container pods |
 
 ---
 

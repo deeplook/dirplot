@@ -16,6 +16,7 @@
 - Squarified treemap layout; file area proportional to size; ~500 extensions mapped to [GitHub Linguist](https://github.com/github/linguist) colours.
 - PNG, animated PNG (APNG), MP4, and MOV output for single frames and animations; interactive SVG for static maps; renders at terminal pixel size or a custom `WIDTHxHEIGHT`.
 - **Animate git history** (`dirplot git`), **Mercurial history** (`dirplot hg`), **watch live filesystems** (`dirplot watch`), and **replay event logs** (`dirplot replay`) — output APNG, MP4, or MOV.
+- **Scan metrics** (`dirplot metrics`) — file/dir counts, total size, depth, top extensions by count or size, largest files and directories with percentage of total; JSON output supported.
 - Scan **SSH hosts**, **AWS S3**, **GitHub repos** (public and private), **Docker containers**, and **Kubernetes pods** — no extra deps beyond the respective CLI.
 - Read **archives** directly (zip, tar, 7z, rar, jar, whl, …) without unpacking.
 - Works on macOS, Linux, and Windows (WSL2 fully supported).
@@ -62,6 +63,11 @@ dirplot watch . --output treemap.png                             # live watch
 dirplot watch . --output treemap.mp4 --animate                   # record as MP4
 
 dirplot demo                                                     # run examples, save to ./demo/
+
+dirplot metrics .                                                # scan metrics: counts, size, top extensions
+dirplot metrics . --sort-by size                                 # sort extensions by total bytes
+dirplot metrics . --top 5 --json                                 # top-5 entries as JSON
+dirplot map . --metrics --no-show                                # treemap + metrics in one pass
 ```
 
 ## Documentation

@@ -1,4 +1,43 @@
-# Examples for Remote Access
+# Examples
+
+## Metrics
+
+`dirplot metrics` scans a directory tree and prints a structured text summary — file/dir counts, total size, depth, scan time, top extensions (by count or size), and the largest files and directories with their percentage of total size. It accepts the same sources as `dirplot map`.
+
+```bash
+# Local directory
+dirplot metrics .
+dirplot metrics /path/to/project
+
+# Sort top extensions by total bytes instead of file count
+dirplot metrics . --sort-by size
+
+# Limit each list to 5 entries
+dirplot metrics . --top 5
+
+# JSON output — pipe into jq or scripts
+dirplot metrics . --json
+dirplot metrics . --json | jq '.largest_files'
+dirplot metrics . --json | jq '.top_extensions[] | select(.ext == ".py")'
+
+# Remote sources — identical to map
+dirplot metrics github://pallets/flask
+dirplot metrics github://torvalds/linux --depth 3 --sort-by size
+dirplot metrics s3://my-bucket --no-sign
+dirplot metrics ssh://alice@prod.example.com/var/www
+dirplot metrics docker://my-container:/app
+dirplot metrics project.zip
+
+# Exclude directories
+dirplot metrics . -e .venv -e .git
+
+# Get treemap and metrics in a single pass
+dirplot map . --metrics --no-show
+```
+
+---
+
+## Remote Access
 
 *dirplot* can scan directory trees on remote sources (remote servers via SSH, AWS S3 buckets, Github repositories, Docker containers, and Kubernetes pods) without copying files locally. Remote backends are optional dependencies — install only what you need.
 

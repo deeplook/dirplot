@@ -6,11 +6,16 @@ import pytest
 
 from dirplot.scanner import (
     Node,
+    _collect_dirs,
+    _collect_files,
+    _fmt_size,
     apply_breadcrumbs,
     build_tree,
     build_tree_multi,
     collect_extensions,
     prune_to_subtrees,
+    tree_metrics,
+    tree_metrics_dict,
 )
 
 
@@ -291,6 +296,175 @@ def test_breadcrumbs_no_collapse_multi_children() -> None:
     child = result.children[0]
     assert child.name == "a"
     assert {c.name for c in child.children} == {"dir1", "dir2"}
+
+
+# ---------------------------------------------------------------------------
+# _fmt_size
+# ---------------------------------------------------------------------------
+
+
+def test_fmt_size_bytes() -> None:
+    assert _fmt_size(0) == "0.0 B"
+    assert _fmt_size(512) == "512.0 B"
+
+
+def test_fmt_size_kilobytes() -> None:
+    assert _fmt_size(1024) == "1.0 KB"
+    assert _fmt_size(2048) == "2.0 KB"
+
+
+def test_fmt_size_megabytes() -> None:
+    assert _fmt_size(1024 * 1024) == "1.0 MB"
+
+
+def test_fmt_size_gigabytes() -> None:
+    assert _fmt_size(1024**3) == "1.0 GB"
+
+
+def test_fmt_size_terabytes() -> None:
+    assert _fmt_size(1024**4) == "1.0 TB"
+
+
+# ---------------------------------------------------------------------------
+# _collect_files / _collect_dirs
+# ---------------------------------------------------------------------------
+
+
+def test_collect_files_flat(sample_tree: Path) -> None:
+    root = build_tree(sample_tree)
+    files = _collect_files(root)
+    assert all(not f.is_dir for f in files)
+    names = {f.name for f in files}
+    assert "app.py" in names
+    assert "README.md" in names
+
+
+def test_collect_files_single_file_node() -> None:
+    node = Node(name="f.py", path=Path("f.py"), size=10, is_dir=False, extension=".py")
+    assert _collect_files(node) == [node]
+
+
+def test_collect_dirs_excludes_root(sample_tree: Path) -> None:
+    root = build_tree(sample_tree)
+    dirs = _collect_dirs(root)
+    assert all(d.is_dir for d in dirs)
+    assert root not in dirs
+    names = {d.name for d in dirs}
+    assert "src" in names
+    assert "docs" in names
+
+
+def test_collect_dirs_empty_tree(tmp_path: Path) -> None:
+    root = build_tree(tmp_path)
+    assert _collect_dirs(root) == []
+
+
+# ---------------------------------------------------------------------------
+# tree_metrics
+# ---------------------------------------------------------------------------
+
+
+def test_tree_metrics_contains_key_fields(sample_tree: Path) -> None:
+    root = build_tree(sample_tree)
+    out = tree_metrics(root, t_scan=0.5)
+    assert "Files:" in out
+    assert "Dirs:" in out
+    assert "Total size:" in out
+    assert "Depth:" in out
+    assert "Scan time:" in out
+    assert "Top extensions" in out
+    assert "Largest files:" in out
+    assert "Largest dirs:" in out
+
+
+def test_tree_metrics_file_count(sample_tree: Path) -> None:
+    root = build_tree(sample_tree)
+    out = tree_metrics(root, t_scan=0.0)
+    # sample_tree has 4 files
+    assert "4" in out
+
+
+def test_tree_metrics_empty_dir_count(tmp_path: Path) -> None:
+    (tmp_path / "empty").mkdir()
+    (tmp_path / "nonempty").mkdir()
+    (tmp_path / "nonempty" / "f.txt").write_bytes(b"x")
+    root = build_tree(tmp_path)
+    out = tree_metrics(root, t_scan=0.0)
+    assert "1 empty" in out
+
+
+def test_tree_metrics_top_n(sample_tree: Path) -> None:
+    root = build_tree(sample_tree)
+    out = tree_metrics(root, t_scan=0.0, top_n=1)
+    assert "Top extensions (1)" in out
+
+
+def test_tree_metrics_scan_time(sample_tree: Path) -> None:
+    root = build_tree(sample_tree)
+    out = tree_metrics(root, t_scan=1.23)
+    assert "1.23s" in out
+
+
+def test_tree_metrics_shows_ext_size(sample_tree: Path) -> None:
+    root = build_tree(sample_tree)
+    out = tree_metrics(root, t_scan=0.0)
+    # Each extension line should include a human-readable size
+    assert "KB" in out or "MB" in out or "B" in out
+
+
+def test_tree_metrics_shows_percentages(sample_tree: Path) -> None:
+    root = build_tree(sample_tree)
+    out = tree_metrics(root, t_scan=0.0)
+    assert "%" in out
+
+
+def test_tree_metrics_sort_by_size(sample_tree: Path) -> None:
+    root = build_tree(sample_tree)
+    out = tree_metrics(root, t_scan=0.0, sort_by="size")
+    assert "by size" in out
+
+
+def test_tree_metrics_sort_by_count(sample_tree: Path) -> None:
+    root = build_tree(sample_tree)
+    out = tree_metrics(root, t_scan=0.0, sort_by="count")
+    assert "by count" in out
+
+
+def test_tree_metrics_dict_keys(sample_tree: Path) -> None:
+    root = build_tree(sample_tree)
+    d = tree_metrics_dict(root, t_scan=0.5)
+    assert d["files"] == 4
+    assert d["dirs"] == 2
+    assert d["total_size_bytes"] == 430
+    assert d["depth"] >= 1
+    assert isinstance(d["top_extensions"], list)
+    assert isinstance(d["largest_files"], list)
+    assert isinstance(d["largest_dirs"], list)
+
+
+def test_tree_metrics_dict_ext_fields(sample_tree: Path) -> None:
+    root = build_tree(sample_tree)
+    d = tree_metrics_dict(root, t_scan=0.0)
+    for e in d["top_extensions"]:
+        assert "ext" in e
+        assert "count" in e
+        assert "size_bytes" in e
+
+
+def test_tree_metrics_dict_pct(sample_tree: Path) -> None:
+    root = build_tree(sample_tree)
+    d = tree_metrics_dict(root, t_scan=0.0)
+    for f in d["largest_files"]:
+        assert 0.0 <= f["pct"] <= 100.0
+    for dr in d["largest_dirs"]:
+        assert 0.0 <= dr["pct"] <= 100.0
+
+
+def test_tree_metrics_dict_sort_by_size(sample_tree: Path) -> None:
+    root = build_tree(sample_tree)
+    d = tree_metrics_dict(root, t_scan=0.0, sort_by="size")
+    sizes = [e["size_bytes"] for e in d["top_extensions"]]
+    assert sizes == sorted(sizes, reverse=True)
 
 
 def test_breadcrumbs_partial_chain() -> None:
