@@ -692,3 +692,116 @@ def test_demo_runs(tmp_path: Path) -> None:
     assert (tmp_path / "demo-out").is_dir()
     assert mock_run.call_count == 8  # one call per non-skipped example
     assert "Done" in result.output
+
+
+# ---------------------------------------------------------------------------
+# metrics command
+# ---------------------------------------------------------------------------
+
+
+def test_metrics_basic(sample_tree: Path) -> None:
+    result = runner.invoke(app, ["metrics", str(sample_tree)])
+    assert result.exit_code == 0
+    assert "Files:" in result.output
+    assert "Dirs:" in result.output
+    assert "Total size:" in result.output
+    assert "Largest files:" in result.output
+    assert "Largest dirs:" in result.output
+
+
+def test_metrics_invalid_path() -> None:
+    result = runner.invoke(app, ["metrics", "/nonexistent/__dirplot_test__"])
+    assert result.exit_code == 1
+    assert "does not exist" in result.output
+
+
+def test_metrics_exclude(sample_tree: Path) -> None:
+    # Exclude src/ by full path — its 300 bytes should disappear from total
+    src_path = str(sample_tree / "src")
+    result_excl = runner.invoke(app, ["metrics", str(sample_tree), "-e", src_path])
+    assert result_excl.exit_code == 0
+    # Without src (300 bytes), total is 130 B; "300" and "app.py"/"util.py" gone
+    assert "app.py" not in result_excl.output
+    assert "util.py" not in result_excl.output
+
+
+def test_metrics_top_n(sample_tree: Path) -> None:
+    result = runner.invoke(app, ["metrics", str(sample_tree), "--top", "1"])
+    assert result.exit_code == 0
+    assert "Top extensions (1)" in result.output
+
+
+def test_metrics_depth(sample_tree: Path) -> None:
+    # With depth=1 we see only the top-level children; src/ appears as empty dir
+    result = runner.invoke(app, ["metrics", str(sample_tree), "--depth", "1"])
+    assert result.exit_code == 0
+    assert "Files:" in result.output
+
+
+def test_metrics_sort_by_count(sample_tree: Path) -> None:
+    result = runner.invoke(app, ["metrics", str(sample_tree), "--sort-by", "count"])
+    assert result.exit_code == 0
+    assert "by count" in result.output
+
+
+def test_metrics_sort_by_size(sample_tree: Path) -> None:
+    result = runner.invoke(app, ["metrics", str(sample_tree), "--sort-by", "size"])
+    assert result.exit_code == 0
+    assert "by size" in result.output
+
+
+def test_metrics_sort_by_invalid(sample_tree: Path) -> None:
+    result = runner.invoke(app, ["metrics", str(sample_tree), "--sort-by", "bogus"])
+    assert result.exit_code == 1
+    assert "Invalid --sort-by" in result.output
+
+
+def test_metrics_json(sample_tree: Path) -> None:
+    import json
+
+    result = runner.invoke(app, ["metrics", str(sample_tree), "--json"])
+    assert result.exit_code == 0
+    # Strip the "Scanning ..." line (goes to stdout via CliRunner)
+    json_part = "\n".join(
+        line for line in result.output.splitlines() if not line.startswith("Scanning")
+    )
+    data = json.loads(json_part)
+    assert data["files"] == 4
+    assert data["dirs"] == 2
+    assert "top_extensions" in data
+    assert "largest_files" in data
+    assert "largest_dirs" in data
+
+
+def test_metrics_json_ext_has_size(sample_tree: Path) -> None:
+    import json
+
+    result = runner.invoke(app, ["metrics", str(sample_tree), "--json"])
+    assert result.exit_code == 0
+    json_part = "\n".join(
+        line for line in result.output.splitlines() if not line.startswith("Scanning")
+    )
+    data = json.loads(json_part)
+    for ext in data["top_extensions"]:
+        assert "size_bytes" in ext
+        assert "count" in ext
+
+
+def test_metrics_json_pct(sample_tree: Path) -> None:
+    import json
+
+    result = runner.invoke(app, ["metrics", str(sample_tree), "--json"])
+    assert result.exit_code == 0
+    json_part = "\n".join(
+        line for line in result.output.splitlines() if not line.startswith("Scanning")
+    )
+    data = json.loads(json_part)
+    for f in data["largest_files"]:
+        assert 0.0 <= f["pct"] <= 100.0
+
+
+def test_map_metrics_flag(sample_tree: Path) -> None:
+    result = runner.invoke(app, ["map", str(sample_tree), "--no-show", "--metrics"])
+    assert result.exit_code == 0
+    assert "Largest files:" in result.output
+    assert "%" in result.output

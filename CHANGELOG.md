@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`dirplot metrics` command** — scans any source supported by `dirplot map`
+  (local, SSH, S3, GitHub, Docker, Kubernetes, archives, stdin) and prints a
+  structured text summary:
+  - File and directory counts (with empty-directory count)
+  - Total size (human-readable)
+  - Maximum tree depth and scan time
+  - Top N file extensions with file count *and* total bytes
+  - Largest N files and directories, each with its percentage share of total size
+- **`--sort-by count|size`** on `dirplot metrics` — controls extension ordering;
+  `count` (default) sorts by number of files, `size` sorts by total bytes.
+- **`--top N` / `-n N`** on `dirplot metrics` — caps the number of entries shown
+  in each list (extensions, largest files, largest dirs). Default: 10.
+- **`--json` / `--no-json`** on `dirplot metrics` — outputs all metrics as a
+  structured JSON object, suitable for piping into `jq` or scripts.
+- **`--metrics` / `--no-metrics`** on `dirplot map` — prints the full metrics
+  block after scanning, before rendering. Lets you get treemap and metrics in
+  a single pass without running two commands.
+- **`tree_metrics(root_node, t_scan, top_n, sort_by) → str`** in
+  `dirplot.scanner` — public API returning the human-readable metrics string.
+- **`tree_metrics_dict(root_node, t_scan, top_n, sort_by) → dict`** in
+  `dirplot.scanner` — public API returning a structured dict with all metrics;
+  the source of truth for both the text and JSON outputs.
+
 ### Changed
 
 - **`--log`/`--logscale` merged into a single `--logscale` parameter** — the

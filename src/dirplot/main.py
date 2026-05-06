@@ -6,6 +6,7 @@ import sys
 import time
 import webbrowser
 import xml.etree.ElementTree as ET
+from collections.abc import Callable
 from datetime import datetime as _datetime
 from pathlib import Path
 
@@ -36,6 +37,12 @@ from dirplot.scanner import (
     collect_extensions,
     max_depth,
     prune_to_subtrees,
+)
+from dirplot.scanner import (
+    tree_metrics as _tree_metrics,
+)
+from dirplot.scanner import (
+    tree_metrics_dict as _tree_metrics_dict,
 )
 from dirplot.ssh import build_tree_ssh, connect, is_ssh_path, parse_ssh_path
 from dirplot.svg_render import create_treemap_svg
@@ -1829,6 +1836,261 @@ def demo_cmd(
     )
 
 
+def _scan_tree(
+    roots: list[str],
+    paths_from: Path | None,
+    exclude: list[str],
+    depth: int | None,
+    ssh_key: str | None,
+    ssh_password: str | None,
+    aws_profile: str | None,
+    no_sign: bool,
+    github_token: str | None,
+    k8s_namespace: str | None,
+    k8s_container: str | None,
+    password: str | None,
+    log: "Callable[[str], None] | None" = None,
+) -> "tuple[Node, float, str | None]":
+    """Scan a root path and return (root_node, t_scan_seconds, display_title).
+
+    *log* is called with each "Scanning ..." message when provided.
+    """
+
+    def _emit(msg: str) -> None:
+        if log is not None:
+            log(msg)
+
+    use_stdin = paths_from is not None or (not roots and not sys.stdin.isatty())
+    if use_stdin and roots:
+        typer.echo(
+            "Error: cannot combine positional paths with --paths-from / piped stdin.",
+            err=True,
+        )
+        raise typer.Exit(1)
+
+    root = roots[0] if len(roots) == 1 else ""
+    display_title: str | None = None
+    t_scan_start = time.monotonic()
+
+    if use_stdin:
+        if paths_from is None or str(paths_from) == "-":
+            raw = sys.stdin.read()
+        else:
+            if not paths_from.exists():
+                typer.echo(f"Error: --paths-from path does not exist: {paths_from}", err=True)
+                raise typer.Exit(1)
+            raw = paths_from.read_text()
+        parsed = parse_pathlist(raw.splitlines())
+        if not parsed:
+            typer.echo("Error: no paths found in path-list input.", err=True)
+            raise typer.Exit(1)
+        for p in parsed:
+            if not p.exists():
+                typer.echo(f"Path does not exist: {p}", err=True)
+                raise typer.Exit(1)
+        excluded = frozenset(Path(e).resolve() for e in exclude)
+        root_paths = [p.resolve() for p in parsed]
+        import os
+
+        common_str = os.path.commonpath([str(p) for p in root_paths])
+        _emit(f"Scanning {len(root_paths)} paths under {common_str} ...")
+        root_node = build_tree_multi(root_paths, excluded, depth)
+    elif not roots:
+        typer.echo("Error: at least one path is required.", err=True)
+        raise typer.Exit(1)
+    elif len(roots) > 1:
+        for r in roots:
+            if any(
+                f(r)
+                for f in (
+                    is_docker_path,
+                    is_pod_path,
+                    is_github_path,
+                    is_s3_path,
+                    is_ssh_path,
+                    is_archive_path,
+                )
+            ):
+                typer.echo(
+                    f"Multiple roots are only supported for local paths, got: {r}",
+                    err=True,
+                )
+                raise typer.Exit(1)
+        root_paths = []
+        for r in roots:
+            rp = Path(r)
+            if not rp.exists():
+                typer.echo(f"Path does not exist: {r}", err=True)
+                raise typer.Exit(1)
+            if not rp.is_dir() and not rp.is_file():
+                typer.echo(f"Not a file or directory: {r}", err=True)
+                raise typer.Exit(1)
+            root_paths.append(rp.resolve())
+        excluded = frozenset(Path(e).resolve() for e in exclude)
+        import os
+
+        common_str = os.path.commonpath([str(p) for p in root_paths])
+        _emit(f"Scanning {len(roots)} paths under {common_str} ...")
+        root_node = build_tree_multi(root_paths, excluded, depth)
+    elif is_docker_path(root):
+        docker_container, docker_path = parse_docker_path(root)
+        _emit(f"Scanning docker://{docker_container}:{docker_path} ...")
+        progress = [0]
+        try:
+            root_node = build_tree_docker(
+                docker_container,
+                docker_path,
+                exclude=frozenset(exclude),
+                depth=depth,
+                _progress=progress,
+            )
+        except (FileNotFoundError, OSError) as exc:
+            typer.echo(f"Error: {exc}", err=True)
+            raise typer.Exit(1) from exc
+        if progress[0] >= 100:
+            print("", file=sys.stderr)
+    elif is_pod_path(root):
+        pod_name, pod_ns, pod_path = parse_pod_path(root)
+        namespace = k8s_namespace or pod_ns
+        ns_label = f"@{namespace}" if namespace else ""
+        _emit(f"Scanning pod://{pod_name}{ns_label}:{pod_path} ...")
+        progress = [0]
+        try:
+            root_node = build_tree_pod(
+                pod_name,
+                pod_path,
+                namespace=namespace,
+                container=k8s_container,
+                exclude=frozenset(exclude),
+                depth=depth,
+                _progress=progress,
+            )
+        except (FileNotFoundError, OSError) as exc:
+            typer.echo(f"Error: {exc}", err=True)
+            raise typer.Exit(1) from exc
+        if progress[0] >= 100:
+            print("", file=sys.stderr)
+    elif is_github_path(root):
+        gh_owner, gh_repo, gh_ref, gh_subpath = parse_github_path(root)
+        display_title = f"{gh_owner}-{gh_repo}"
+        try:
+            root_node, resolved_ref = build_tree_github(
+                gh_owner,
+                gh_repo,
+                gh_ref,
+                token=github_token,
+                exclude=frozenset(exclude),
+                depth=depth,
+                subpath=gh_subpath,
+            )
+        except (PermissionError, FileNotFoundError) as exc:
+            typer.echo(f"Error: {exc}", err=True)
+            raise typer.Exit(1) from exc
+        subpath_label = f"/{gh_subpath}" if gh_subpath else ""
+        _emit(f"Scanning github:{gh_owner}/{gh_repo}@{resolved_ref}{subpath_label} ...")
+    elif is_s3_path(root):
+        bucket, prefix = parse_s3_path(root)
+        _emit(f"Scanning {root} ...")
+        try:
+            s3 = make_s3_client(profile=aws_profile, no_sign=no_sign)
+        except ImportError as exc:
+            typer.echo(f"Error: {exc}", err=True)
+            raise typer.Exit(1) from exc
+        progress = [0]
+        root_node = build_tree_s3(
+            s3,
+            bucket,
+            prefix,
+            exclude=frozenset(exclude),
+            depth=depth,
+            _progress=progress,
+        )
+        if progress[0] >= 100:
+            print("", file=sys.stderr)
+    elif is_ssh_path(root):
+        ssh_user, ssh_host, remote_path = parse_ssh_path(root)
+        _emit(f"Scanning {root} ...")
+        try:
+            client = connect(ssh_host, ssh_user, ssh_key=ssh_key, ssh_password=ssh_password)
+        except ImportError as exc:
+            typer.echo(f"Error: {exc}", err=True)
+            raise typer.Exit(1) from exc
+        sftp = client.open_sftp()
+        progress = [0]
+        try:
+            root_node = build_tree_ssh(
+                sftp,
+                remote_path,
+                exclude=frozenset(exclude),
+                depth=depth,
+                _progress=progress,
+            )
+        finally:
+            sftp.close()
+            client.close()
+        if progress[0] >= 100:
+            print("", file=sys.stderr)
+    elif is_archive_path(root):
+        archive_path = Path(root)
+        if not archive_path.exists():
+            typer.echo(f"Path does not exist: {root}", err=True)
+            raise typer.Exit(1)
+        if not archive_path.is_file():
+            typer.echo(f"Not a file: {root}", err=True)
+            raise typer.Exit(1)
+        _emit(f"Reading archive {root} ...")
+        try:
+            root_node = build_tree_archive(
+                archive_path, exclude=frozenset(exclude), depth=depth, password=password
+            )
+        except PasswordRequired as exc:
+            if password is not None:
+                typer.echo("Error: incorrect password.", err=True)
+                raise typer.Exit(1) from exc
+            pw = typer.prompt("Password", hide_input=True)
+            try:
+                root_node = build_tree_archive(
+                    archive_path, exclude=frozenset(exclude), depth=depth, password=pw
+                )
+            except PasswordRequired as exc2:
+                typer.echo("Error: incorrect password.", err=True)
+                raise typer.Exit(1) from exc2
+        except (ImportError, OSError, RuntimeError) as exc:
+            typer.echo(f"Error: {exc}", err=True)
+            raise typer.Exit(1) from exc
+    else:
+        root_path = Path(root)
+        if not root_path.exists():
+            typer.echo(f"Path does not exist: {root}", err=True)
+            raise typer.Exit(1)
+        if not root_path.is_dir():
+            if not root_path.is_file():
+                typer.echo(f"Not a file or directory: {root}", err=True)
+                raise typer.Exit(1)
+            rp = root_path.resolve()
+            try:
+                file_size = max(1, rp.stat().st_size)
+            except OSError:
+                file_size = 1
+            ext = rp.suffix.lower() if rp.suffix else "(no ext)"
+            file_node = Node(name=rp.name, path=rp, size=file_size, is_dir=False, extension=ext)
+            root_node = Node(
+                name=rp.parent.name,
+                path=rp.parent,
+                size=file_size,
+                is_dir=True,
+                children=[file_node],
+            )
+            _emit(f"Scanning {root} ...")
+        else:
+            excluded = frozenset(Path(e).resolve() for e in exclude)
+            _emit(f"Scanning {root} ...")
+            root_node = build_tree(root_path.resolve(), excluded, depth)
+
+    t_scan = time.monotonic() - t_scan_start
+    return root_node, t_scan, display_title
+
+
 @app.command(name="map", epilog=_EPILOG)
 def main(
     roots: list[str] = typer.Argument(
@@ -1959,6 +2221,11 @@ def main(
             " (e.g. foo / bar / baz). Default: on."
         ),
     ),
+    show_metrics: bool = typer.Option(
+        False,
+        "--metrics/--no-metrics",
+        help="Print detailed metrics after scanning (same output as the metrics command).",
+    ),
 ) -> None:
     """Create a nested treemap bitmap for a directory tree."""
     roots = roots or []
@@ -1972,242 +2239,21 @@ def main(
         typer.echo(f"Unknown colormap '{colormap}'. Valid options:\n{valid}", err=True)
         raise typer.Exit(1)
 
-    # Resolve path-list mode: --paths-from FILE or implicit stdin pipe
-    use_stdin = paths_from is not None or (not roots and not sys.stdin.isatty())
-    if use_stdin and roots:
-        typer.echo(
-            "Error: cannot combine positional paths with --paths-from / piped stdin.",
-            err=True,
-        )
-        raise typer.Exit(1)
-
-    root = roots[0] if len(roots) == 1 else ""  # alias for single-root branches
-    _display_title: str | None = None  # used as prefix for the temp image filename
-    t_scan_start = time.monotonic()
-    if use_stdin:
-        if paths_from is None or str(paths_from) == "-":
-            raw = sys.stdin.read()
-        else:
-            if not paths_from.exists():
-                typer.echo(f"Error: --paths-from path does not exist: {paths_from}", err=True)
-                raise typer.Exit(1)
-            raw = paths_from.read_text()
-        parsed = parse_pathlist(raw.splitlines())
-        if not parsed:
-            typer.echo("Error: no paths found in path-list input.", err=True)
-            raise typer.Exit(1)
-        for p in parsed:
-            if not p.exists():
-                typer.echo(f"Path does not exist: {p}", err=True)
-                raise typer.Exit(1)
-        excluded = frozenset(Path(e).resolve() for e in exclude)
-        root_paths = [p.resolve() for p in parsed]
-        if header:
-            import os
-
-            common_str = os.path.commonpath([str(p) for p in root_paths])
-            _info(f"Scanning {len(root_paths)} paths under {common_str} ...")
-        root_node = build_tree_multi(root_paths, excluded, depth)
-    elif not roots:
-        typer.echo("Error: at least one path is required.", err=True)
-        raise typer.Exit(1)
-    elif len(roots) > 1:
-        for r in roots:
-            if any(
-                f(r)
-                for f in (
-                    is_docker_path,
-                    is_pod_path,
-                    is_github_path,
-                    is_s3_path,
-                    is_ssh_path,
-                    is_archive_path,
-                )
-            ):
-                typer.echo(
-                    f"Multiple roots are only supported for local paths, got: {r}",
-                    err=True,
-                )
-                raise typer.Exit(1)
-        root_paths = []
-        for r in roots:
-            rp = Path(r)
-            if not rp.exists():
-                typer.echo(f"Path does not exist: {r}", err=True)
-                raise typer.Exit(1)
-            if not rp.is_dir() and not rp.is_file():
-                typer.echo(f"Not a file or directory: {r}", err=True)
-                raise typer.Exit(1)
-            root_paths.append(rp.resolve())
-        excluded = frozenset(Path(e).resolve() for e in exclude)
-        if header:
-            import os
-
-            common_str = os.path.commonpath([str(p) for p in root_paths])
-            _info(f"Scanning {len(roots)} paths under {common_str} ...")
-        root_node = build_tree_multi(root_paths, excluded, depth)
-    elif is_docker_path(root):
-        docker_container, docker_path = parse_docker_path(root)
-        if header:
-            _info(f"Scanning docker://{docker_container}:{docker_path} ...")
-        progress = [0]
-        try:
-            root_node = build_tree_docker(
-                docker_container,
-                docker_path,
-                exclude=frozenset(exclude),
-                depth=depth,
-                _progress=progress,
-            )
-        except (FileNotFoundError, OSError) as exc:
-            typer.echo(f"Error: {exc}", err=True)
-            raise typer.Exit(1) from exc
-        if progress[0] >= 100:
-            print("", file=sys.stderr)
-    elif is_pod_path(root):
-        pod_name, pod_ns, pod_path = parse_pod_path(root)
-        namespace = k8s_namespace or pod_ns
-        if header:
-            ns_label = f"@{namespace}" if namespace else ""
-            _info(f"Scanning pod://{pod_name}{ns_label}:{pod_path} ...")
-        progress = [0]
-        try:
-            root_node = build_tree_pod(
-                pod_name,
-                pod_path,
-                namespace=namespace,
-                container=k8s_container,
-                exclude=frozenset(exclude),
-                depth=depth,
-                _progress=progress,
-            )
-        except (FileNotFoundError, OSError) as exc:
-            typer.echo(f"Error: {exc}", err=True)
-            raise typer.Exit(1) from exc
-        if progress[0] >= 100:
-            print("", file=sys.stderr)
-    elif is_github_path(root):
-        gh_owner, gh_repo, gh_ref, gh_subpath = parse_github_path(root)
-        _display_title = f"{gh_owner}-{gh_repo}"
-        try:
-            root_node, resolved_ref = build_tree_github(
-                gh_owner,
-                gh_repo,
-                gh_ref,
-                token=github_token,
-                exclude=frozenset(exclude),
-                depth=depth,
-                subpath=gh_subpath,
-            )
-        except (PermissionError, FileNotFoundError) as exc:
-            typer.echo(f"Error: {exc}", err=True)
-            raise typer.Exit(1) from exc
-        if header:
-            subpath_label = f"/{gh_subpath}" if gh_subpath else ""
-            _info(f"Scanning github:{gh_owner}/{gh_repo}@{resolved_ref}{subpath_label} ...")
-    elif is_s3_path(root):
-        bucket, prefix = parse_s3_path(root)
-        if header:
-            _info(f"Scanning {root} ...")
-        try:
-            s3 = make_s3_client(profile=aws_profile, no_sign=no_sign)
-        except ImportError as exc:
-            typer.echo(f"Error: {exc}", err=True)
-            raise typer.Exit(1) from exc
-        progress = [0]
-        root_node = build_tree_s3(
-            s3,
-            bucket,
-            prefix,
-            exclude=frozenset(exclude),
-            depth=depth,
-            _progress=progress,
-        )
-        if progress[0] >= 100:
-            print("", file=sys.stderr)
-    elif is_ssh_path(root):
-        ssh_user, ssh_host, remote_path = parse_ssh_path(root)
-        if header:
-            _info(f"Scanning {root} ...")
-        try:
-            client = connect(ssh_host, ssh_user, ssh_key=ssh_key, ssh_password=ssh_password)
-        except ImportError as exc:
-            typer.echo(f"Error: {exc}", err=True)
-            raise typer.Exit(1) from exc
-        sftp = client.open_sftp()
-        progress = [0]
-        try:
-            root_node = build_tree_ssh(
-                sftp,
-                remote_path,
-                exclude=frozenset(exclude),
-                depth=depth,
-                _progress=progress,
-            )
-        finally:
-            sftp.close()
-            client.close()
-        if progress[0] >= 100:
-            print("", file=sys.stderr)
-    elif is_archive_path(root):
-        archive_path = Path(root)
-        if not archive_path.exists():
-            typer.echo(f"Path does not exist: {root}", err=True)
-            raise typer.Exit(1)
-        if not archive_path.is_file():
-            typer.echo(f"Not a file: {root}", err=True)
-            raise typer.Exit(1)
-        if header:
-            _info(f"Reading archive {root} ...")
-        try:
-            root_node = build_tree_archive(
-                archive_path, exclude=frozenset(exclude), depth=depth, password=password
-            )
-        except PasswordRequired as exc:
-            if password is not None:
-                typer.echo("Error: incorrect password.", err=True)
-                raise typer.Exit(1) from exc
-            pw = typer.prompt("Password", hide_input=True)
-            try:
-                root_node = build_tree_archive(
-                    archive_path, exclude=frozenset(exclude), depth=depth, password=pw
-                )
-            except PasswordRequired as exc2:
-                typer.echo("Error: incorrect password.", err=True)
-                raise typer.Exit(1) from exc2
-        except (ImportError, OSError, RuntimeError) as exc:
-            typer.echo(f"Error: {exc}", err=True)
-            raise typer.Exit(1) from exc
-    else:
-        root_path = Path(root)
-        if not root_path.exists():
-            typer.echo(f"Path does not exist: {root}", err=True)
-            raise typer.Exit(1)
-        if not root_path.is_dir():
-            if not root_path.is_file():
-                typer.echo(f"Not a file or directory: {root}", err=True)
-                raise typer.Exit(1)
-            rp = root_path.resolve()
-            try:
-                file_size = max(1, rp.stat().st_size)
-            except OSError:
-                file_size = 1
-            ext = rp.suffix.lower() if rp.suffix else "(no ext)"
-            file_node = Node(name=rp.name, path=rp, size=file_size, is_dir=False, extension=ext)
-            root_node = Node(
-                name=rp.parent.name,
-                path=rp.parent,
-                size=file_size,
-                is_dir=True,
-                children=[file_node],
-            )
-            if header:
-                _info(f"Scanning {root} ...")
-        else:
-            excluded = frozenset(Path(e).resolve() for e in exclude)
-            if header:
-                _info(f"Scanning {root} ...")
-            root_node = build_tree(root_path.resolve(), excluded, depth)
+    root_node, t_scan, _display_title = _scan_tree(
+        roots=roots,
+        paths_from=paths_from,
+        exclude=exclude,
+        depth=depth,
+        ssh_key=ssh_key,
+        ssh_password=ssh_password,
+        aws_profile=aws_profile,
+        no_sign=no_sign,
+        github_token=github_token,
+        k8s_namespace=k8s_namespace,
+        k8s_container=k8s_container,
+        password=password,
+        log=_info if header else None,
+    )
 
     if subtrees:
         root_node = prune_to_subtrees(root_node, set(subtrees))
@@ -2217,13 +2263,15 @@ def main(
     if breadcrumbs:
         root_node = apply_breadcrumbs(root_node)
 
-    t_scan = time.monotonic() - t_scan_start
     if logscale > 1:
         apply_log_sizes(root_node, logscale)
     total_files = len(collect_extensions(root_node))
     if header:
         _f = "file" if total_files == 1 else "files"
         _info(f"Found {total_files:,} {_f}, total size: {root_node.size:,} bytes  [{t_scan:.1f}s]")
+
+    if show_metrics:
+        typer.echo(_tree_metrics(root_node, t_scan), err=to_stdout)
 
     if size is not None:
         try:
@@ -2301,10 +2349,106 @@ def main(
             display_window(buf, title=_display_title)
 
 
+@app.command(name="metrics")
+def metrics_command(
+    roots: list[str] = typer.Argument(
+        default=None,
+        help="Root(s) to scan. Supports the same sources as the map command.",
+    ),
+    paths_from: Path | None = typer.Option(
+        None,
+        "--paths-from",
+        help="File containing a path list in tree or find output format. Use - for stdin.",
+        metavar="FILE",
+    ),
+    exclude: list[str] = typer.Option([], "--exclude", "-e", help="Paths to exclude (repeatable)"),
+    depth: int | None = typer.Option(
+        None, "--depth", help="Maximum recursion depth (local and remote)"
+    ),
+    ssh_key: str | None = typer.Option(
+        None, "--ssh-key", help="SSH private key file (default: ~/.ssh/id_rsa)"
+    ),
+    ssh_password: str | None = typer.Option(
+        None, "--ssh-password", envvar="SSH_PASSWORD", help="SSH password"
+    ),
+    aws_profile: str | None = typer.Option(
+        None, "--aws-profile", envvar="AWS_PROFILE", help="AWS profile name for S3 access"
+    ),
+    no_sign: bool = typer.Option(
+        False, "--no-sign", help="Skip AWS signing for anonymous access to public S3 buckets"
+    ),
+    github_token: str | None = typer.Option(
+        None, "--github-token", envvar="GITHUB_TOKEN", help="GitHub personal access token"
+    ),
+    k8s_namespace: str | None = typer.Option(
+        None, "--k8s-namespace", "-N", help="Kubernetes namespace (overrides @namespace in pod URL)"
+    ),
+    k8s_container: str | None = typer.Option(
+        None, "--k8s-container", help="Container name for multi-container pods"
+    ),
+    password: str | None = typer.Option(
+        None,
+        "--password",
+        help="Password for encrypted archives. Prompted interactively if not supplied and needed.",
+    ),
+    top_n: int = typer.Option(
+        10, "--top", "-n", help="Number of top extensions / largest files / largest dirs to show."
+    ),
+    sort_by: str = typer.Option(
+        "count",
+        "--sort-by",
+        help="Sort top extensions by: count (default) or size.",
+        metavar="FIELD",
+    ),
+    as_json: bool = typer.Option(False, "--json/--no-json", help="Output metrics as JSON."),
+) -> None:
+    """Print detailed metrics for a scanned directory tree."""
+    roots = roots or []
+    root_node, t_scan, _ = _scan_tree(
+        roots=roots,
+        paths_from=paths_from,
+        exclude=exclude,
+        depth=depth,
+        ssh_key=ssh_key,
+        ssh_password=ssh_password,
+        aws_profile=aws_profile,
+        no_sign=no_sign,
+        github_token=github_token,
+        k8s_namespace=k8s_namespace,
+        k8s_container=k8s_container,
+        password=password,
+        log=typer.echo,
+    )
+    if sort_by not in ("count", "size"):
+        typer.echo(f"Invalid --sort-by value '{sort_by}'. Choose: count, size", err=True)
+        raise typer.Exit(1)
+    if as_json:
+        import json
+
+        typer.echo(
+            json.dumps(
+                _tree_metrics_dict(root_node, t_scan, top_n=top_n, sort_by=sort_by), indent=2
+            )
+        )
+    else:
+        typer.echo(_tree_metrics(root_node, t_scan, top_n=top_n, sort_by=sort_by))
+
+
 from dirplot._overview import add_overview_command  # noqa: E402
 
 add_overview_command(app)
 
 # Reorder help output regardless of definition order.
-_CMD_ORDER = ["demo", "overview", "termsize", "map", "git", "hg", "watch", "replay", "read-meta"]
+_CMD_ORDER = [
+    "demo",
+    "overview",
+    "termsize",
+    "map",
+    "metrics",
+    "git",
+    "hg",
+    "watch",
+    "replay",
+    "read-meta",
+]
 app.registered_commands.sort(key=lambda c: _CMD_ORDER.index(c.name or ""))

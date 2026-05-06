@@ -268,3 +268,140 @@ def collect_extensions(node: Node) -> list[str]:
     for child in node.children:
         exts.extend(collect_extensions(child))
     return exts
+
+
+def _fmt_size(n: int) -> str:
+    """Format byte count as a human-readable string."""
+    for unit in ("B", "KB", "MB", "GB"):
+        if n < 1024:
+            return f"{n:.1f} {unit}"
+        n /= 1024  # type: ignore[assignment]
+    return f"{n:.1f} TB"
+
+
+def _collect_files(node: Node) -> list[Node]:
+    """Return a flat list of all file nodes under *node*."""
+    if not node.is_dir:
+        return [node]
+    result: list[Node] = []
+    for child in node.children:
+        result.extend(_collect_files(child))
+    return result
+
+
+def _collect_dirs(node: Node) -> list[Node]:
+    """Return a flat list of all directory nodes under *node* (excluding root)."""
+    result: list[Node] = []
+    for child in node.children:
+        if child.is_dir:
+            result.append(child)
+            result.extend(_collect_dirs(child))
+    return result
+
+
+def tree_metrics_dict(
+    root_node: Node,
+    t_scan: float,
+    top_n: int = 10,
+    sort_by: str = "count",
+) -> dict:
+    """Return a dict of metrics for the scanned tree.
+
+    *sort_by* controls extension ordering: ``"count"`` (default) or ``"size"``.
+    """
+    from collections import Counter, defaultdict
+
+    n_files, n_dirs = count_nodes(root_node)
+    depth = max_depth(root_node)
+    all_files = _collect_files(root_node)
+    all_dirs = _collect_dirs(root_node)
+    empty_dirs = sum(1 for d in all_dirs if not d.children)
+    total = root_node.size or 1  # guard against zero-size trees
+
+    # Extension stats: count + total bytes
+    ext_sizes: dict[str, int] = defaultdict(int)
+    ext_counts_raw: Counter[str] = Counter()
+    for f in all_files:
+        ext_counts_raw[f.extension] += 1
+        ext_sizes[f.extension] += f.size
+
+    if sort_by == "size":
+        sorted_exts = sorted(ext_sizes.items(), key=lambda kv: kv[1], reverse=True)[:top_n]
+    else:
+        sorted_exts = [(e, ext_sizes[e]) for e, _ in ext_counts_raw.most_common(top_n)]
+
+    top_extensions = [
+        {
+            "ext": ext if ext else "(no ext)",
+            "count": ext_counts_raw[ext],
+            "size_bytes": ext_sizes[ext],
+        }
+        for ext, _ in sorted_exts
+    ]
+
+    largest_files = sorted(all_files, key=lambda n: n.size, reverse=True)[:top_n]
+    largest_dirs = sorted(all_dirs, key=lambda n: n.size, reverse=True)[:top_n]
+
+    return {
+        "files": n_files,
+        "dirs": n_dirs,
+        "empty_dirs": empty_dirs,
+        "total_size_bytes": root_node.size,
+        "depth": depth,
+        "scan_time_s": round(t_scan, 3),
+        "top_extensions": top_extensions,
+        "largest_files": [
+            {
+                "path": str(f.path),
+                "size_bytes": f.size,
+                "pct": round(100 * f.size / total, 1),
+            }
+            for f in largest_files
+        ],
+        "largest_dirs": [
+            {
+                "path": str(d.path),
+                "size_bytes": d.size,
+                "pct": round(100 * d.size / total, 1),
+            }
+            for d in largest_dirs
+        ],
+    }
+
+
+def tree_metrics(
+    root_node: Node,
+    t_scan: float,
+    top_n: int = 10,
+    sort_by: str = "count",
+) -> str:
+    """Return a human-readable metrics string for the scanned tree.
+
+    *sort_by* controls extension ordering: ``"count"`` (default) or ``"size"``.
+    """
+    m = tree_metrics_dict(root_node, t_scan, top_n=top_n, sort_by=sort_by)
+    total = m["total_size_bytes"] or 1
+
+    lines: list[str] = [
+        f"  Files:      {m['files']:,}",
+        f"  Dirs:       {m['dirs']:,}  ({m['empty_dirs']:,} empty)",
+        f"  Total size: {_fmt_size(total)}",
+        f"  Depth:      {m['depth']}",
+        f"  Scan time:  {m['scan_time_s']:.2f}s",
+        f"  Top extensions ({len(m['top_extensions'])}) [by {sort_by}]:",
+    ]
+    for e in m["top_extensions"]:
+        label = e["ext"]
+        lines.append(f"    {label:<20} {e['count']:>6,}    {_fmt_size(e['size_bytes'])}")
+
+    lines.append("  Largest files:")
+    for f in m["largest_files"]:
+        size_str = _fmt_size(f["size_bytes"])
+        lines.append(f"    {size_str:<10}  {f['pct']:>5.1f}%  {f['path']}")
+
+    lines.append("  Largest dirs:")
+    for d in m["largest_dirs"]:
+        size_str = _fmt_size(d["size_bytes"])
+        lines.append(f"    {size_str:<10}  {d['pct']:>5.1f}%  {d['path']}")
+
+    return "\n".join(lines)

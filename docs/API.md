@@ -45,6 +45,57 @@ buf = create_treemap(root, width_px=1280, height_px=720)
 Image.open(buf)  # Jupyter renders PIL images automatically via _repr_png_()
 ```
 
+## Metrics
+
+`tree_metrics` and `tree_metrics_dict` compute statistics from a scanned `Node` tree — the same data shown by `dirplot metrics`:
+
+```python
+from pathlib import Path
+from dirplot import build_tree
+from dirplot.scanner import tree_metrics, tree_metrics_dict
+
+root = build_tree(Path("/path/to/project"))
+
+# Human-readable string (same as CLI output)
+print(tree_metrics(root, t_scan=0.0))
+
+# Sort extensions by total bytes instead of file count
+print(tree_metrics(root, t_scan=0.0, sort_by="size"))
+
+# Limit to top 5 entries per list
+print(tree_metrics(root, t_scan=0.0, top_n=5))
+
+# Structured dict — suitable for JSON serialisation or downstream processing
+import json
+data = tree_metrics_dict(root, t_scan=0.0)
+print(json.dumps(data, indent=2))
+```
+
+`tree_metrics_dict` returns:
+
+```python
+{
+    "files": int,            # total file count
+    "dirs": int,             # total directory count
+    "empty_dirs": int,       # directories with no children
+    "total_size_bytes": int,
+    "depth": int,            # maximum tree depth
+    "scan_time_s": float,
+    "top_extensions": [
+        {"ext": str, "count": int, "size_bytes": int},
+        …
+    ],
+    "largest_files": [
+        {"path": str, "size_bytes": int, "pct": float},  # pct = % of total size
+        …
+    ],
+    "largest_dirs": [
+        {"path": str, "size_bytes": int, "pct": float},
+        …
+    ],
+}
+```
+
 ## Remote backends
 
 Each remote backend exposes a `build_tree_*` function that returns the same `Node` type accepted by `create_treemap`:
