@@ -92,7 +92,7 @@ def _api_get(url: str, token: str | None) -> Any:
         if exc.code == 401:
             raise PermissionError(
                 "GitHub authentication failed — token invalid or expired. "
-                "Set GITHUB_TOKEN, use --github-token, or run 'gh auth login'."
+                "Set GITHUB_TOKEN, use --github-token-file, or run 'gh auth login'."
             ) from exc
         if exc.code == 403:
             # Could be rate-limit (unauthenticated: 60 req/h) or repo permissions.
@@ -100,18 +100,18 @@ def _api_get(url: str, token: str | None) -> Any:
             if "rate limit" in body.lower():
                 raise PermissionError(
                     "GitHub API rate limit exceeded (60 req/h without a token). "
-                    "Set GITHUB_TOKEN, use --github-token, or run 'gh auth login' "
+                    "Set GITHUB_TOKEN, use --github-token-file, or run 'gh auth login' "
                     "to raise the limit to 5,000 req/h."
                 ) from exc
             raise PermissionError(
                 "GitHub access denied — the repository may be private. "
-                "Set GITHUB_TOKEN, use --github-token, or run 'gh auth login'."
+                "Set GITHUB_TOKEN, use --github-token-file, or run 'gh auth login'."
             ) from exc
         if exc.code == 404:
             raise FileNotFoundError(
                 f"GitHub repository or branch not found: {url}\n"
                 "Check the owner/repo spelling and branch name. "
-                "Private repositories require GITHUB_TOKEN, --github-token, "
+                "Private repositories require GITHUB_TOKEN, --github-token-file, "
                 "or 'gh auth login'."
             ) from exc
         raise

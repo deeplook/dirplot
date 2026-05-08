@@ -51,6 +51,7 @@ from dirplot.terminal import get_terminal_pixel_size, get_terminal_size
 app = typer.Typer(
     context_settings={"help_option_names": ["-h", "--help"]},
     rich_markup_mode="rich",
+    epilog="Docs & issues: https://github.com/deeplook/dirplot",
 )
 
 
@@ -142,7 +143,18 @@ def _app_callback(
         is_eager=True,
         help="Show version and exit",
     ),
+    no_color: bool = typer.Option(
+        False,
+        "--no-color",
+        help="Disable ANSI color output (equivalent to setting NO_COLOR=1).",
+        is_eager=True,
+        hidden=False,
+    ),
 ) -> None:
+    if no_color:
+        import os
+
+        os.environ["NO_COLOR"] = "1"
     if ctx.invoked_subcommand is None:
         typer.echo(ctx.get_help())
         raise typer.Exit()
@@ -184,7 +196,7 @@ def watch_cmd(
     ),
     exclude: list[str] = typer.Option([], "--exclude", "-e", help="Paths to exclude (repeatable)"),
     font_size: int = typer.Option(12, "--font-size", help="Directory label font size in pixels"),
-    colormap: str = typer.Option("tab20", "--colormap", "-c", help="Matplotlib colormap"),
+    colormap: str = typer.Option("tab20", "--colormap", help="Matplotlib colormap"),
     size: str | None = typer.Option(
         None, "--size", help="Output size as WIDTHxHEIGHT", metavar="WIDTHxHEIGHT"
     ),
@@ -199,7 +211,7 @@ def watch_cmd(
     ),
     logscale: float = typer.Option(
         0.0,
-        "--logscale",
+        "--log-scale",
         help="Log-scale compression ratio (max/min ratio). 0 disables; must be > 1 to enable.",
         show_default=True,
     ),
@@ -258,6 +270,7 @@ def watch_cmd(
         ),
         metavar="COLOR",
     ),
+    quiet: bool = typer.Option(False, "--quiet", "-q", help="Suppress non-error output."),
 ) -> None:
     """Watch one or more directories and regenerate the treemap on every file change.
 
@@ -324,13 +337,15 @@ def watch_cmd(
     try:
         # Generate an initial treemap immediately
         roots_str = ", ".join(str(r) for r in roots)
-        typer.echo(f"Scanning {roots_str} ...", err=True)
+        if not quiet:
+            typer.echo(f"Scanning {roots_str} ...", err=True)
         handler._regenerate()
 
         for root in roots:
             observer.schedule(handler, str(root), recursive=True)
         observer.start()
-        typer.echo(f"Watching {roots_str} → {output}  (Ctrl-C to stop)")
+        if not quiet:
+            typer.echo(f"Watching {roots_str} → {output}  (Ctrl-C to stop)", err=True)
 
         while True:
             time.sleep(1)
@@ -389,6 +404,7 @@ def _run_vcs_animation(
     fade_out_duration: float,
     fade_out_frames: int | None,
     fade_out_color: str,
+    quiet: bool = False,
 ) -> None:
     """Render *snapshots* to an animated APNG or MP4 at *output*.
 
@@ -407,7 +423,8 @@ def _run_vcs_animation(
     # ── Phase 2: parallel render ──────────────────────────────────────────
     total = len(snapshots)
     n_workers = min(workers if workers is not None else (os.cpu_count() or 1), total)
-    typer.echo(f"Rendering {total} frame(s) using {n_workers} worker(s) ...", err=True)
+    if not quiet:
+        typer.echo(f"Rendering {total} frame(s) using {n_workers} worker(s) ...", err=True)
 
     # Per-frame progress: fraction of total animation time elapsed after each
     # frame plays.  With proportional timing this reflects real bursts; with
@@ -449,7 +466,8 @@ def _run_vcs_animation(
             for done, future in enumerate(as_completed(futures), 1):
                 orig_i, png_bytes, rect_map = future.result()
                 raw[orig_i] = (png_bytes, rect_map)
-                typer.echo(f"  Rendered {done}/{total}", err=True)
+                if not quiet:
+                    typer.echo(f"  Rendered {done}/{total}", err=True)
     except KeyboardInterrupt:
         typer.echo("\nInterrupted.", err=True)
         raise typer.Exit(1) from None
@@ -510,7 +528,8 @@ def _run_vcs_animation(
 
         write_apng(output, frame_bytes, frame_durations)
     fmt = output.suffix.upper()[1:]
-    typer.echo(f"Wrote {len(frame_bytes)}-frame {fmt} → {output}", err=True)
+    if not quiet:
+        typer.echo(f"Wrote {len(frame_bytes)}-frame {fmt} → {output}", err=True)
 
 
 _GIT_EPILOG = (
@@ -545,7 +564,6 @@ def git_cmd(
     revision_range: str | None = typer.Option(
         None,
         "--range",
-        "-r",
         help=(
             "Git revision range (e.g. main~50..main). "
             "When using a GitHub URL with --max-commits, "
@@ -553,7 +571,7 @@ def git_cmd(
         ),
     ),
     max_commits: int | None = typer.Option(
-        None, "--max-commits", "-n", help="Maximum number of commits to process"
+        None, "--max-commits", help="Maximum number of commits to process"
     ),
     last: str | None = typer.Option(
         None,
@@ -566,7 +584,7 @@ def git_cmd(
         [], "--exclude", "-e", help="Top-level paths to exclude (repeatable)"
     ),
     font_size: int = typer.Option(12, "--font-size", help="Directory label font size in pixels"),
-    colormap: str = typer.Option("tab20", "--colormap", "-c", help="Matplotlib colormap"),
+    colormap: str = typer.Option("tab20", "--colormap", help="Matplotlib colormap"),
     size: str | None = typer.Option(
         None, "--size", help="Output size as WIDTHxHEIGHT", metavar="WIDTHxHEIGHT"
     ),
@@ -581,7 +599,7 @@ def git_cmd(
     ),
     logscale: float = typer.Option(
         0.0,
-        "--logscale",
+        "--log-scale",
         help="Log-scale compression ratio (max/min ratio). 0 disables; must be > 1 to enable.",
         show_default=True,
     ),
@@ -602,7 +620,6 @@ def git_cmd(
     workers: int | None = typer.Option(
         None,
         "--workers",
-        "-w",
         help="Parallel render workers for animate mode (default: all CPU cores).  "
         "Rendering is memory-bandwidth bound, so the optimal value depends on your hardware; "
         "try --workers 4-8 if the default is slower than expected.",
@@ -620,11 +637,11 @@ def git_cmd(
         help="MP4 video codec: libx264 (H.264, default) or libx265 (H.265, smaller files). "
         "Ignored for APNG output.",
     ),
-    github_token: str | None = typer.Option(
+    github_token_file: Path | None = typer.Option(
         None,
-        "--github-token",
-        envvar="GITHUB_TOKEN",
-        help="GitHub personal access token for private repos",
+        "--github-token-file",
+        help="File containing a GitHub personal access token (avoids exposing the token in shell history).",  # noqa: E501
+        metavar="FILE",
     ),
     fade_out: bool = typer.Option(
         False,
@@ -651,6 +668,7 @@ def git_cmd(
         ),
         metavar="COLOR",
     ),
+    quiet: bool = typer.Option(False, "--quiet", "-q", help="Suppress non-error output."),
 ) -> None:
     """Replay git history commit-by-commit as an animated treemap."""
     import shutil
@@ -678,12 +696,21 @@ def git_cmd(
             typer.echo(f"Error: {exc}", err=True)
             raise typer.Exit(1) from exc
 
+    import os
+
+    github_token: str | None = os.environ.get("GITHUB_TOKEN")
     _tmpdir: tempfile.TemporaryDirectory[str] | None = None
     _gh_owner: str | None = None
     _gh_repo_name: str | None = None
     _gh_ref: str | None = None
     _gh_token: str | None = None
     repo: Path
+    if github_token_file is not None:
+        if not github_token_file.exists():
+            typer.echo(f"Error: --github-token-file not found: {github_token_file}", err=True)
+            raise typer.Exit(1)
+        github_token = github_token_file.read_text().strip()
+
     if is_github_path(repo_arg):
         gh_owner, gh_repo_name, gh_ref, _ = parse_github_path(repo_arg)
         _gh_owner, _gh_repo_name, _gh_ref = gh_owner, gh_repo_name, gh_ref
@@ -711,7 +738,8 @@ def git_cmd(
         if gh_ref:
             clone_cmd += ["--branch", gh_ref]
         clone_cmd += [clone_url, str(_clone_dir)]
-        typer.echo(f"Cloning github:{gh_owner}/{gh_repo_name} ...", err=True)
+        if not quiet:
+            typer.echo(f"Cloning github:{gh_owner}/{gh_repo_name} ...", err=True)
         try:
             subprocess.run(clone_cmd, check=True, capture_output=True, text=True)
         except subprocess.CalledProcessError as exc:
@@ -746,7 +774,8 @@ def git_cmd(
         width_px = term_w + 1
         height_px = term_h - 3 * row_px
 
-    typer.echo(f"Reading git log from {repo} ...", err=True)
+    if not quiet:
+        typer.echo(f"Reading git log from {repo} ...", err=True)
     _shallow_hint = ""
     if _tmpdir is not None and revision_range:
         if last_dt is not None and max_commits is not None:
@@ -796,20 +825,21 @@ def git_cmd(
         except (subprocess.CalledProcessError, ValueError):
             pass
 
-    if total_in_repo is not None and total_in_repo > len(commits):
-        _filters = []
-        if last_dt is not None:
-            _filters.append(f"--last {last}")
-        if max_commits is not None:
-            _filters.append(f"--max-commits {max_commits}")
-        _filter_str = " and ".join(_filters) if _filters else "--max-commits"
-        typer.echo(
-            f"Replaying {len(commits)} of {total_in_repo} commit(s) "
-            f"(filtered by {_filter_str}) ...",
-            err=True,
-        )
-    else:
-        typer.echo(f"Replaying {len(commits)} commit(s) ...", err=True)
+    if not quiet:
+        if total_in_repo is not None and total_in_repo > len(commits):
+            _filters = []
+            if last_dt is not None:
+                _filters.append(f"--last {last}")
+            if max_commits is not None:
+                _filters.append(f"--max-commits {max_commits}")
+            _filter_str = " and ".join(_filters) if _filters else "--max-commits"
+            typer.echo(
+                f"Replaying {len(commits)} of {total_in_repo} commit(s) "
+                f"(filtered by {_filter_str}) ...",
+                err=True,
+            )
+        else:
+            typer.echo(f"Replaying {len(commits)} commit(s) ...", err=True)
 
     # Pre-compute per-commit frame durations.
     if total_duration is not None and animate:
@@ -826,11 +856,12 @@ def git_cmd(
         total_ms = total_duration * 1000
         commit_durations = _proportional_durations(gaps, total_ms)
         min_d, max_d = min(commit_durations), max(commit_durations)
-        typer.echo(
-            f"  Proportional timing: {min_d}–{max_d} ms/frame"
-            f" (total ~{sum(commit_durations) / 1000:.1f}s)",
-            err=True,
-        )
+        if not quiet:
+            typer.echo(
+                f"  Proportional timing: {min_d}–{max_d} ms/frame"
+                f" (total ~{sum(commit_durations) / 1000:.1f}s)",
+                err=True,
+            )
     else:
         commit_durations = [frame_duration] * len(commits)
 
@@ -848,7 +879,8 @@ def git_cmd(
         snapshots: list[Snapshot] = []
 
         for i, (sha, ts, subject) in enumerate(commits):
-            typer.echo(f"  [{i + 1}/{len(commits)}] {sha[:8]}  {subject[:72]}", err=True)
+            if not quiet:
+                typer.echo(f"  [{i + 1}/{len(commits)}] {sha[:8]}  {subject[:72]}", err=True)
             try:
                 if prev_sha is None:
                     files = git_initial_files(repo, sha, excluded)
@@ -888,6 +920,7 @@ def git_cmd(
             fade_out_duration=fade_out_duration,
             fade_out_frames=fade_out_frames,
             fade_out_color=fade_out_color,
+            quiet=quiet,
         )
 
     else:
@@ -896,7 +929,8 @@ def git_cmd(
         cumulative_ms = 0.0
 
         for i, (sha, ts, subject) in enumerate(commits):
-            typer.echo(f"  [{i + 1}/{len(commits)}] {sha[:8]}  {subject[:72]}", err=True)
+            if not quiet:
+                typer.echo(f"  [{i + 1}/{len(commits)}] {sha[:8]}  {subject[:72]}", err=True)
             try:
                 if prev_sha is None:
                     files = git_initial_files(repo, sha, excluded)
@@ -934,7 +968,8 @@ def git_cmd(
                 logscale=logscale,
             )
             output.write_bytes(png_buf.read())
-            typer.echo(f"  Updated {output}", err=True)
+            if not quiet:
+                typer.echo(f"  Updated {output}", err=True)
 
 
 _HG_EPILOG = (
@@ -960,11 +995,10 @@ def hg_cmd(
     revision_range: str | None = typer.Option(
         None,
         "--range",
-        "-r",
         help="Mercurial revision range (e.g. 0:tip).  Overrides @rev in the path.",
     ),
     max_commits: int | None = typer.Option(
-        None, "--max-commits", "-n", help="Maximum number of changesets to process"
+        None, "--max-commits", help="Maximum number of changesets to process"
     ),
     last: str | None = typer.Option(
         None,
@@ -977,7 +1011,7 @@ def hg_cmd(
         [], "--exclude", "-e", help="Top-level paths to exclude (repeatable)"
     ),
     font_size: int = typer.Option(12, "--font-size", help="Directory label font size in pixels"),
-    colormap: str = typer.Option("tab20", "--colormap", "-c", help="Matplotlib colormap"),
+    colormap: str = typer.Option("tab20", "--colormap", help="Matplotlib colormap"),
     size: str | None = typer.Option(
         None, "--size", help="Output size as WIDTHxHEIGHT", metavar="WIDTHxHEIGHT"
     ),
@@ -992,7 +1026,7 @@ def hg_cmd(
     ),
     logscale: float = typer.Option(
         0.0,
-        "--logscale",
+        "--log-scale",
         help="Log-scale compression ratio (max/min ratio). 0 disables; must be > 1 to enable.",
         show_default=True,
     ),
@@ -1013,7 +1047,6 @@ def hg_cmd(
     workers: int | None = typer.Option(
         None,
         "--workers",
-        "-w",
         help="Parallel render workers for animate mode (default: all CPU cores).",
     ),
     crf: int = typer.Option(
@@ -1054,6 +1087,7 @@ def hg_cmd(
         ),
         metavar="COLOR",
     ),
+    quiet: bool = typer.Option(False, "--quiet", "-q", help="Suppress non-error output."),
 ) -> None:
     """Replay Mercurial history changeset-by-changeset as an animated treemap."""
     import shutil
@@ -1109,7 +1143,8 @@ def hg_cmd(
         width_px = term_w + 1
         height_px = term_h - 3 * row_px
 
-    typer.echo(f"Reading hg log from {repo} ...", err=True)
+    if not quiet:
+        typer.echo(f"Reading hg log from {repo} ...", err=True)
     try:
         commits = hg_log(repo, revision_range, max_commits, last_dt)
     except subprocess.CalledProcessError as exc:
@@ -1131,20 +1166,21 @@ def hg_cmd(
     except (subprocess.CalledProcessError, ValueError):
         total_in_repo = None
 
-    if total_in_repo is not None and total_in_repo > len(commits):
-        _filters = []
-        if last_dt is not None:
-            _filters.append(f"--last {last}")
-        if max_commits is not None:
-            _filters.append(f"--max-commits {max_commits}")
-        _filter_str = " and ".join(_filters) if _filters else "--max-commits"
-        typer.echo(
-            f"Replaying {len(commits)} of {total_in_repo} changeset(s) "
-            f"(filtered by {_filter_str}) ...",
-            err=True,
-        )
-    else:
-        typer.echo(f"Replaying {len(commits)} changeset(s) ...", err=True)
+    if not quiet:
+        if total_in_repo is not None and total_in_repo > len(commits):
+            _filters = []
+            if last_dt is not None:
+                _filters.append(f"--last {last}")
+            if max_commits is not None:
+                _filters.append(f"--max-commits {max_commits}")
+            _filter_str = " and ".join(_filters) if _filters else "--max-commits"
+            typer.echo(
+                f"Replaying {len(commits)} of {total_in_repo} changeset(s) "
+                f"(filtered by {_filter_str}) ...",
+                err=True,
+            )
+        else:
+            typer.echo(f"Replaying {len(commits)} changeset(s) ...", err=True)
 
     # Pre-compute per-changeset frame durations.
     if total_duration is not None and animate:
@@ -1159,11 +1195,12 @@ def hg_cmd(
         total_ms = total_duration * 1000
         commit_durations = _proportional_durations(gaps, total_ms)
         min_d, max_d = min(commit_durations), max(commit_durations)
-        typer.echo(
-            f"  Proportional timing: {min_d}–{max_d} ms/frame"
-            f" (total ~{sum(commit_durations) / 1000:.1f}s)",
-            err=True,
-        )
+        if not quiet:
+            typer.echo(
+                f"  Proportional timing: {min_d}–{max_d} ms/frame"
+                f" (total ~{sum(commit_durations) / 1000:.1f}s)",
+                err=True,
+            )
     else:
         commit_durations = [frame_duration] * len(commits)
 
@@ -1177,7 +1214,8 @@ def hg_cmd(
         snapshots: list[Snapshot] = []
 
         for i, (node, ts, subject) in enumerate(commits):
-            typer.echo(f"  [{i + 1}/{len(commits)}] {node[:8]}  {subject[:72]}", err=True)
+            if not quiet:
+                typer.echo(f"  [{i + 1}/{len(commits)}] {node[:8]}  {subject[:72]}", err=True)
             try:
                 if prev_node is None:
                     files = hg_initial_files(repo, node, excluded)
@@ -1217,6 +1255,7 @@ def hg_cmd(
             fade_out_duration=fade_out_duration,
             fade_out_frames=fade_out_frames,
             fade_out_color=fade_out_color,
+            quiet=quiet,
         )
 
     else:
@@ -1225,7 +1264,8 @@ def hg_cmd(
         cumulative_ms = 0.0
 
         for i, (node, ts, subject) in enumerate(commits):
-            typer.echo(f"  [{i + 1}/{len(commits)}] {node[:8]}  {subject[:72]}", err=True)
+            if not quiet:
+                typer.echo(f"  [{i + 1}/{len(commits)}] {node[:8]}  {subject[:72]}", err=True)
             try:
                 if prev_node is None:
                     files = hg_initial_files(repo, node, excluded)
@@ -1262,7 +1302,8 @@ def hg_cmd(
                 logscale=logscale,
             )
             output.write_bytes(png_buf.read())
-            typer.echo(f"  Updated {output}", err=True)
+            if not quiet:
+                typer.echo(f"  Updated {output}", err=True)
 
 
 _REPLAY_EPILOG = (
@@ -1303,7 +1344,7 @@ def replay_cmd(
     ),
     exclude: list[str] = typer.Option([], "--exclude", "-e", help="Paths to exclude (repeatable)"),
     font_size: int = typer.Option(12, "--font-size", help="Directory label font size in pixels"),
-    colormap: str = typer.Option("tab20", "--colormap", "-c", help="Matplotlib colormap"),
+    colormap: str = typer.Option("tab20", "--colormap", help="Matplotlib colormap"),
     size: str | None = typer.Option(
         None, "--size", help="Output size as WIDTHxHEIGHT", metavar="WIDTHxHEIGHT"
     ),
@@ -1311,7 +1352,7 @@ def replay_cmd(
     dark: bool = typer.Option(True, "--dark/--light", help="Dark background (default) or light"),
     logscale: float = typer.Option(
         0.0,
-        "--logscale",
+        "--log-scale",
         help="Log-scale compression ratio (max/min ratio). 0 disables; must be > 1 to enable.",
         show_default=True,
     ),
@@ -1319,7 +1360,6 @@ def replay_cmd(
     workers: int | None = typer.Option(
         None,
         "--workers",
-        "-w",
         help="Parallel render workers (default: all CPU cores)",
     ),
     crf: int = typer.Option(
@@ -1360,6 +1400,7 @@ def replay_cmd(
         ),
         metavar="COLOR",
     ),
+    quiet: bool = typer.Option(False, "--quiet", "-q", help="Suppress non-error output."),
 ) -> None:
     """Replay a JSONL filesystem event log as an animated treemap."""
     import io
@@ -1393,7 +1434,8 @@ def replay_cmd(
         width_px = term_w + 1
         height_px = term_h - 3 * row_px
 
-    typer.echo(f"Reading events from {event_log} ...", err=True)
+    if not quiet:
+        typer.echo(f"Reading events from {event_log} ...", err=True)
     events = parse_events(event_log)
     if not events:
         typer.echo("Error: no events found in event log.", err=True)
@@ -1404,7 +1446,8 @@ def replay_cmd(
     common_root = Path(os.path.commonpath(all_paths))
     if not common_root.is_dir():
         common_root = common_root.parent
-    typer.echo(f"Common root: {common_root}", err=True)
+    if not quiet:
+        typer.echo(f"Common root: {common_root}", err=True)
 
     excluded = frozenset(Path(e).resolve() for e in exclude)
 
@@ -1422,13 +1465,15 @@ def replay_cmd(
                 files[rel] = max(1, p.stat().st_size)
             except (OSError, ValueError):
                 pass
-    typer.echo(f"  {len(files)} unique files from event log", err=True)
+    if not quiet:
+        typer.echo(f"  {len(files)} unique files from event log", err=True)
 
     buckets = bucket_events(events, bucket)
-    typer.echo(
-        f"Grouped {len(events)} events into {len(buckets)} frame(s) ({bucket:.0f}s buckets) ...",
-        err=True,
-    )
+    if not quiet:
+        typer.echo(
+            f"Grouped {len(events)} events into {len(buckets)} frame(s) ({bucket:.0f}s buckets) ...",  # noqa: E501
+            err=True,
+        )
 
     # Pre-compute per-frame durations
     if total_duration is not None:
@@ -1443,11 +1488,12 @@ def replay_cmd(
         total_ms = total_duration * 1000
         frame_durations = _proportional_durations(gaps, total_ms)
         min_d, max_d = min(frame_durations), max(frame_durations)
-        typer.echo(
-            f"  Proportional timing: {min_d}–{max_d} ms/frame"
-            f" (total ~{sum(frame_durations) / 1000:.1f}s)",
-            err=True,
-        )
+        if not quiet:
+            typer.echo(
+                f"  Proportional timing: {min_d}–{max_d} ms/frame"
+                f" (total ~{sum(frame_durations) / 1000:.1f}s)",
+                err=True,
+            )
     else:
         frame_durations = [frame_duration] * len(buckets)
 
@@ -1464,7 +1510,8 @@ def replay_cmd(
     # Phase 2: parallel render
     total = len(snapshots)
     n_workers = min(workers if workers is not None else (os.cpu_count() or 1), total)
-    typer.echo(f"Rendering {total} frame(s) using {n_workers} worker(s) ...", err=True)
+    if not quiet:
+        typer.echo(f"Rendering {total} frame(s) using {n_workers} worker(s) ...", err=True)
 
     total_anim_ms = sum(frame_durations)
     cumulative_ms = 0.0
@@ -1503,7 +1550,8 @@ def replay_cmd(
             for done, future in enumerate(as_completed(futures), 1):
                 orig_i, png_bytes, rect_map = future.result()
                 raw[orig_i] = (png_bytes, rect_map)
-                typer.echo(f"  Rendered {done}/{total}", err=True)
+                if not quiet:
+                    typer.echo(f"  Rendered {done}/{total}", err=True)
     except KeyboardInterrupt:
         typer.echo("\nInterrupted.", err=True)
         raise typer.Exit(1) from None
@@ -1559,7 +1607,10 @@ def replay_cmd(
         from dirplot.render_png import write_apng
 
         write_apng(output, frame_bytes, final_durations)
-    typer.echo(f"Wrote {len(frame_bytes)}-frame {output.suffix.upper()[1:]} → {output}", err=True)
+    if not quiet:
+        typer.echo(
+            f"Wrote {len(frame_bytes)}-frame {output.suffix.upper()[1:]} → {output}", err=True
+        )
 
 
 @app.command(name="read-meta")
@@ -1849,6 +1900,7 @@ def _scan_tree(
     k8s_namespace: str | None,
     k8s_container: str | None,
     password: str | None,
+    no_input: bool = False,
     log: "Callable[[str], None] | None" = None,
 ) -> "tuple[Node, float, str | None]":
     """Scan a root path and return (root_node, t_scan_seconds, display_title).
@@ -2047,6 +2099,12 @@ def _scan_tree(
             if password is not None:
                 typer.echo("Error: incorrect password.", err=True)
                 raise typer.Exit(1) from exc
+            if no_input:
+                typer.echo(
+                    "Error: archive requires a password. Pass --password or --password-file.",
+                    err=True,
+                )
+                raise typer.Exit(1) from exc
             pw = typer.prompt("Password", hide_input=True)
             try:
                 root_node = build_tree_archive(
@@ -2093,6 +2151,7 @@ def _scan_tree(
 
 @app.command(name="map", epilog=_EPILOG)
 def main(
+    ctx: typer.Context,
     roots: list[str] = typer.Argument(
         default=None,
         help="Root(s) to map: one or more local directories (multiple → shows only those "
@@ -2138,7 +2197,6 @@ def main(
     colormap: str = typer.Option(
         "tab20",
         "--colormap",
-        "-c",
         help=(
             "Matplotlib colormap for file-extension colours (default: tab20). "
             "The default uses the GitHub Linguist palette for known extensions; "
@@ -2156,7 +2214,6 @@ def main(
     subtrees: list[str] = typer.Option(
         [],
         "--subtree",
-        "-s",
         help=(
             "Show only this named direct child of the root (repeatable). "
             "Allowlist complement to --exclude: use when it is easier to name what you want."
@@ -2164,9 +2221,6 @@ def main(
     ),
     ssh_key: str | None = typer.Option(
         None, "--ssh-key", help="SSH private key file (default: ~/.ssh/id_rsa)"
-    ),
-    ssh_password: str | None = typer.Option(
-        None, "--ssh-password", envvar="SSH_PASSWORD", help="SSH password"
     ),
     depth: int | None = typer.Option(
         None, "--depth", help="Maximum recursion depth (local and remote)"
@@ -2177,11 +2231,8 @@ def main(
     no_sign: bool = typer.Option(
         False, "--no-sign", help="Skip AWS signing for anonymous access to public S3 buckets"
     ),
-    github_token: str | None = typer.Option(
-        None, "--github-token", envvar="GITHUB_TOKEN", help="GitHub personal access token"
-    ),
     k8s_namespace: str | None = typer.Option(
-        None, "--k8s-namespace", "-N", help="Kubernetes namespace (overrides @namespace in pod URL)"
+        None, "--k8s-namespace", help="Kubernetes namespace (overrides @namespace in pod URL)"
     ),
     k8s_container: str | None = typer.Option(
         None, "--k8s-container", help="Container name for multi-container pods"
@@ -2203,19 +2254,31 @@ def main(
     dark: bool = typer.Option(True, "--dark/--light", help="Dark background (default) or light"),
     logscale: float = typer.Option(
         0.0,
-        "--logscale",
+        "--log-scale",
         help="Log-scale compression ratio (max/min ratio). 0 disables; must be > 1 to enable.",
         show_default=True,
     ),
-    password: str | None = typer.Option(
+    password_file: Path | None = typer.Option(
         None,
-        "--password",
-        help="Password for encrypted archives. Prompted interactively if not supplied and needed.",
+        "--password-file",
+        help="File containing the archive password (avoids exposing the password in shell history).",  # noqa: E501
+        metavar="FILE",
+    ),
+    ssh_password_file: Path | None = typer.Option(
+        None,
+        "--ssh-password-file",
+        help="File containing the SSH password (avoids exposing the password in shell history).",
+        metavar="FILE",
+    ),
+    github_token_file: Path | None = typer.Option(
+        None,
+        "--github-token-file",
+        help="File containing a GitHub personal access token (avoids exposing the token in shell history).",  # noqa: E501
+        metavar="FILE",
     ),
     breadcrumbs: bool = typer.Option(
         True,
         "--breadcrumbs/--no-breadcrumbs",
-        "-b/-B",
         help=(
             "Collapse single-subdirectory chains into breadcrumb labels"
             " (e.g. foo / bar / baz). Default: on."
@@ -2226,13 +2289,50 @@ def main(
         "--metrics/--no-metrics",
         help="Print detailed metrics after scanning (same output as the metrics command).",
     ),
+    quiet: bool = typer.Option(False, "--quiet", "-q", help="Suppress non-error output."),
+    no_input: bool = typer.Option(
+        False,
+        "--no-input",
+        help="Disable all interactive prompts; fail instead of prompting for passwords.",
+    ),
 ) -> None:
     """Create a nested treemap bitmap for a directory tree."""
+    import os
+
     roots = roots or []
+
+    # Show help when called with no arguments and no piped input.
+    if not roots and paths_from is None and sys.stdin.isatty():
+        typer.echo(ctx.get_help())
+        raise typer.Exit()
+
     to_stdout = output is not None and str(output) == "-"
 
+    github_token: str | None = os.environ.get("GITHUB_TOKEN")
+    ssh_password: str | None = None
+    password: str | None = None
+
+    if password_file is not None:
+        if not password_file.exists():
+            typer.echo(f"Error: --password-file not found: {password_file}", err=True)
+            raise typer.Exit(1)
+        password = password_file.read_text().strip()
+
+    if ssh_password_file is not None:
+        if not ssh_password_file.exists():
+            typer.echo(f"Error: --ssh-password-file not found: {ssh_password_file}", err=True)
+            raise typer.Exit(1)
+        ssh_password = ssh_password_file.read_text().strip()
+
+    if github_token_file is not None:
+        if not github_token_file.exists():
+            typer.echo(f"Error: --github-token-file not found: {github_token_file}", err=True)
+            raise typer.Exit(1)
+        github_token = github_token_file.read_text().strip()
+
     def _info(msg: str) -> None:
-        typer.echo(msg, err=to_stdout)
+        if not quiet:
+            typer.echo(msg, err=True)
 
     if colormap not in plt.colormaps():
         valid = ", ".join(sorted(plt.colormaps()))
@@ -2252,6 +2352,7 @@ def main(
         k8s_namespace=k8s_namespace,
         k8s_container=k8s_container,
         password=password,
+        no_input=no_input,
         log=_info if header else None,
     )
 
@@ -2368,31 +2469,38 @@ def metrics_command(
     ssh_key: str | None = typer.Option(
         None, "--ssh-key", help="SSH private key file (default: ~/.ssh/id_rsa)"
     ),
-    ssh_password: str | None = typer.Option(
-        None, "--ssh-password", envvar="SSH_PASSWORD", help="SSH password"
-    ),
     aws_profile: str | None = typer.Option(
         None, "--aws-profile", envvar="AWS_PROFILE", help="AWS profile name for S3 access"
     ),
     no_sign: bool = typer.Option(
         False, "--no-sign", help="Skip AWS signing for anonymous access to public S3 buckets"
     ),
-    github_token: str | None = typer.Option(
-        None, "--github-token", envvar="GITHUB_TOKEN", help="GitHub personal access token"
-    ),
     k8s_namespace: str | None = typer.Option(
-        None, "--k8s-namespace", "-N", help="Kubernetes namespace (overrides @namespace in pod URL)"
+        None, "--k8s-namespace", help="Kubernetes namespace (overrides @namespace in pod URL)"
     ),
     k8s_container: str | None = typer.Option(
         None, "--k8s-container", help="Container name for multi-container pods"
     ),
-    password: str | None = typer.Option(
+    password_file: Path | None = typer.Option(
         None,
-        "--password",
-        help="Password for encrypted archives. Prompted interactively if not supplied and needed.",
+        "--password-file",
+        help="File containing the archive password (avoids exposing the password in shell history).",  # noqa: E501
+        metavar="FILE",
+    ),
+    ssh_password_file: Path | None = typer.Option(
+        None,
+        "--ssh-password-file",
+        help="File containing the SSH password (avoids exposing the password in shell history).",
+        metavar="FILE",
+    ),
+    github_token_file: Path | None = typer.Option(
+        None,
+        "--github-token-file",
+        help="File containing a GitHub personal access token (avoids exposing the token in shell history).",  # noqa: E501
+        metavar="FILE",
     ),
     top_n: int = typer.Option(
-        10, "--top", "-n", help="Number of top extensions / largest files / largest dirs to show."
+        10, "--top", help="Number of top extensions / largest files / largest dirs to show."
     ),
     sort_by: str = typer.Option(
         "count",
@@ -2401,9 +2509,44 @@ def metrics_command(
         metavar="FIELD",
     ),
     as_json: bool = typer.Option(False, "--json/--no-json", help="Output metrics as JSON."),
+    quiet: bool = typer.Option(False, "--quiet", "-q", help="Suppress non-error output."),
+    no_input: bool = typer.Option(
+        False,
+        "--no-input",
+        help="Disable all interactive prompts; fail instead of prompting for passwords.",
+    ),
 ) -> None:
     """Print detailed metrics for a scanned directory tree."""
+    import os
+
     roots = roots or []
+
+    github_token: str | None = os.environ.get("GITHUB_TOKEN")
+    ssh_password: str | None = None
+    password: str | None = None
+
+    if password_file is not None:
+        if not password_file.exists():
+            typer.echo(f"Error: --password-file not found: {password_file}", err=True)
+            raise typer.Exit(1)
+        password = password_file.read_text().strip()
+
+    if ssh_password_file is not None:
+        if not ssh_password_file.exists():
+            typer.echo(f"Error: --ssh-password-file not found: {ssh_password_file}", err=True)
+            raise typer.Exit(1)
+        ssh_password = ssh_password_file.read_text().strip()
+
+    if github_token_file is not None:
+        if not github_token_file.exists():
+            typer.echo(f"Error: --github-token-file not found: {github_token_file}", err=True)
+            raise typer.Exit(1)
+        github_token = github_token_file.read_text().strip()
+
+    def _metrics_log(msg: str) -> None:
+        if not quiet:
+            typer.echo(msg, err=True)
+
     root_node, t_scan, _ = _scan_tree(
         roots=roots,
         paths_from=paths_from,
@@ -2417,7 +2560,8 @@ def metrics_command(
         k8s_namespace=k8s_namespace,
         k8s_container=k8s_container,
         password=password,
-        log=typer.echo,
+        no_input=no_input,
+        log=_metrics_log,
     )
     if sort_by not in ("count", "size"):
         typer.echo(f"Invalid --sort-by value '{sort_by}'. Choose: count, size", err=True)

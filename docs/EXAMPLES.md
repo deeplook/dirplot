@@ -43,8 +43,8 @@ dirplot map . --metrics --no-show
 
 > **Warning:** Remote trees can contain hundreds of thousands of files. Use `--depth N` to limit how far down the tree dirplot recurses until you have a feel for the size of the target.
 
-> **Tip:** If one large file (a binary, dataset, or build artifact) dominates the layout and squashes everything else into tiny slivers, add `--logscale 4` to use log-scaled file sizes instead — this makes small files much more visible.
-> The value controls the max/min layout-size ratio after compression: `--logscale 4` means the largest file's tile is at most 4× the smallest. Values in the range **2–10** are most useful; below 2 the effect is subtle, and above ~10 you get diminishing returns toward raw log scaling where the ratio loses its intuitive meaning.
+> **Tip:** If one large file (a binary, dataset, or build artifact) dominates the layout and squashes everything else into tiny slivers, add `--log-scale 4` to use log-scaled file sizes instead — this makes small files much more visible.
+> The value controls the max/min layout-size ratio after compression: `--log-scale 4` means the largest file's tile is at most 4× the smallest. Values in the range **2–10** are most useful; below 2 the effect is subtle, and above ~10 you get diminishing returns toward raw log scaling where the ratio loses its intuitive meaning.
 
 ---
 
@@ -74,11 +74,10 @@ dirplot map ssh://alice@prod.example.com/var --exclude /var/cache --depth 4 --ou
 Credentials are resolved in this order:
 
 1. `--ssh-key PATH` — explicit private key file
-2. `SSH_KEY` environment variable — path to key file
-3. `IdentityFile` from `~/.ssh/config` for the target host
-4. ssh-agent (picked up automatically)
-5. `--ssh-password` / `SSH_PASSWORD` environment variable
-6. Interactive password prompt as a last resort
+2. `IdentityFile` from `~/.ssh/config` for the target host
+3. ssh-agent (picked up automatically)
+4. `--ssh-password-file FILE` — file containing the SSH password
+5. Interactive password prompt as a last resort
 
 ### SSH config
 
@@ -101,7 +100,7 @@ dirplot map ssh://prod/var/www   # resolves using the config block above
 | Flag | Default | Description |
 |---|---|---|
 | `--ssh-key` | `~/.ssh/id_rsa` | Path to SSH private key |
-| `--ssh-password` | `SSH_PASSWORD` env var | SSH password |
+| `--ssh-password-file` | — | File containing SSH password |
 | `--depth` | unlimited | Maximum recursion depth |
 
 ### Python API
@@ -263,19 +262,19 @@ export GITHUB_TOKEN=ghp_…
 dirplot map github://my-org/private-repo
 ```
 
-**Option 3 — flag:**
+**Option 3 — token file:**
 
 ```bash
-dirplot map github://my-org/private-repo --github-token ghp_…
+dirplot map github://my-org/private-repo --github-token-file ~/.github-token
 ```
 
-Token resolution order: `--github-token` → `$GITHUB_TOKEN` → `gh auth token`.
+Token resolution order: `--github-token-file` → `$GITHUB_TOKEN` → `gh auth token`.
 
 ### Options
 
 | Flag | Default | Description |
 |---|---|---|
-| `--github-token` | `GITHUB_TOKEN` env var | Personal access token |
+| `--github-token-file` | `$GITHUB_TOKEN` | File containing personal access token |
 | `--depth` | unlimited | Maximum recursion depth |
 | `--exclude` | — | Repo-relative path to skip (repeatable) |
 
@@ -325,7 +324,7 @@ dirplot git . --animate --max-commits 50 --total-duration 30 --output history.pn
 
 # Specific commit range from a GitHub repository, MP4 output, log scale
 dirplot git github://openclaw/openclaw --range 871e8882..8445c9a5 \
-  --animate --logscale 4 --size 1920x1080 --output openclaw.mp4
+  --animate --log-scale 4 --size 1920x1080 --output openclaw.mp4
 
 # Last 30 days of activity
 dirplot git . --animate --last 30d --output history.mp4
@@ -333,7 +332,7 @@ dirplot git . --animate --last 30d --output history.mp4
 
 <figure>
   <video src="https://github.com/user-attachments/assets/b30b3434-ff48-4a43-a363-620899b86ebb" autoplay loop muted playsinline width="100%"></video>
-  <figcaption><code>dirplot git github://openclaw/openclaw --range 871e8882..8445c9a5 --animate --logscale 4 --size 1920x1080 -o openclaw-871e8882-8445c9a5.mp4</code></figcaption>
+  <figcaption><code>dirplot git github://openclaw/openclaw --range 871e8882..8445c9a5 --animate --log-scale 4 --size 1920x1080 -o openclaw-871e8882-8445c9a5.mp4</code></figcaption>
 </figure>
 
 ### Options
@@ -346,9 +345,9 @@ dirplot git . --animate --last 30d --output history.mp4
 | `--total-duration` | — | Target total animation length in seconds (time-proportional frame durations) |
 | `--frame-duration` | 1000 ms | Fixed frame duration when `--total-duration` is not set |
 | `--workers` | all cores | Number of parallel render workers |
-| `--logscale` | 0 (off) | Log-scale compression ratio; any value > 1 enables it (e.g. `4` means largest tile is at most 4× the smallest) |
+| `--log-scale` | 0 (off) | Log-scale compression ratio; any value > 1 enables it (e.g. `4` means largest tile is at most 4× the smallest) |
 | `--dark` / `--light` | dark | Background and label colour scheme |
-| `--github-token` | `GITHUB_TOKEN` env var | Token for private repos or to raise rate limits |
+| `--github-token-file` | `$GITHUB_TOKEN` | File containing token for private repos or to raise rate limits |
 
 ### Python API
 
@@ -392,7 +391,7 @@ docker rm -f pg-demo
 
 <figure>
   <img src="docker.png" alt="Postgres container /usr treemap">
-  <figcaption><code>dirplot map docker://pg-demo:/usr --logscale 4</code></figcaption>
+  <figcaption><code>dirplot map docker://pg-demo:/usr --log-scale 4</code></figcaption>
 </figure>
 
 ### Requirements

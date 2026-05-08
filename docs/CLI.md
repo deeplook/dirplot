@@ -50,7 +50,7 @@ dirplot map . --legend           # up to 20 entries
 dirplot map . --legend 10        # cap at 10
 
 # Disable breadcrumb collapsing
-dirplot map . -B
+dirplot map . --no-breadcrumbs
 
 # Interactive SVG output (hover highlight + floating tooltip)
 dirplot map . --output treemap.svg --no-show
@@ -85,19 +85,20 @@ dirplot map pod://my-pod:/app
 | `--inline` | | off | Display in terminal (auto-detected protocol; PNG only) |
 | `--legend [N]` | | off | File-count legend; `N` = max entries (default: 20) |
 | `--font-size` | | `12` | Directory label font size in pixels |
-| `--colormap` | `-c` | `tab20` | Matplotlib colormap for unknown extensions |
+| `--colormap` | | `tab20` | Matplotlib colormap for unknown extensions |
 | `--exclude` | `-e` | — | Path to exclude (repeatable) |
-| `--subtree` | `-s` | — | Show only this named subtree (repeatable); supports nested paths |
+| `--subtree` | | — | Show only this named subtree (repeatable); supports nested paths |
 | `--depth` | | unlimited | Maximum recursion depth |
 | `--size` | | terminal size | Output dimensions as `WIDTHxHEIGHT` (e.g. `1920x1080`) |
 | `--header/--no-header` | | `--header` | Print info lines before rendering |
 | `--cushion/--no-cushion` | | `--cushion` | Van Wijk cushion shading for a raised 3-D look |
-| `--log/--no-log` | | `--no-log` | Log scale for file sizes; useful when one large file dominates the layout |
-| `--breadcrumbs/--no-breadcrumbs` | `-b`/`-B` | `--breadcrumbs` | Collapse single-child chains into `foo / bar / baz` labels |
+| `--log-scale` | | `0` (off) | Log-scale compression ratio; any value > 1 enables it |
+| `--breadcrumbs/--no-breadcrumbs` | | `--breadcrumbs` | Collapse single-child chains into `foo / bar / baz` labels |
 | `--metrics/--no-metrics` | | off | Print detailed metrics after scanning (same output as `dirplot metrics`) |
-| `--password` | | — | Archive password; prompted interactively if not supplied |
-| `--github-token` | | `$GITHUB_TOKEN` | GitHub personal access token |
+| `--password-file` | | — | File containing archive password; prompted interactively if not supplied |
+| `--github-token-file` | | `$GITHUB_TOKEN` | File containing GitHub personal access token |
 | `--ssh-key` | | `~/.ssh/id_rsa` | SSH private key path |
+| `--ssh-password-file` | | — | File containing SSH password |
 | `--aws-profile` | | `$AWS_PROFILE` | Named AWS profile |
 | `--no-sign` | | off | Anonymous access for public S3 buckets |
 
@@ -155,19 +156,19 @@ dirplot map . --metrics --no-show
 
 | Flag | Short | Default | Description |
 |---|---|---|---|
-| `--top` | `-n` | `10` | Number of entries to show in each list |
+| `--top` | | `10` | Number of entries to show in each list |
 | `--sort-by` | | `count` | Sort top extensions by `count` (files) or `size` (bytes) |
 | `--json` / `--no-json` | | off | Output all metrics as JSON |
 | `--exclude` | `-e` | — | Path to exclude (repeatable) |
 | `--depth` | | unlimited | Maximum recursion depth |
 | `--paths-from` | | — | File with path list (`tree`/`find` output); `-` for stdin |
-| `--password` | | — | Archive password; prompted interactively if needed |
-| `--github-token` | | `$GITHUB_TOKEN` | GitHub personal access token |
+| `--password-file` | | — | File containing archive password; prompted interactively if needed |
+| `--github-token-file` | | `$GITHUB_TOKEN` | File containing GitHub personal access token |
 | `--ssh-key` | | `~/.ssh/id_rsa` | SSH private key path |
-| `--ssh-password` | | `$SSH_PASSWORD` | SSH password |
+| `--ssh-password-file` | | — | File containing SSH password |
 | `--aws-profile` | | `$AWS_PROFILE` | Named AWS profile |
 | `--no-sign` | | off | Anonymous access for public S3 buckets |
-| `--k8s-namespace` | `-N` | — | Kubernetes namespace |
+| `--k8s-namespace` | | — | Kubernetes namespace |
 | `--k8s-container` | | — | Container name for multi-container pods |
 
 ---
@@ -218,11 +219,11 @@ dirplot watch . --output treemap.png --animate --fade-out --fade-out-color trans
 | `--fade-out-color` | `auto` | Fade target: `auto` (black/white per mode), `transparent` (PNG/APNG only), CSS name, or hex |
 | `--crf` | `23` | MP4 quality: 0 = lossless, 51 = worst. Ignored for APNG |
 | `--codec` | `libx264` | MP4 codec: `libx264` (H.264) or `libx265` (H.265) |
-| `--log` / `--no-log` | off | Log scale for file sizes |
+| `--log-scale` | `0` (off) | Log-scale compression ratio; any value > 1 enables it |
 | `--size` | terminal size | Output dimensions as `WIDTHxHEIGHT` |
 | `--depth` | — | Maximum recursion depth |
 | `--exclude` / `-e` | — | Path to exclude (repeatable) |
-| `--colormap` / `-c` | `tab20` | Matplotlib colormap |
+| `--colormap` | `tab20` | Matplotlib colormap |
 | `--font-size` | `12` | Directory label font size in pixels |
 | `--cushion` / `--no-cushion` | on | Van Wijk cushion shading |
 
@@ -265,12 +266,12 @@ dirplot replay events.jsonl --output replay.png --total-duration 30 --fade-out -
 | `--fade-out-color` | `auto` | Fade target: `auto` (black/white per mode), `transparent` (PNG/APNG only), CSS name, or hex |
 | `--crf` | `23` | MP4 quality: 0 = lossless, 51 = worst. Ignored for APNG |
 | `--codec` | `libx264` | MP4 codec: `libx264` (H.264) or `libx265` (H.265) |
-| `--workers` / `-w` | all CPU cores | Parallel render workers |
-| `--log` / `--no-log` | off | Log scale for file sizes |
+| `--workers` | all CPU cores | Parallel render workers |
+| `--log-scale` | `0` (off) | Log-scale compression ratio; any value > 1 enables it |
 | `--size` | terminal size | Output dimensions as `WIDTHxHEIGHT` |
 | `--depth` | — | Maximum directory depth |
 | `--exclude` / `-e` | — | Path to exclude (repeatable) |
-| `--colormap` / `-c` | `tab20` | Matplotlib colormap |
+| `--colormap` | `tab20` | Matplotlib colormap |
 | `--font-size` | `12` | Directory label font size in pixels |
 | `--cushion` / `--no-cushion` | on | Van Wijk cushion shading |
 
@@ -329,8 +330,8 @@ dirplot git . --output history.mp4 --animate --fade-out --fade-out-color "#1a1a2
 |---|---|---|
 | `--output` / `-o` | required | Output PNG, APNG, or MP4 |
 | `--animate` / `--no-animate` | off | Build APNG or MP4; without this, each commit overwrites the output PNG |
-| `--range` / `-r` | all commits | Git revision range (e.g. `main~50..main`, `v1.0..HEAD`) |
-| `--max-commits` / `-n` | — | Cap the number of commits processed |
+| `--range` | all commits | Git revision range (e.g. `main~50..main`, `v1.0..HEAD`) |
+| `--max-commits` | — | Cap the number of commits processed |
 | `--last` | — | Time-period filter: `30d`, `24h`, `2w`, `1mo`, `30m`. Uses `--shallow-since` for GitHub URLs |
 | `--frame-duration` | `1000` | Frame display time in ms (when `--total-duration` is not set) |
 | `--total-duration` | — | Target total animation length in seconds; frames scale proportionally to real time gaps between commits |
@@ -340,15 +341,15 @@ dirplot git . --output history.mp4 --animate --fade-out --fade-out-color "#1a1a2
 | `--fade-out-color` | `auto` | Fade target: `auto` (black/white per mode), `transparent` (PNG/APNG only), CSS name, or hex |
 | `--crf` | `23` | MP4 quality: 0 = lossless, 51 = worst. Ignored for APNG |
 | `--codec` | `libx264` | MP4 codec: `libx264` (H.264) or `libx265` (~40% smaller at same quality) |
-| `--workers` / `-w` | all CPU cores | Parallel render workers; 4–8 is typically optimal |
-| `--log` / `--no-log` | off | Log scale for file sizes |
+| `--workers` | all CPU cores | Parallel render workers; 4–8 is typically optimal |
+| `--log-scale` | `0` (off) | Log-scale compression ratio; any value > 1 enables it |
 | `--size` | terminal size | Output dimensions as `WIDTHxHEIGHT` |
 | `--depth` | — | Maximum directory depth |
 | `--exclude` / `-e` | — | Path to exclude (repeatable) |
-| `--colormap` / `-c` | `tab20` | Matplotlib colormap |
+| `--colormap` | `tab20` | Matplotlib colormap |
 | `--font-size` | `12` | Directory label font size in pixels |
 | `--cushion` / `--no-cushion` | on | Van Wijk cushion shading |
-| `--github-token` | `$GITHUB_TOKEN` | GitHub personal access token |
+| `--github-token-file` | `$GITHUB_TOKEN` | File containing GitHub personal access token |
 
 ---
 

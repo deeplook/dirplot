@@ -46,7 +46,7 @@ Optional extras: `pip install "dirplot[ssh]"`, `"dirplot[s3]"`, `"dirplot[libarc
 dirplot map .                                                    # current directory
 dirplot map . --inline                                           # display in terminal
 dirplot map . --output treemap.png --no-show                     # save to file
-dirplot map . --logscale 4 --inline                              # log scale (4× ratio), inline
+dirplot map . --log-scale 4 --inline                              # log scale (4× ratio), inline
 dirplot map github://pallets/flask                               # GitHub repo
 dirplot map docker://my-container:/app                           # Docker container
 dirplot map project.zip                                          # archive file

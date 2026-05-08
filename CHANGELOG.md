@@ -7,6 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.3] - 2026-05-08
+
+### Changed
+
+- **Secret flags removed** — `--github-token`, `--ssh-password`, and `--password`
+  flags have been removed from all commands. Use the `$GITHUB_TOKEN` / `$SSH_PASSWORD`
+  environment variables or the `--github-token-file`, `--ssh-password-file`, and
+  `--password-file` options instead. This prevents secrets from appearing in shell
+  history and process listings.
+- **`SSH_KEY` and `SSH_PASSWORD` environment variables removed** — SSH credentials
+  are now resolved via `--ssh-key` / `--ssh-password-file` flags, `~/.ssh/config`
+  `IdentityFile`, the ssh-agent, or an interactive prompt. The non-standard env vars
+  are no longer read.
+- **`--logscale` renamed to `--log-scale`** — the flag now follows the standard
+  CLI convention of hyphen-separated words.
+- **`--top -n` short form removed** (`dirplot metrics`) — `-n` is conventionally
+  reserved for `--dry-run`; use `--top N` directly.
+- **`--range -r`, `--max-commits -n`, `--workers -w` short forms removed** (`git`,
+  `hg`) — these single-letter aliases conflicted with conventions or were too obscure
+  to warrant a shorthand.
+- **`--colormap -c`, `--subtree -s`, `--breadcrumbs -b/-B`, `--k8s-namespace -N`
+  short forms removed** — single-letter flags reserved for commonly-used options per
+  CLIG guidelines.
+- **Status messages now always go to stderr** — info lines from `dirplot map` and
+  the "Watching … (Ctrl-C to stop)" line from `dirplot watch` previously went to
+  stdout in some cases; they now consistently go to stderr.
+- **`$COLUMNS` / `$LINES` honoured for terminal size** — when `ioctl` and
+  `os.get_terminal_size()` are both unavailable (CI, SSH sessions, scripts), the
+  standard `$COLUMNS` and `$LINES` environment variables are now checked before
+  falling back to the hardcoded `160×45` default.
+- **`dirplot map` with no arguments shows help** — running `dirplot map` without
+  paths or piped input in an interactive terminal now prints the command help instead
+  of an error.
+
 ### Added
 
 - **`dirplot metrics` command** — scans any source supported by `dirplot map`
@@ -19,7 +53,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Largest N files and directories, each with its percentage share of total size
 - **`--sort-by count|size`** on `dirplot metrics` — controls extension ordering;
   `count` (default) sorts by number of files, `size` sorts by total bytes.
-- **`--top N` / `-n N`** on `dirplot metrics` — caps the number of entries shown
+- **`--top N`** on `dirplot metrics` — caps the number of entries shown
   in each list (extensions, largest files, largest dirs). Default: 10.
 - **`--json` / `--no-json`** on `dirplot metrics` — outputs all metrics as a
   structured JSON object, suitable for piping into `jq` or scripts.
