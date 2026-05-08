@@ -270,7 +270,7 @@ def test_watch_single_path(sample_tree: Path, tmp_path: Path) -> None:
         patch("dirplot.watch.build_tree_multi"),
         patch("dirplot.watch.create_treemap") as mock_render,
         patch("watchdog.observers.Observer", return_value=mock_obs),
-        patch("dirplot.main.time.sleep", side_effect=KeyboardInterrupt),
+        patch("dirplot.commands.watch.time.sleep", side_effect=KeyboardInterrupt),
     ):
         mock_render.return_value = MagicMock(read=lambda: b"\x89PNG\r\n\x1a\n" + b"\x00" * 8)
         result = runner.invoke(
@@ -291,7 +291,7 @@ def test_watch_multiple_paths(tmp_path: Path) -> None:
         patch("dirplot.watch.build_tree_multi"),
         patch("dirplot.watch.create_treemap") as mock_render,
         patch("watchdog.observers.Observer", return_value=mock_obs),
-        patch("dirplot.main.time.sleep", side_effect=KeyboardInterrupt),
+        patch("dirplot.commands.watch.time.sleep", side_effect=KeyboardInterrupt),
     ):
         mock_render.return_value = MagicMock(read=lambda: b"\x89PNG\r\n\x1a\n" + b"\x00" * 8)
         result = runner.invoke(
@@ -526,9 +526,9 @@ def test_read_meta_mp4(tmp_path: Path) -> None:
 
 
 def test_proportional_durations_basic() -> None:
-    from dirplot.main import _proportional_durations
+    from dirplot.helpers.animation import proportional_durations
 
-    durations = _proportional_durations([1.0, 2.0, 3.0], total_ms=6000)
+    durations = proportional_durations([1.0, 2.0, 3.0], total_ms=6000)
     assert sum(durations) == 6000
     assert len(durations) == 3
     assert all(d >= 200 for d in durations)
@@ -536,19 +536,19 @@ def test_proportional_durations_basic() -> None:
 
 def test_proportional_durations_floor_applied() -> None:
     """Very small gaps are raised to floor_ms; total still sums to target."""
-    from dirplot.main import _proportional_durations
+    from dirplot.helpers.animation import proportional_durations
 
     # Many tiny gaps and one large gap
     gaps = [0.01] * 10 + [100.0]
-    durations = _proportional_durations(gaps, total_ms=5000)
+    durations = proportional_durations(gaps, total_ms=5000)
     assert sum(durations) == 5000
     assert all(d >= 200 for d in durations)
 
 
 def test_proportional_durations_all_equal() -> None:
-    from dirplot.main import _proportional_durations
+    from dirplot.helpers.animation import proportional_durations
 
-    durations = _proportional_durations([1.0, 1.0, 1.0, 1.0], total_ms=4000)
+    durations = proportional_durations([1.0, 1.0, 1.0, 1.0], total_ms=4000)
     assert sum(durations) == 4000
 
 
