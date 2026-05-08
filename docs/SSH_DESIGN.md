@@ -151,9 +151,9 @@ The `_progress` parameter is a one-element list (mutable counter) threaded throu
 ### New options
 
 ```
---ssh-key PATH        Path to private key file [default: ~/.ssh/id_rsa]
---ssh-password TEXT   Password (prefer env var SSH_PASSWORD)
---depth INTEGER       Maximum recursion depth for remote trees
+--ssh-key PATH             Path to private key file [default: ~/.ssh/id_rsa]
+--ssh-password-file FILE   File containing SSH password
+--depth INTEGER            Maximum recursion depth for remote trees
 ```
 
 ### Detection logic in `main.py`
@@ -182,9 +182,9 @@ This detection happens before the `root.exists()` check in `main.py`, so the exi
 Paramiko supports multiple auth mechanisms. The priority order for dirplot should be:
 
 1. **`--ssh-key` flag** — explicit key file passed on the command line.
-2. **`SSH_KEY` environment variable** — path to key file, useful in scripts and CI.
+2. **`IdentityFile` from `~/.ssh/config`** — resolved automatically for the target host.
 3. **ssh-agent** — paramiko picks this up automatically via `paramiko.Agent()`; no extra code needed if `key_filename` is not set.
-4. **`--ssh-password` / `SSH_PASSWORD` env var** — password auth as a fallback.
+4. **`--ssh-password-file`** — file containing the SSH password; avoids the secret appearing in shell history or environment.
 5. **Interactive prompt** — `getpass.getpass()` as a last resort when all other methods fail.
 
 Implementation sketch:

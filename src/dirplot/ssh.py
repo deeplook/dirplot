@@ -81,11 +81,10 @@ def connect(
     Resolution order for credentials:
 
     1. *ssh_key* argument
-    2. ``SSH_KEY`` environment variable
-    3. ``IdentityFile`` from ``~/.ssh/config``
-    4. ssh-agent (paramiko picks this up automatically)
-    5. *ssh_password* argument / ``SSH_PASSWORD`` env var
-    6. Interactive password prompt as last resort
+    2. ``IdentityFile`` from ``~/.ssh/config``
+    3. ssh-agent (paramiko picks this up automatically)
+    4. *ssh_password* argument
+    5. Interactive password prompt as last resort
     """
     paramiko = _require_paramiko()
 
@@ -95,12 +94,8 @@ def connect(
     resolved_port = port or int(ssh_cfg.get("port", 22))
 
     identity_files: list[str] = ssh_cfg.get("identityfile", [])
-    key_file = (
-        ssh_key
-        or os.environ.get("SSH_KEY")
-        or (os.path.expanduser(identity_files[0]) if identity_files else None)
-    )
-    password = ssh_password or os.environ.get("SSH_PASSWORD")
+    key_file = ssh_key or (os.path.expanduser(identity_files[0]) if identity_files else None)
+    password = ssh_password
 
     client = paramiko.SSHClient()
     client.load_system_host_keys()

@@ -29,7 +29,14 @@ def get_terminal_size() -> tuple[int, int, int, int]:
         size = os.get_terminal_size()
         return size.columns, size.lines, size.columns * 8, size.lines * 16
     except Exception:  # noqa: BLE001
-        return 160, 45, 1280, 720
+        pass
+    try:
+        cols = int(os.environ["COLUMNS"])
+        rows = int(os.environ["LINES"])
+        return cols, rows, cols * 8, rows * 16
+    except (KeyError, ValueError):
+        pass
+    return 160, 45, 1280, 720
 
 
 def get_terminal_pixel_size() -> tuple[int, int, int]:
