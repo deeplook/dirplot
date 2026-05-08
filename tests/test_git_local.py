@@ -10,7 +10,8 @@ from pathlib import Path
 import pytest
 from typer.testing import CliRunner
 
-from dirplot.main import app, parse_last_period
+from dirplot.helpers.time import parse_last_period
+from dirplot.main import app
 
 runner = CliRunner()
 
