@@ -9,7 +9,7 @@ import dirplot.commands.treemap
 import dirplot.commands.vcs
 import dirplot.commands.watch
 from dirplot._overview import add_overview_command
-from dirplot.app import app
+from dirplot.app import app as app
 
 add_overview_command(app)
 
