@@ -5,7 +5,7 @@ import time
 import webbrowser
 from pathlib import Path
 
-import matplotlib.pyplot as plt
+import cmap as _cmap_lib
 import typer
 
 from dirplot.app import app
@@ -228,8 +228,9 @@ def main(
         if not quiet:
             typer.echo(msg, err=True)
 
-    if colormap not in plt.colormaps():
-        valid = ", ".join(sorted(plt.colormaps()))
+    _valid_cmaps = set(_cmap_lib.Catalog().short_keys())
+    if colormap not in _valid_cmaps:
+        valid = ", ".join(sorted(_valid_cmaps))
         typer.echo(f"Unknown colormap '{colormap}'. Valid options:\n{valid}", err=True)
         raise typer.Exit(1)
 
