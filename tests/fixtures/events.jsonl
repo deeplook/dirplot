@@ -1,0 +1,14 @@
+{"timestamp": 1000.0, "type": "created", "path": "src/main.py"}
+{"timestamp": 1001.5, "type": "created", "path": "src/utils.py"}
+{"timestamp": 1003.0, "type": "created", "path": "tests/test_main.py"}
+{"timestamp": 1060.0, "type": "modified", "path": "src/main.py"}
+{"timestamp": 1062.0, "type": "modified", "path": "src/utils.py"}
+{"timestamp": 1120.0, "type": "created", "path": "src/models.py"}
+{"timestamp": 1180.0, "type": "moved", "path": "src/utils.py", "dest_path": "src/helpers.py"}
+{"timestamp": 1240.0, "type": "modified", "path": "src/main.py"}
+{"timestamp": 1241.0, "type": "modified", "path": "src/helpers.py"}
+{"timestamp": 1300.0, "type": "deleted", "path": "src/models.py"}
+{"timestamp": 1360.0, "type": "created", "path": "src/models/__init__.py"}
+{"timestamp": 1361.0, "type": "created", "path": "src/models/user.py"}
+{"timestamp": 1420.0, "type": "modified", "path": "tests/test_main.py"}
+{"timestamp": 1480.0, "type": "created", "path": "tests/test_models.py"}

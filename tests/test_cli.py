@@ -661,6 +661,50 @@ def test_replay_total_duration(tmp_path: Path) -> None:
     assert out.exists()
 
 
+def test_replay_fixture_jsonl(tmp_path: Path) -> None:
+    """replay produces a non-empty APNG from the checked-in fixture event log.
+
+    The fixture uses relative paths; this test rewrites them as absolute paths
+    under tmp_path and creates stub files so the scanner has real sizes to work with.
+    """
+    import json
+
+    fixture = Path(__file__).parent / "fixtures" / "events.jsonl"
+    root = tmp_path / "repo"
+
+    # Create stub files for every path mentioned in the fixture
+    with open(fixture) as f:
+        raw_events = [json.loads(line) for line in f if line.strip()]
+
+    all_rel = {e["path"] for e in raw_events} | {
+        e["dest_path"] for e in raw_events if "dest_path" in e
+    }
+    for rel in all_rel:
+        p = root / rel
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_bytes(b"x" * 200)
+
+    # Write a new JSONL with absolute paths
+    abs_log = tmp_path / "events_abs.jsonl"
+    abs_events = []
+    for e in raw_events:
+        ev = dict(e)
+        ev["path"] = str(root / e["path"])
+        if "dest_path" in e:
+            ev["dest_path"] = str(root / e["dest_path"])
+        abs_events.append(ev)
+    abs_log.write_text("\n".join(json.dumps(e) for e in abs_events) + "\n")
+
+    out = tmp_path / "replay.apng"
+    result = runner.invoke(
+        app,
+        ["replay", str(abs_log), "--output", str(out), "--size", "200x150", "--workers", "1"],
+    )
+    assert result.exit_code == 0, result.output
+    assert out.exists()
+    assert out.stat().st_size > 0
+
+
 def test_demo_help() -> None:
     result = runner.invoke(app, ["demo", "--help"])
     assert result.exit_code == 0
