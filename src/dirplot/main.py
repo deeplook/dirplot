@@ -2,6 +2,7 @@
 
 # ruff: noqa: F401
 # Import command modules so their @app.command decorators register against the app.
+import dirplot.commands.diff
 import dirplot.commands.metrics
 import dirplot.commands.misc
 import dirplot.commands.replay
@@ -19,6 +20,7 @@ _CMD_ORDER = [
     "overview",
     "termsize",
     "map",
+    "diff",
     "metrics",
     "git",
     "hg",
