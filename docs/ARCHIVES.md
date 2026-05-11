@@ -165,10 +165,11 @@ HFS+/FAT images without UDIF wrapping may still be readable.
 - **Archives inside directories**: when scanning a local directory, SSH host,
   S3 bucket, or GitHub repository, any archive files found as members of that
   scan are treated as regular files — they are not recursively introspected.
-- **Password-protected archives**: not supported.  `zipfile` raises
-  `RuntimeError`, `py7zr` raises `py7zr.exceptions.PasswordRequired`, and
-  `rarfile` raises `rarfile.BadRarFile` or `rarfile.NeedFirstVolume`.  These
-  propagate as unhandled exceptions.
+- **Password-protected archives**: supported for zip, 7z, rar, and libarchive
+  formats via `--password-file <FILE>` (pass a file containing the password to
+  avoid exposing it in shell history).  If no password is supplied and the
+  archive is encrypted, dirplot will prompt interactively unless `--no-input`
+  is set, in which case it exits with an error.
 - **`--exclude` matching**: for local directory scans, excludes are resolved
   to absolute paths.  For archives, excludes are matched against the member's
   filename component and its full path string inside the archive (e.g.
