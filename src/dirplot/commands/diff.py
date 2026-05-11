@@ -145,18 +145,19 @@ def diff_cmd(
     files_a = _flatten(node_a)
     files_b = _flatten(node_b)
 
-    # Compute diff highlights keyed by absolute path in B's tree
-    # (highlights uses absolute paths matching the renderer's rect_map keys)
+    # Compute diff highlights keyed to match rect_map keys produced by build_node_tree.
+    # build_node_tree uses node.path.as_posix() which preserves whatever path was passed
+    # as root (relative or absolute), so we must use the same base path here.
     highlights: dict[str, str] = {}
     all_keys = set(files_a) | set(files_b)
     for rel in all_keys:
-        abs_path = str((path_b / rel).resolve())
+        key = (path_b / rel).as_posix()
         if rel in files_a and rel not in files_b:
-            highlights[abs_path] = DIFF_COLORS["removed"]
+            highlights[key] = DIFF_COLORS["removed"]
         elif rel not in files_a and rel in files_b:
-            highlights[abs_path] = DIFF_COLORS["added"]
+            highlights[key] = DIFF_COLORS["added"]
         elif rel in files_a and rel in files_b and files_a[rel] != files_b[rel]:
-            highlights[abs_path] = DIFF_COLORS["changed"]
+            highlights[key] = DIFF_COLORS["changed"]
 
     n_removed = sum(1 for v in highlights.values() if v == DIFF_COLORS["removed"])
     n_added = sum(1 for v in highlights.values() if v == DIFF_COLORS["added"])
