@@ -173,6 +173,52 @@ dirplot map . --metrics --no-show
 
 ---
 
+## `dirplot diff` — compare two directory trees
+
+Compares two directory trees A and B as a treemap. Tiles are sized by B (the new tree). Colour-coded borders indicate the diff status of each file: **green** = added (present in B, absent in A), **red** = removed (present in A, absent in B), **blue** = changed (present in both, but size differs). Unchanged files have no border. By default, unchanged files are included as context (`--context`); pass `--no-context` to show only changed, added, and removed files.
+
+```bash
+# Basic comparison — open in system viewer
+dirplot diff old/ new/
+
+# Save to file
+dirplot diff old/ new/ --output diff.png --no-show
+
+# Hide unchanged files (only show the diff)
+dirplot diff old/ new/ --no-context
+
+# Light mode, SVG output
+dirplot diff old/ new/ --light --output diff.svg --no-show
+
+# Exclude build artefacts and limit depth
+dirplot diff old/ new/ --exclude .git --exclude __pycache__ --depth 4
+
+# Custom colormap and font size
+dirplot diff old/ new/ --colormap viridis --font-size 14 --output diff.png --no-show
+```
+
+### Options
+
+| Flag | Short | Default | Description |
+|---|---|---|---|
+| `--output` | `-o` | — | Save to this path (PNG or SVG); `-` for stdout |
+| `--format` | `-f` | auto | Output format: `png` or `svg` |
+| `--show/--no-show` | | `--show` | Display the image after rendering |
+| `--inline` | | off | Display in terminal (auto-detected protocol; PNG only) |
+| `--context/--no-context` | | `--context` | Include unchanged files in the treemap |
+| `--font-size` | | `12` | Directory label font size in pixels |
+| `--colormap` | | `tab20` | Colormap for unknown extensions |
+| `--exclude` | `-e` | — | Path to exclude (repeatable) |
+| `--depth` | | unlimited | Maximum recursion depth |
+| `--size` | | terminal size | Output dimensions as `WIDTHxHEIGHT` (e.g. `1920x1080`) |
+| `--cushion/--no-cushion` | | `--cushion` | Van Wijk cushion shading for a raised 3-D look |
+| `--dark/--light` | | `--dark` | Canvas and label colour scheme |
+| `--log-scale` | | `0` (off) | Log-scale compression ratio; any value > 1 enables it |
+| `--header/--no-header` | | `--header` | Print info lines before rendering |
+| `--quiet` | | off | Suppress all status output |
+
+---
+
 ## `dirplot watch` — live watch mode
 
 Monitors directories and regenerates the treemap on every change. With `--animate`, each debounced render becomes one frame; the complete APNG or MP4 is written on Ctrl-C.

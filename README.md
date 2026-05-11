@@ -17,6 +17,7 @@
 - PNG, animated PNG (APNG), MP4, and MOV output for single frames and animations; interactive SVG for static maps; renders at terminal pixel size or a custom `WIDTHxHEIGHT`.
 - **Animate git history** (`dirplot git`), **Mercurial history** (`dirplot hg`), **watch live filesystems** (`dirplot watch`), and **replay event logs** (`dirplot replay`) — output APNG, MP4, or MOV.
 - **Scan metrics** (`dirplot metrics`) — file/dir counts, total size, depth, top extensions by count or size, largest files and directories with percentage of total; JSON output supported.
+- **Compare two trees** (`dirplot diff`) — side-by-side treemap diff of directories A and B; files sized by B; colour-coded borders show added (green), removed (red), and changed (blue) files.
 - Scan **SSH hosts**, **AWS S3**, **GitHub repos** (public and private), **Docker containers**, and **Kubernetes pods** — no extra deps beyond the respective CLI.
 - Read **archives** directly (zip, tar, 7z, rar, jar, whl, …) without unpacking.
 - Works on macOS, Linux, and Windows (WSL2 fully supported).
@@ -68,6 +69,11 @@ dirplot metrics .                                                # scan metrics:
 dirplot metrics . --sort-by size                                 # sort extensions by total bytes
 dirplot metrics . --top 5 --json                                 # top-5 entries as JSON
 dirplot map . --metrics --no-show                                # treemap + metrics in one pass
+
+dirplot diff old/ new/                                           # compare two trees (system viewer)
+dirplot diff old/ new/ --output diff.png --no-show               # save to file
+dirplot diff old/ new/ --no-context                              # hide unchanged files
+dirplot diff old/ new/ --light --output diff.svg --no-show       # light mode, SVG
 ```
 
 ## Documentation

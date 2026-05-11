@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.4] - 2026-05-12
+
+### Added
+
+- **`dirplot diff` command** — compares two directory trees A and B as a treemap. Files are
+  sized by B. Borders show diff status: green = added, red = removed, blue = changed (size
+  differs). Unchanged files show no border. Supports `--context/--no-context` (default: on,
+  i.e. unchanged files are shown). All visual options from `dirplot map` are available:
+  `--output`, `--format`, `--show/--no-show`, `--inline`, `--font-size`, `--colormap`,
+  `--exclude`, `--depth`, `--size`, `--cushion/--no-cushion`, `--dark/--light`,
+  `--log-scale`, `--header/--no-header`, and `--quiet`.
+
+### Changed
+
+- **matplotlib replaced by cmap** — matplotlib is no longer a dependency. Colormap lookups
+  now use the `cmap` package instead, which is significantly smaller. All colormap names
+  previously accepted by matplotlib continue to work.
+
 ## [0.4.3] - 2026-05-08
 
 ### Changed
