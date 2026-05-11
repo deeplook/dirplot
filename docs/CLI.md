@@ -40,7 +40,7 @@ dirplot map . --size 1920x1080 --output treemap.png --no-show
 dirplot map . --colormap Set2 --font-size 18
 
 # Log scale — use when one large file dominates and squashes everything else
-dirplot map . --log
+dirplot map . --log-scale 2
 
 # Disable cushion shading
 dirplot map . --no-cushion

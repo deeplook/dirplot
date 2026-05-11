@@ -13,7 +13,7 @@
 
 ## Features
 
-- Squarified treemap layout; file area proportional to size; ~500 extensions mapped to [GitHub Linguist](https://github.com/github/linguist) colours.
+- Squarified treemap layout; file area proportional to size; per-extension colours (GitHub Linguist palette for known types, configurable Matplotlib colormap for the rest).
 - PNG, animated PNG (APNG), MP4, and MOV output for single frames and animations; interactive SVG for static maps; renders at terminal pixel size or a custom `WIDTHxHEIGHT`.
 - **Animate git history** (`dirplot git`), **Mercurial history** (`dirplot hg`), **watch live filesystems** (`dirplot watch`), and **replay event logs** (`dirplot replay`) — output APNG, MP4, or MOV.
 - **Scan metrics** (`dirplot metrics`) — file/dir counts, total size, depth, top extensions by count or size, largest files and directories with percentage of total; JSON output supported.
