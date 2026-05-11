@@ -135,10 +135,7 @@ def test_cli_show_window(sample_tree: Path) -> None:
 
 
 def test_cli_show_inline(sample_tree: Path) -> None:
-    from unittest.mock import mock_open
-
-    m = mock_open()
-    with patch("builtins.open", m):
+    with patch("dirplot.display.display_inline"):
         result = runner.invoke(app, ["map", str(sample_tree), "--show", "--inline"])
     assert result.exit_code == 0
 
