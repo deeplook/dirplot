@@ -2,11 +2,7 @@
 
 from typing import Any
 
-import matplotlib
-
-matplotlib.use("Agg")
-
-import matplotlib.pyplot as plt  # noqa: E402
+import cmap as _cmap_lib
 
 # Matplotlib RGBA colour as returned by a colormap call.
 RGBAColor = tuple[float, float, float, float]
@@ -720,12 +716,13 @@ def assign_colors(extensions: list[str], colormap: str = "tab20") -> dict[str, R
     import hashlib
 
     use_linguist = colormap == "tab20"
-    cmap: Any = plt.get_cmap(colormap)
-    n: int = int(cmap.N) if hasattr(cmap, "N") else 256
+    cm: Any = _cmap_lib.Colormap(colormap)
+    n: int = 256
     result: dict[str, RGBAColor] = {}
     for ext in set(extensions):
         if use_linguist and ext.lower() in _LINGUIST:
             result[ext] = _hex_to_rgba(_LINGUIST[ext.lower()])
         else:
-            result[ext] = tuple(cmap((int(hashlib.md5(ext.encode()).hexdigest(), 16) % n) / n))
+            rgba = cm((int(hashlib.md5(ext.encode()).hexdigest(), 16) % n) / n)
+            result[ext] = (float(rgba[0]), float(rgba[1]), float(rgba[2]), float(rgba[3]))
     return result
