@@ -270,7 +270,7 @@ def test_watch_single_path(sample_tree: Path, tmp_path: Path) -> None:
     ):
         mock_render.return_value = MagicMock(read=lambda: b"\x89PNG\r\n\x1a\n" + b"\x00" * 8)
         result = runner.invoke(
-            app, ["watch", str(sample_tree), "--output", str(output), "--size", "100x100"]
+            app, ["watch", str(sample_tree), "--snapshot", str(output), "--size", "100x100"]
         )
     assert result.exit_code == 0
     mock_obs.schedule.assert_called_once_with(ANY, str(sample_tree.resolve()), recursive=True)
@@ -292,7 +292,7 @@ def test_watch_multiple_paths(tmp_path: Path) -> None:
         mock_render.return_value = MagicMock(read=lambda: b"\x89PNG\r\n\x1a\n" + b"\x00" * 8)
         result = runner.invoke(
             app,
-            ["watch", str(dir_a), str(dir_b), "--output", str(output), "--size", "100x100"],
+            ["watch", str(dir_a), str(dir_b), "--snapshot", str(output), "--size", "100x100"],
         )
     assert result.exit_code == 0
     scheduled_paths = {call.args[1] for call in mock_obs.schedule.call_args_list}
@@ -398,7 +398,9 @@ def test_watch_event_log_written(tmp_path: Path) -> None:
 
 def test_watch_invalid_path(tmp_path: Path) -> None:
     output = tmp_path / "out.png"
-    result = runner.invoke(app, ["watch", "/nonexistent/__dirplot_test__", "--output", str(output)])
+    result = runner.invoke(
+        app, ["watch", "/nonexistent/__dirplot_test__", "--snapshot", str(output)]
+    )
     assert result.exit_code == 1
     assert "not a directory" in result.output
 
@@ -407,7 +409,7 @@ def test_watch_missing_watchdog(sample_tree: Path, tmp_path: Path) -> None:
     output = tmp_path / "out.png"
     with patch.dict("sys.modules", {"watchdog.observers": None}):
         result = runner.invoke(
-            app, ["watch", str(sample_tree), "--output", str(output), "--size", "100x100"]
+            app, ["watch", str(sample_tree), "--snapshot", str(output), "--size", "100x100"]
         )
     assert result.exit_code == 1
     assert "watchdog" in result.output
