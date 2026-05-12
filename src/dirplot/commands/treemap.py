@@ -39,7 +39,7 @@ _EPILOG = (
     "  dirplot map release.tar.gz --depth 2  [dim]# limit depth into a tarball[/dim]\n\n"
     "  dirplot map app.jar --exclude META-INF  [dim]# skip a member directory[/dim]\n\n"
     "  dirplot map src tests  [dim]# map two subtrees under their common parent[/dim]\n\n"
-    "  dirplot map . --subtree src --subtree tests  [dim]# same result, explicit root[/dim]"
+    "  dirplot map . --include src --include tests  [dim]# same result, explicit root[/dim]"
 )
 
 
@@ -105,12 +105,13 @@ def main(
         ),
     ),
     exclude: list[str] = typer.Option([], "--exclude", "-e", help="Paths to exclude (repeatable)"),
-    subtrees: list[str] = typer.Option(
+    includes: list[str] = typer.Option(
         [],
-        "--subtree",
+        "--include",
+        "--subtree",  # hidden backwards-compat alias
         help=(
-            "Show only this named direct child of the root (repeatable). "
-            "Allowlist complement to --exclude: use when it is easier to name what you want."
+            "Show only this subtree (repeatable; supports nested paths like src/fonts). "
+            "Allowlist complement to --exclude."
         ),
     ),
     ssh_key: str | None = typer.Option(
@@ -251,8 +252,8 @@ def main(
         log=_info if header else None,
     )
 
-    if subtrees:
-        root_node = prune_to_subtrees(root_node, set(subtrees))
+    if includes:
+        root_node = prune_to_subtrees(root_node, set(includes))
 
     tree_depth = max_depth(root_node)
 

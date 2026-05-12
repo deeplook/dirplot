@@ -12,6 +12,7 @@ import typer
 
 from dirplot.app import app
 from dirplot.display import display_inline, display_window
+from dirplot.scanner import prune_to_subtrees
 from dirplot.terminal import get_terminal_pixel_size
 
 # Border colours for diff status — applied to file tile borders only.
@@ -70,6 +71,11 @@ def diff_cmd(
         help="Colormap for file-extension fill colours (default: tab20 uses Linguist palette)",
     ),
     exclude: list[str] = typer.Option([], "--exclude", "-e", help="Paths to exclude (repeatable)"),
+    includes: list[str] = typer.Option(
+        [],
+        "--include",
+        help="Show only this subtree (repeatable; supports nested paths). Allowlist complement to --exclude.",  # noqa: E501
+    ),
     depth: int | None = typer.Option(None, "--depth", help="Maximum directory depth"),
     size: str | None = typer.Option(
         None, "--size", help="Output dimensions as WIDTHxHEIGHT", metavar="WIDTHxHEIGHT"
@@ -237,12 +243,12 @@ def diff_cmd(
         p = Path(src)
         if not is_git_ref_path(src) and _is_local_git_repo(src):
             _info(f"Scanning {label}: {src} (tracked files only) ...")
-            excluded_set = frozenset(Path(e).name for e in exclude)
+            excluded_set = frozenset(exclude)
             node = build_tree_git_worktree(p.resolve(), excluded_set, depth)
             return node, None
         if not is_git_ref_path(src) and p.is_dir() and is_hg_repo(p.resolve()):
             _info(f"Scanning {label}: {src} (tracked files only) ...")
-            excluded_set = frozenset(Path(e).name for e in exclude)
+            excluded_set = frozenset(exclude)
             node = build_tree_hg_worktree(p.resolve(), excluded_set, depth)
             return node, None
         return scan_tree(
@@ -358,6 +364,9 @@ def diff_cmd(
         }
 
     root_node = build_node_tree(virtual_root_b, combined_files, depth)
+
+    if includes:
+        root_node = prune_to_subtrees(root_node, set(includes))
 
     if log_scale > 1:
         apply_log_sizes(root_node, log_scale)
