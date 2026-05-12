@@ -5,6 +5,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TypedDict
 
+from dirplot.filters import matches_exclude
+
 
 class _ExtEntry(TypedDict):
     ext: str
@@ -45,14 +47,14 @@ class Node:
 
 def build_tree(
     root: Path,
-    exclude: frozenset[Path] = frozenset(),
+    exclude: frozenset[str] = frozenset(),
     depth: int | None = None,
 ) -> Node:
     """Recursively build a Node tree from *root*.
 
     Args:
         root: Directory to scan.
-        exclude: Resolved absolute paths to skip entirely.
+        exclude: Glob patterns to skip (names, relative paths, or ``**`` globs).
         depth: Maximum recursion depth. ``None`` means unlimited.
             ``depth=1`` lists direct children without recursing into subdirs.
 
@@ -67,7 +69,7 @@ def build_tree(
         return Node(name=root.name, path=root, size=0, is_dir=True)
 
     for entry in sorted(entries, key=lambda e: e.name):
-        if entry.resolve() in exclude:
+        if matches_exclude(str(entry.relative_to(root)), exclude):
             continue
         if entry.is_symlink():
             continue
@@ -130,7 +132,7 @@ def prune_to_subtrees(node: Node, paths: set[str]) -> Node:
 
 def build_tree_multi(
     roots: list[Path],
-    exclude: frozenset[Path] = frozenset(),
+    exclude: frozenset[str] = frozenset(),
     depth: int | None = None,
 ) -> Node:
     """Scan each path in *roots* independently, then wrap them under their common parent.

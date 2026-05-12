@@ -210,7 +210,7 @@ def test_build_tree_ssh_exclude() -> None:
         make_attr("skip.py", 200),
     ]
 
-    node = build_tree_ssh(sftp, "/project", exclude=frozenset({"/project/skip.py"}))
+    node = build_tree_ssh(sftp, "/project", exclude=frozenset({"skip.py"}))
     names = {c.name for c in node.children}
     assert "keep.py" in names
     assert "skip.py" not in names
@@ -309,7 +309,7 @@ def test_ssh_localhost_exclude(tmp_path: Path) -> None:
         node = build_tree_ssh(
             sftp,
             str(tmp_path),
-            exclude=frozenset({str(tmp_path / "skip.py")}),
+            exclude=frozenset({"skip.py"}),
         )
     finally:
         sftp.close()

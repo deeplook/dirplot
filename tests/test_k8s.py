@@ -272,7 +272,7 @@ def test_build_tree_pod_skips_dotfiles() -> None:
 def test_build_tree_pod_exclude() -> None:
     output = "keep.py\t100\tf\nskip.py\t200\tf\n"
     with patch("subprocess.run", side_effect=_mock_run(output)):
-        node = build_tree_pod("mypod", "/app", exclude=frozenset({"/app/skip.py"}))
+        node = build_tree_pod("mypod", "/app", exclude=frozenset({"skip.py"}))
     names = {c.name for c in node.children}
     assert "keep.py" in names
     assert "skip.py" not in names

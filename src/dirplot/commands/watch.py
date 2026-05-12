@@ -130,7 +130,7 @@ def watch_cmd(
         width_px = term_w + 1
         height_px = term_h - 3 * row_px
 
-    excluded = frozenset(Path(e).resolve() for e in exclude)
+    excluded = frozenset(exclude)
     roots = [path.resolve() for path in paths]
 
     handler = TreemapEventHandler(

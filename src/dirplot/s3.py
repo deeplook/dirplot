@@ -6,6 +6,7 @@ import sys
 from pathlib import Path, PurePosixPath
 from typing import Any
 
+from dirplot.filters import matches_exclude
 from dirplot.scanner import Node
 
 
@@ -68,6 +69,7 @@ def build_tree_s3(
     *,
     depth: int | None = None,
     _progress: list[int] | None = None,
+    _root_prefix: str | None = None,
 ) -> Node:
     """Recursively build a :class:`~dirplot.scanner.Node` tree from an S3 prefix.
 
@@ -80,11 +82,14 @@ def build_tree_s3(
         s3: A boto3 S3 client.
         bucket: S3 bucket name.
         prefix: Key prefix to scan (must end with ``/`` or be empty).
-        exclude: Set of full ``s3://bucket/key`` URIs to skip.
+        exclude: Glob patterns to skip (names, relative paths, or ``**`` globs).
         depth: Maximum recursion depth. ``None`` means unlimited.
             ``depth=1`` lists direct children without recursing into subdirs.
         _progress: Internal one-element counter for progress reporting.
+        _root_prefix: Original prefix for relative-path computation (internal).
     """
+    if _root_prefix is None:
+        _root_prefix = prefix
     paginator = s3.get_paginator("list_objects_v2")
     pages = paginator.paginate(Bucket=bucket, Prefix=prefix, Delimiter="/")
 
@@ -102,8 +107,8 @@ def build_tree_s3(
         name = PurePosixPath(obj["Key"]).name
         if not name or name.startswith("."):
             continue
-        full = f"s3://{bucket}/{obj['Key']}"
-        if full in exclude:
+        rel = obj["Key"][len(_root_prefix) :]
+        if matches_exclude(rel, exclude):
             continue
 
         if _progress is not None:
@@ -132,8 +137,8 @@ def build_tree_s3(
         name = PurePosixPath(subprefix.rstrip("/")).name
         if not name or name.startswith("."):
             continue
-        full = f"s3://{bucket}/{subprefix}"
-        if full in exclude:
+        rel = subprefix.rstrip("/")[len(_root_prefix) :]
+        if matches_exclude(rel, exclude):
             continue
 
         if depth is not None and depth <= 1:
@@ -152,6 +157,7 @@ def build_tree_s3(
                 exclude,
                 depth=None if depth is None else depth - 1,
                 _progress=_progress,
+                _root_prefix=_root_prefix,
             )
         children.append(child)
 

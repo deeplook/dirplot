@@ -15,8 +15,10 @@ dirplot map . --inline
 # Save to file without displaying
 dirplot map . --output treemap.png --no-show
 
-# Exclude paths
+# Exclude paths — plain names, globs, or relative paths
 dirplot map . --exclude .venv --exclude .git
+dirplot map . --exclude "*.egg-info" --exclude "**/__pycache__"
+dirplot map . --exclude src/vendor
 
 # Focus on named subtrees
 dirplot map . --subtree src --subtree tests
@@ -86,7 +88,7 @@ dirplot map pod://my-pod:/app
 | `--legend [N]` | | off | File-count legend; `N` = max entries (default: 20) |
 | `--font-size` | | `12` | Directory label font size in pixels |
 | `--colormap` | | `tab20` | Matplotlib colormap for unknown extensions |
-| `--exclude` | `-e` | — | Path to exclude (repeatable) |
+| `--exclude` | `-e` | — | Pattern to exclude (repeatable): plain name, glob (``*.egg-info``), ``**`` glob, or relative path |
 | `--subtree` | | — | Show only this named subtree (repeatable); supports nested paths |
 | `--depth` | | unlimited | Maximum recursion depth |
 | `--size` | | terminal size | Output dimensions as `WIDTHxHEIGHT` (e.g. `1920x1080`) |
@@ -159,7 +161,7 @@ dirplot map . --metrics --no-show
 | `--top` | | `10` | Number of entries to show in each list |
 | `--sort-by` | | `count` | Sort top extensions by `count` (files) or `size` (bytes) |
 | `--json` / `--no-json` | | off | Output all metrics as JSON |
-| `--exclude` | `-e` | — | Path to exclude (repeatable) |
+| `--exclude` | `-e` | — | Pattern to exclude (repeatable): plain name, glob (``*.egg-info``), ``**`` glob, or relative path |
 | `--depth` | | unlimited | Maximum recursion depth |
 | `--paths-from` | | — | File with path list (`tree`/`find` output); `-` for stdin |
 | `--password-file` | | — | File containing archive password; prompted interactively if needed |
@@ -231,7 +233,7 @@ dirplot diff old/ new/ --light --output diff.svg --no-show
 | `--context/--no-context` | | `--context` | Include unchanged files in the treemap |
 | `--font-size` | | `12` | Directory label font size in pixels |
 | `--colormap` | | `tab20` | Colormap for unknown extensions |
-| `--exclude` | `-e` | — | Path to exclude (repeatable) |
+| `--exclude` | `-e` | — | Pattern to exclude (repeatable): plain name, glob (``*.egg-info``), ``**`` glob, or relative path |
 | `--depth` | | unlimited | Maximum recursion depth |
 | `--size` | | terminal size | Output dimensions as `WIDTHxHEIGHT` (e.g. `1920x1080`) |
 | `--cushion/--no-cushion` | | `--cushion` | Van Wijk cushion shading for a raised 3-D look |
@@ -300,7 +302,7 @@ dirplot watch . --output treemap.png --animate --fade-out --fade-out-color trans
 | `--log-scale` | `0` (off) | Log-scale compression ratio; any value > 1 enables it |
 | `--size` | terminal size | Output dimensions as `WIDTHxHEIGHT` |
 | `--depth` | — | Maximum recursion depth |
-| `--exclude` / `-e` | — | Path to exclude (repeatable) |
+| `--exclude` / `-e` | — | Pattern to exclude (repeatable): plain name, glob (``*.egg-info``), ``**`` glob, or relative path |
 | `--colormap` | `tab20` | Matplotlib colormap |
 | `--font-size` | `12` | Directory label font size in pixels |
 | `--cushion` / `--no-cushion` | on | Van Wijk cushion shading |
@@ -348,7 +350,7 @@ dirplot replay events.jsonl --output replay.png --total-duration 30 --fade-out -
 | `--log-scale` | `0` (off) | Log-scale compression ratio; any value > 1 enables it |
 | `--size` | terminal size | Output dimensions as `WIDTHxHEIGHT` |
 | `--depth` | — | Maximum directory depth |
-| `--exclude` / `-e` | — | Path to exclude (repeatable) |
+| `--exclude` / `-e` | — | Pattern to exclude (repeatable): plain name, glob (``*.egg-info``), ``**`` glob, or relative path |
 | `--colormap` | `tab20` | Matplotlib colormap |
 | `--font-size` | `12` | Directory label font size in pixels |
 | `--cushion` / `--no-cushion` | on | Van Wijk cushion shading |
@@ -423,7 +425,7 @@ dirplot git . --output history.mp4 --animate --fade-out --fade-out-color "#1a1a2
 | `--log-scale` | `0` (off) | Log-scale compression ratio; any value > 1 enables it |
 | `--size` | terminal size | Output dimensions as `WIDTHxHEIGHT` |
 | `--depth` | — | Maximum directory depth |
-| `--exclude` / `-e` | — | Path to exclude (repeatable) |
+| `--exclude` / `-e` | — | Pattern to exclude (repeatable): plain name, glob (``*.egg-info``), ``**`` glob, or relative path |
 | `--colormap` | `tab20` | Matplotlib colormap |
 | `--font-size` | `12` | Directory label font size in pixels |
 | `--cushion` / `--no-cushion` | on | Van Wijk cushion shading |

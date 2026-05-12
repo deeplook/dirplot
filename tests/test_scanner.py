@@ -39,7 +39,7 @@ def test_build_tree_file_node(sample_tree: Path) -> None:
 
 
 def test_build_tree_exclude(sample_tree: Path) -> None:
-    excluded = frozenset({(sample_tree / "src").resolve()})
+    excluded = frozenset({"src"})
     root = build_tree(sample_tree, exclude=excluded)
     child_names = {c.name for c in root.children}
     assert "src" not in child_names

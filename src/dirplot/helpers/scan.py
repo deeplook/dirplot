@@ -72,7 +72,7 @@ def scan_tree(
             if not p.exists():
                 typer.echo(f"Path does not exist: {p}", err=True)
                 raise typer.Exit(1)
-        excluded = frozenset(Path(e).resolve() for e in exclude)
+        excluded = frozenset(exclude)
         root_paths = [p.resolve() for p in parsed]
         common_str = os.path.commonpath([str(p) for p in root_paths])
         _emit(f"Scanning {len(root_paths)} paths under {common_str} ...")
@@ -109,7 +109,7 @@ def scan_tree(
                 typer.echo(f"Not a file or directory: {r}", err=True)
                 raise typer.Exit(1)
             root_paths.append(rp.resolve())
-        excluded = frozenset(Path(e).resolve() for e in exclude)
+        excluded = frozenset(exclude)
         common_str = os.path.commonpath([str(p) for p in root_paths])
         _emit(f"Scanning {len(roots)} paths under {common_str} ...")
         root_node = build_tree_multi(root_paths, excluded, depth)
@@ -280,7 +280,7 @@ def scan_tree(
             )
             _emit(f"Scanning {root} ...")
         else:
-            excluded = frozenset(Path(e).resolve() for e in exclude)
+            excluded = frozenset(exclude)
             _emit(f"Scanning {root} ...")
             root_node = build_tree(root_path.resolve(), excluded, depth)
 

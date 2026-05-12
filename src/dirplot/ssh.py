@@ -10,6 +10,7 @@ from getpass import getpass, getuser
 from pathlib import Path, PurePosixPath
 from typing import TYPE_CHECKING, Any
 
+from dirplot.filters import matches_exclude
 from dirplot.scanner import Node
 
 if TYPE_CHECKING:
@@ -136,17 +137,21 @@ def build_tree_ssh(
     *,
     depth: int | None = None,
     _progress: list[int] | None = None,
+    _root: str | None = None,
 ) -> Node:
     """Recursively build a :class:`~dirplot.scanner.Node` tree via SFTP.
 
     Args:
         sftp: An open ``paramiko.SFTPClient``.
         remote_path: Absolute path on the remote host.
-        exclude: Set of absolute remote paths to skip.
+        exclude: Glob patterns to skip (names, relative paths, or ``**`` globs).
         depth: Maximum recursion depth. ``None`` means unlimited.
             ``depth=1`` lists direct children without recursing into subdirs.
         _progress: Internal one-element counter for progress reporting.
+        _root: Original root path for relative-path computation (internal).
     """
+    if _root is None:
+        _root = remote_path
     try:
         attrs = sftp.listdir_attr(remote_path)
     except PermissionError:
@@ -164,8 +169,9 @@ def build_tree_ssh(
     children: list[Node] = []
     for attr in sorted(attrs, key=lambda a: a.filename):
         full = remote_path.rstrip("/") + "/" + attr.filename
+        rel = full[len(_root.rstrip("/")) + 1 :]
 
-        if full in exclude or attr.filename.startswith("."):
+        if matches_exclude(rel, exclude) or attr.filename.startswith("."):
             continue
 
         mode: int | None = attr.st_mode
@@ -199,6 +205,7 @@ def build_tree_ssh(
                     exclude,
                     depth=None if depth is None else depth - 1,
                     _progress=_progress,
+                    _root=_root,
                 )
         else:
             ext = PurePosixPath(attr.filename).suffix.lower() or "(no ext)"

@@ -6,6 +6,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+from dirplot.filters import matches_exclude
 from dirplot.scanner import Node
 
 
@@ -65,7 +66,7 @@ def git_initial_files(
         parts = meta.split()
         if len(parts) < 4 or parts[1] != "blob":
             continue
-        if filepath.split("/")[0] in exclude:
+        if matches_exclude(filepath, exclude):
             continue
         try:
             size = max(1, int(parts[3]))
@@ -141,30 +142,30 @@ def git_apply_diff(
 
         if status == "A" and path_list:
             fp = path_list[0]
-            if fp.split("/")[0] not in exclude:
+            if not matches_exclude(fp, exclude):
                 to_add[fp] = new_hash
                 highlights[(repo / fp).as_posix()] = "created"
         elif status == "M" and path_list:
             fp = path_list[0]
-            if fp.split("/")[0] not in exclude:
+            if not matches_exclude(fp, exclude):
                 to_add[fp] = new_hash
                 highlights[(repo / fp).as_posix()] = "modified"
         elif status == "D" and path_list:
             fp = path_list[0]
-            if fp.split("/")[0] not in exclude:
+            if not matches_exclude(fp, exclude):
                 to_delete.append(fp)
                 highlights[(repo / fp).as_posix()] = "deleted"
         elif status.startswith("R") and len(path_list) >= 2:
             old_fp, new_fp = path_list[0], path_list[1]
-            if old_fp.split("/")[0] not in exclude:
+            if not matches_exclude(old_fp, exclude):
                 to_delete.append(old_fp)
                 highlights[(repo / old_fp).as_posix()] = "deleted"
-            if new_fp.split("/")[0] not in exclude:
+            if not matches_exclude(new_fp, exclude):
                 to_add[new_fp] = new_hash
                 highlights[(repo / new_fp).as_posix()] = "created"
         elif status.startswith("C") and len(path_list) >= 2:
             new_fp = path_list[1]
-            if new_fp.split("/")[0] not in exclude:
+            if not matches_exclude(new_fp, exclude):
                 to_add[new_fp] = new_hash
                 highlights[(repo / new_fp).as_posix()] = "created"
 
@@ -336,7 +337,7 @@ def build_tree_git_worktree(
     for filepath in result.stdout.splitlines():
         if not filepath:
             continue
-        if filepath.split("/")[0] in exclude:
+        if matches_exclude(filepath, exclude):
             continue
         abs_path = repo / filepath
         try:

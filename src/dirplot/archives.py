@@ -7,6 +7,7 @@ import zipfile
 from collections import defaultdict
 from pathlib import Path, PurePosixPath
 
+from dirplot.filters import matches_exclude
 from dirplot.scanner import Node
 
 ARCHIVE_SUFFIXES = frozenset(
@@ -295,7 +296,7 @@ def _entries_to_tree(
         ):
             if child_name.startswith("."):
                 continue
-            if child_name in exclude or member_path in exclude:
+            if matches_exclude(member_path, exclude):
                 continue
             if is_dir:
                 if current_depth is not None and current_depth <= 1:
