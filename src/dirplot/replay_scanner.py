@@ -4,8 +4,16 @@ from __future__ import annotations
 
 import json
 import os
+from datetime import datetime
 from pathlib import Path
 from typing import Any
+
+
+def _parse_timestamp(value: str | float) -> float:
+    """Return a Unix timestamp float from either an ISO 8601 string or a legacy float."""
+    if isinstance(value, str):
+        return datetime.fromisoformat(value).timestamp()
+    return float(value)
 
 
 def parse_events(path: Path) -> list[tuple[float, str, str, str]]:
@@ -19,7 +27,7 @@ def parse_events(path: Path) -> list[tuple[float, str, str, str]]:
             obj = json.loads(line)
             events.append(
                 (
-                    float(obj["timestamp"]),
+                    _parse_timestamp(obj["timestamp"]),
                     obj["type"],
                     obj["path"],
                     obj.get("dest_path", ""),
