@@ -11,7 +11,7 @@ from pathlib import Path, PurePosixPath
 from typing import TYPE_CHECKING, Any
 
 from dirplot.filters import matches_exclude
-from dirplot.scanner import Node
+from dirplot.scanner import NO_EXT, Node
 
 if TYPE_CHECKING:
     pass  # paramiko types only used as strings below
@@ -208,7 +208,7 @@ def build_tree_ssh(
                     _root=_root,
                 )
         else:
-            ext = PurePosixPath(attr.filename).suffix.lower() or "(no ext)"
+            ext = PurePosixPath(attr.filename).suffix.lower() or NO_EXT
             child = Node(
                 name=attr.filename,
                 path=Path(full),

@@ -7,7 +7,7 @@ from pathlib import Path, PurePosixPath
 from typing import Any
 
 from dirplot.filters import matches_exclude
-from dirplot.scanner import Node
+from dirplot.scanner import NO_EXT, Node
 
 
 def _require_boto3() -> Any:
@@ -121,7 +121,7 @@ def build_tree_s3(
                     flush=True,
                 )
 
-        ext = PurePosixPath(name).suffix.lower() or "(no ext)"
+        ext = PurePosixPath(name).suffix.lower() or NO_EXT
         children.append(
             Node(
                 name=name,

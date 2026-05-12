@@ -8,7 +8,7 @@ from collections import defaultdict
 from pathlib import Path, PurePosixPath
 
 from dirplot.filters import matches_exclude
-from dirplot.scanner import Node
+from dirplot.scanner import NO_EXT, Node
 
 ARCHIVE_SUFFIXES = frozenset(
     {
@@ -314,7 +314,7 @@ def _entries_to_tree(
                         None if current_depth is None else current_depth - 1,
                     )
             else:
-                ext = PurePosixPath(child_name).suffix.lower() or "(no ext)"
+                ext = PurePosixPath(child_name).suffix.lower() or NO_EXT
                 child = Node(
                     name=child_name,
                     path=Path(member_path),

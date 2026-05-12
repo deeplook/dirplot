@@ -7,7 +7,7 @@ import sys
 from pathlib import Path, PurePosixPath
 
 from dirplot.filters import matches_exclude
-from dirplot.scanner import Node
+from dirplot.scanner import NO_EXT, Node
 
 
 def _kubectl_cmd() -> str:
@@ -238,7 +238,7 @@ def _entries_to_tree(root_path: str, entries: list[tuple[str, int, bool]]) -> No
             )
             dir_nodes[rel_path] = node
         else:
-            ext = pure.suffix.lower() or "(no ext)"
+            ext = pure.suffix.lower() or NO_EXT
             node = Node(
                 name=name,
                 path=Path(abs_path),
