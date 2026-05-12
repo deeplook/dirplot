@@ -8,6 +8,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+from dirplot.filters import matches_exclude
+
 
 def _parse_timestamp(value: str | float) -> float:
     """Return a Unix timestamp float from either an ISO 8601 string or a legacy float."""
@@ -37,15 +39,21 @@ def parse_events(path: Path) -> list[tuple[float, str, str, str]]:
     return events
 
 
-def scan_to_flat(root: Path, exclude: frozenset[Path] = frozenset()) -> dict[str, int]:
+def scan_to_flat(root: Path, exclude: frozenset[str] = frozenset()) -> dict[str, int]:
     """Walk *root* and return ``{rel_path: size}`` with forward-slash separators."""
     files: dict[str, int] = {}
-    root_str = str(root)
-    for dirpath, dirnames, filenames in os.walk(root_str):
-        dirnames[:] = [d for d in dirnames if (Path(dirpath) / d).resolve() not in exclude]
+    for dirpath, dirnames, filenames in os.walk(str(root)):
+        dirnames[:] = [
+            d
+            for d in dirnames
+            if not matches_exclude(
+                str(Path(dirpath).relative_to(root) / d).replace(os.sep, "/"), exclude
+            )
+        ]
         for fname in filenames:
             fpath = Path(dirpath) / fname
-            if fpath.resolve() in exclude:
+            rel = str(fpath.relative_to(root)).replace(os.sep, "/")
+            if matches_exclude(rel, exclude):
                 continue
             try:
                 size = max(1, fpath.stat().st_size)
@@ -85,7 +93,7 @@ def apply_events(
     files: dict[str, int],
     root: Path,
     events: list[tuple[float, str, str, str]],
-    exclude: frozenset[Path],
+    exclude: frozenset[str],
 ) -> dict[str, str]:
     """Apply *events* to *files* in-place.
 
@@ -98,11 +106,11 @@ def apply_events(
         if not path_str.startswith(root_str):
             continue
         p = Path(path_str)
-        if p.resolve() in exclude:
-            continue
         try:
             rel = str(p.relative_to(root)).replace(os.sep, "/")
         except ValueError:
+            continue
+        if matches_exclude(rel, exclude):
             continue
 
         if event_type == "deleted":
@@ -115,7 +123,7 @@ def apply_events(
             except ValueError:
                 dest_rel = None
             old_size = files.pop(rel, None)
-            if dest_rel is not None and dest.resolve() not in exclude:
+            if dest_rel is not None and not matches_exclude(dest_rel, exclude):
                 files[dest_rel] = old_size if old_size is not None else 1
                 highlights[dest_str] = "modified"
         else:  # created, modified

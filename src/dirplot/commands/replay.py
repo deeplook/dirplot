@@ -8,6 +8,7 @@ from pathlib import Path
 import typer
 
 from dirplot.app import app
+from dirplot.filters import matches_exclude
 from dirplot.helpers.animation import (
     proportional_durations,
     resolve_fade_color,
@@ -154,7 +155,7 @@ def replay_cmd(
     if not quiet:
         typer.echo(f"Common root: {common_root}", err=True)
 
-    excluded = frozenset(Path(e).resolve() for e in exclude)
+    excluded = frozenset(exclude)
 
     # Build initial files dict by statting only paths that appear in the event log
     files: dict[str, int] = {}
@@ -163,7 +164,10 @@ def replay_cmd(
             p = Path(p_str)
             if not p_str.startswith(str(common_root)):
                 continue
-            if p.resolve() in excluded or not p.is_file():
+            if (
+                matches_exclude(str(p.relative_to(common_root)).replace(os.sep, "/"), excluded)
+                or not p.is_file()
+            ):
                 continue
             try:
                 rel = str(p.relative_to(common_root)).replace(os.sep, "/")
