@@ -20,6 +20,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (`**/__pycache__`). Matching is consistent across all backends — previously each backend
   used a different comparison strategy (absolute paths, basenames, full URIs).
 
+- **ISO 8601 timestamps in event log** — `dirplot watch --event-log` now writes timestamps
+  as timezone-aware ISO 8601 strings (e.g. `2026-05-12T14:21:52.341+00:00`) instead of raw
+  Unix epoch floats. `dirplot replay` still accepts both formats for backwards compatibility.
+
 - **`dirplot diff` enhancements** — single-argument shorthand: `dirplot diff .` diffs the
   working tree against HEAD (git) or tip (hg). Supports `<path>@<ref>` syntax for local git
   repos (e.g. `dirplot diff .@HEAD~5 .@HEAD`). When a source is a local git or hg repo,
