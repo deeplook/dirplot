@@ -1,10 +1,8 @@
 """Filesystem watcher that regenerates a treemap on every file change."""
 
-import io
 import json
 import sys
 import threading
-import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -15,7 +13,7 @@ try:
 except ImportError:
     Observer = None  # type: ignore[assignment]
 
-from dirplot.render_png import _draw_highlights, create_treemap
+from dirplot.render_png import create_treemap
 from dirplot.scanner import apply_log_sizes, build_tree_multi
 from dirplot.svg_render import create_treemap_svg
 
@@ -24,7 +22,7 @@ class TreemapEventHandler(FileSystemEventHandler):
     def __init__(
         self,
         roots: list[Path],
-        output: Path,
+        output: Path | None = None,
         *,
         exclude: frozenset[str] = frozenset(),
         width_px: int,
@@ -32,18 +30,11 @@ class TreemapEventHandler(FileSystemEventHandler):
         font_size: int,
         colormap: str,
         cushion: bool,
-        animate: bool = False,
         logscale: float = 0.0,
         debounce: float = 0.0,
         event_log: Path | None = None,
         depth: int | None = None,
-        crf: int = 23,
-        codec: str = "libx264",
         dark: bool = True,
-        fade_out: bool = False,
-        fade_out_duration: float = 1.0,
-        fade_out_frames: int | None = None,
-        fade_out_color: tuple[int, int, int] | tuple[int, int, int, int] = (0, 0, 0),
     ) -> None:
         super().__init__()
         self.roots = roots
@@ -56,15 +47,7 @@ class TreemapEventHandler(FileSystemEventHandler):
         self.colormap = colormap
         self.cushion = cushion
         self.dark = dark
-        self.use_svg = output.suffix.lower() == ".svg"
-        self.use_mp4 = output.suffix.lower() in {".mp4", ".mov"}
-        self.crf = crf
-        self.codec = codec
-        self.animate = animate
-        self.fade_out = fade_out
-        self.fade_out_duration = fade_out_duration
-        self.fade_out_frames = fade_out_frames
-        self.fade_out_color = fade_out_color
+        self.use_svg = output is not None and output.suffix.lower() == ".svg"
         self.logscale = logscale
         self.debounce = debounce
         self.event_log = event_log
@@ -72,58 +55,10 @@ class TreemapEventHandler(FileSystemEventHandler):
         self._timer: threading.Timer | None = None
         self._render_thread: threading.Thread | None = None
         self._lock = threading.Lock()
-        # Animate mode: raw PNG bytes and inter-frame durations accumulated in
-        # memory; written to disk as a single APNG in flush().
-        self._frame_bytes: list[bytes] = []
-        self._durations: list[int] = []
-        self._last_frame_time: float | None = None
         # Pending file-change highlights: path → event_type, consumed each frame.
         self._pending_highlights: dict[str, str] = {}
-        # Rect map from the most recent frame, used for deletion highlights.
+        # Rect map from the most recent frame.
         self._prev_rect_map: dict[str, tuple[int, int, int, int]] = {}
-
-    def _store_frame(self, png_bytes: bytes) -> None:
-        """Append a rendered PNG to the in-memory frame list and update timings."""
-        now = time.monotonic()
-        # APNG fcTL delay is uint16/uint16; Pillow uses delay_den=1000, so
-        # delay_num = duration_ms must fit in uint16 (max 65 535 ms ≈ 65 s).
-        if self._durations and self._last_frame_time is not None:
-            self._durations[-1] = min(65535, max(100, int((now - self._last_frame_time) * 1000)))
-        self._frame_bytes.append(png_bytes)
-        self._durations.append(1000)  # placeholder until next frame arrives
-        self._last_frame_time = now
-
-    def _write_apng(self) -> None:
-        """Write all accumulated frames as a single APNG (called once in flush())."""
-        from dirplot.render_png import write_apng
-
-        write_apng(self.output, self._frame_bytes, self._durations)
-        print(f"Wrote {len(self._frame_bytes)}-frame APNG → {self.output}", file=sys.stderr)
-
-    def _write_mp4(self) -> None:
-        """Write all accumulated frames as an MP4 video (called once in flush())."""
-        from dirplot.render_png import build_metadata, write_mp4
-
-        write_mp4(
-            self.output,
-            self._frame_bytes,
-            self._durations,
-            crf=self.crf,
-            codec=self.codec,
-            metadata=build_metadata(),
-        )
-        print(f"Wrote {len(self._frame_bytes)}-frame MP4 → {self.output}", file=sys.stderr)
-
-    def _patch_prev_frame_deletions(self, deletions: dict[str, str]) -> None:
-        """Draw red borders on the previous frame for files about to be deleted."""
-        from PIL import Image, ImageDraw
-
-        prev_img = Image.open(io.BytesIO(self._frame_bytes[-1])).convert("RGB")
-        draw = ImageDraw.Draw(prev_img)
-        _draw_highlights(draw, self._prev_rect_map, deletions)
-        buf = io.BytesIO()
-        prev_img.save(buf, format="PNG")
-        self._frame_bytes[-1] = buf.getvalue()
 
     def _regenerate(self) -> None:
         # Consume pending highlights for this frame.
@@ -131,20 +66,14 @@ class TreemapEventHandler(FileSystemEventHandler):
             all_highlights = dict(self._pending_highlights) if self._pending_highlights else {}
             self._pending_highlights.clear()
 
-        # Separate deletions (shown on previous frame) from other highlights.
-        deletions = {p: v for p, v in all_highlights.items() if v == "deleted"}
         current_highlights = {p: v for p, v in all_highlights.items() if v != "deleted"} or None
-
-        # Patch the previous frame with red borders for deleted files.
-        if deletions and self._prev_rect_map and self._frame_bytes:
-            self._patch_prev_frame_deletions(deletions)
 
         try:
             node = build_tree_multi(self.roots, self.exclude, self.depth)
             if self.logscale > 1:
                 apply_log_sizes(node, self.logscale)
             rect_map: dict[str, tuple[int, int, int, int]] = {}
-            if self.use_svg:
+            if self.use_svg and self.output is not None:
                 buf = create_treemap_svg(
                     node,
                     self.width_px,
@@ -156,22 +85,6 @@ class TreemapEventHandler(FileSystemEventHandler):
                     dark=self.dark,
                 )
                 self.output.write_bytes(buf.read())
-            elif self.animate:
-                buf = create_treemap(
-                    node,
-                    self.width_px,
-                    self.height_px,
-                    self.font_size,
-                    self.colormap,
-                    None,
-                    self.cushion,
-                    highlights=current_highlights,
-                    rect_map_out=rect_map,
-                    dark=self.dark,
-                    logscale=self.logscale,
-                )
-                self._store_frame(buf.read())
-                print(f"Captured frame {len(self._frame_bytes)}", file=sys.stderr)
             else:
                 buf = create_treemap(
                     node,
@@ -186,8 +99,9 @@ class TreemapEventHandler(FileSystemEventHandler):
                     dark=self.dark,
                     logscale=self.logscale,
                 )
-                self.output.write_bytes(buf.read())
-                print(f"Updated {self.output}", file=sys.stderr)
+                if self.output is not None:
+                    self.output.write_bytes(buf.read())
+                    print(f"Updated {self.output}", file=sys.stderr)
             self._prev_rect_map = rect_map
         except Exception as exc:  # noqa: BLE001
             print(f"Error regenerating treemap: {exc}", file=sys.stderr)
@@ -226,7 +140,7 @@ class TreemapEventHandler(FileSystemEventHandler):
             self._render_thread = None
 
     def flush(self) -> None:
-        """Fire any pending debounced regeneration and write the event log."""
+        """Fire any pending debounced regeneration."""
         with self._lock:
             if self._timer is not None:
                 self._timer.cancel()
@@ -239,31 +153,6 @@ class TreemapEventHandler(FileSystemEventHandler):
             self._regenerate()
         elif render_thread is not None:
             render_thread.join()
-        if self.animate and self._frame_bytes:
-            if self.fade_out:
-                from dirplot.render_png import _frames_as_rgba, make_fade_out_frames
-
-                fade_color = self.fade_out_color
-                fade_transparent = len(fade_color) == 4 and fade_color[3] == 0
-                if fade_transparent and self.use_mp4:
-                    fade_color = (0, 0, 0) if self.dark else (255, 255, 255)
-                    fade_transparent = False
-                if fade_transparent:
-                    self._frame_bytes = _frames_as_rgba(self._frame_bytes)
-                extra, extra_durs = make_fade_out_frames(
-                    self._frame_bytes[-1],
-                    n_frames=self.fade_out_frames
-                    if self.fade_out_frames is not None
-                    else max(1, round(self.fade_out_duration * 4)),
-                    duration_ms=int(self.fade_out_duration * 1000),
-                    target_color=fade_color,
-                )
-                self._frame_bytes.extend(extra)
-                self._durations.extend(extra_durs)
-            if self.use_mp4:
-                self._write_mp4()
-            else:
-                self._write_apng()
         if self.event_log is not None and self._events:
             with self._lock:
                 snapshot = list(self._events)

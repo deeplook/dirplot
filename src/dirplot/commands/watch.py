@@ -8,16 +8,12 @@ import typer
 
 from dirplot.app import app
 from dirplot.defaults import DEFAULT_COLORMAP, DEFAULT_FONT_SIZE
-from dirplot.helpers.animation import resolve_fade_color
 from dirplot.terminal import default_canvas_size
 
 
 @app.command(name="watch")
 def watch_cmd(
     paths: list[Path] = typer.Argument(..., help="Directories to watch"),
-    output: Path = typer.Option(
-        ..., "--output", "-o", help="Output file (.png, .apng, .mp4, or .svg)"
-    ),
     exclude: list[str] = typer.Option([], "--exclude", "-e", help="Paths to exclude (repeatable)"),
     font_size: int = typer.Option(
         DEFAULT_FONT_SIZE, "--font-size", help="Directory label font size in pixels"
@@ -30,11 +26,6 @@ def watch_cmd(
         True, "--cushion/--no-cushion", help="Apply van Wijk cushion shading"
     ),
     dark: bool = typer.Option(True, "--dark/--light", help="Dark background (default) or light"),
-    animate: bool = typer.Option(
-        False,
-        "--animate/--no-animate",
-        help="Build an animated APNG or MP4 by appending each new frame",
-    ),
     logscale: float = typer.Option(
         0.0,
         "--log-scale",
@@ -58,52 +49,15 @@ def watch_cmd(
         help="Write all raw events as JSONL to this file on exit",
         metavar="FILE",
     ),
-    crf: int = typer.Option(
-        23,
-        "--crf",
-        help="MP4 quality: Constant Rate Factor (0=lossless, 51=worst; default 23). "
-        "Ignored for APNG output.",
-        show_default=True,
-    ),
-    codec: str = typer.Option(
-        "libx264",
-        "--codec",
-        help="MP4 video codec: libx264 (H.264, default) or libx265 (H.265, smaller files). "
-        "Ignored for APNG output.",
-    ),
-    fade_out: bool = typer.Option(
-        False,
-        "--fade-out/--no-fade-out",
-        help="Append a fade-out sequence at the end of the animation (--animate only)",
-    ),
-    fade_out_duration: float = typer.Option(
-        1.0,
-        "--fade-out-duration",
-        help="Total duration of the fade-out in seconds",
-        show_default=True,
-    ),
-    fade_out_frames: int | None = typer.Option(
+    snapshot: Path | None = typer.Option(
         None,
-        "--fade-out-frames",
-        help="Number of equidistant frames in the fade-out (default: 4 per second of duration)",
-    ),
-    fade_out_color: str = typer.Option(
-        "auto",
-        "--fade-out-color",
-        help=(
-            "Target colour for the fade-out: 'auto' (black in dark mode, white in light mode), "
-            "'transparent' (APNG only), a CSS colour name, or a hex code"
-        ),
-        metavar="COLOR",
+        "--snapshot",
+        help="Write the current treemap as a PNG to this file on each filesystem change.",
+        metavar="FILE",
     ),
     quiet: bool = typer.Option(False, "--quiet", "-q", help="Suppress non-error output."),
 ) -> None:
-    """Watch one or more directories and regenerate the treemap on every file change.
-
-    With [bold]--animate[/bold] and a [bold].mp4[/bold] output path, frames are written
-    as an MP4 video on exit (requires ffmpeg). Use [bold]--crf[/bold] and
-    [bold]--codec[/bold] to control quality and codec.
-    """
+    """Watch one or more directories and regenerate the treemap on every file change."""
     from dirplot.watch import TreemapEventHandler
 
     try:
@@ -116,10 +70,6 @@ def watch_cmd(
         if not path.exists() or not path.is_dir():
             typer.echo(f"Error: not a directory: {path}", err=True)
             raise typer.Exit(1)
-
-    if animate and output.suffix.lower() == ".svg":
-        typer.echo("Error: --animate requires a PNG, MP4, or MOV output file.", err=True)
-        raise typer.Exit(1)
 
     if size is not None:
         try:
@@ -136,25 +86,18 @@ def watch_cmd(
 
     handler = TreemapEventHandler(
         roots,
-        output,
+        output=snapshot,
         exclude=excluded,
         width_px=width_px,
         height_px=height_px,
         font_size=font_size,
         colormap=colormap,
         cushion=cushion,
-        animate=animate,
         logscale=logscale,
         debounce=debounce,
         event_log=event_log,
         depth=depth,
-        crf=crf,
-        codec=codec,
         dark=dark,
-        fade_out=fade_out,
-        fade_out_duration=fade_out_duration,
-        fade_out_frames=fade_out_frames,
-        fade_out_color=resolve_fade_color(fade_out_color, dark) if fade_out else (0, 0, 0),
     )
 
     observer = Observer()
@@ -169,14 +112,14 @@ def watch_cmd(
             observer.schedule(handler, str(root), recursive=True)
         observer.start()
         if not quiet:
-            typer.echo(f"Watching {roots_str} → {output}  (Ctrl-C to stop)", err=True)
+            snapshot_info = f" → {snapshot}" if snapshot else ""
+            typer.echo(f"Watching {roots_str}{snapshot_info}  (Ctrl-C to stop)", err=True)
 
         while True:
             time.sleep(1)
     except KeyboardInterrupt:
         pass
     finally:
-        # Ignore further Ctrl-C so flush() can finish writing the APNG.
         signal.signal(signal.SIGINT, signal.SIG_IGN)
         handler.flush()
         if observer.is_alive():

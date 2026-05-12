@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **`dirplot watch` simplified** — animation output removed from `watch`; use `dirplot replay`
+  on a `--event-log` file to produce APNG/MP4. New `--snapshot FILE` option writes the current
+  treemap PNG on each filesystem change (for external tools or wallpaper updaters).
+
 ### Added
 
 - **`--include` flag** (replaces `--subtree`, which remains as a hidden alias) — available on

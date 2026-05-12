@@ -257,50 +257,34 @@ dirplot diff old/ new/ --light --output diff.svg --no-show
 
 ## `dirplot watch` — live watch mode
 
-Monitors directories and regenerates the treemap on every change. With `--animate`, each debounced render becomes one frame; the complete APNG or MP4 is written on Ctrl-C.
-
-> **Requires** `ffmpeg` on `PATH` for MP4 output.
+Monitors directories and regenerates the treemap on every filesystem change. Use `--snapshot` to write the current PNG on each change (useful for external tools or wallpaper updaters). To produce an animated APNG or MP4, record events with `--event-log` and replay with `dirplot replay`.
 
 ```bash
-# Watch and regenerate on every change
-dirplot watch . --output treemap.png
+# Watch a directory (display only, no file output)
+dirplot watch .
 
 # Watch multiple directories
-dirplot watch src tests --output treemap.png
+dirplot watch src tests
+
+# Write a snapshot PNG on each change
+dirplot watch . --snapshot treemap.png
 
 # Adjust debounce (default 0.5 s)
-dirplot watch . --output treemap.png --debounce 1.0
-dirplot watch . --output treemap.png --debounce 0   # immediate
+dirplot watch . --snapshot treemap.png --debounce 1.0
+dirplot watch . --snapshot treemap.png --debounce 0   # immediate
 
-# Log all events to a JSONL file
-dirplot watch src --output treemap.png --event-log events.jsonl
-
-# Animated APNG or MP4 — one frame per debounced render, written on Ctrl-C
-dirplot watch . --output treemap.png --animate
-dirplot watch . --output treemap.mp4 --animate
-dirplot watch . --output treemap.mp4 --animate --crf 18         # higher quality
-dirplot watch . --output treemap.mp4 --animate --codec libx265  # smaller file
-
-# Fade out to black at the end (default: 1 s, 4 fps)
-dirplot watch . --output treemap.png --animate --fade-out
-dirplot watch . --output treemap.mp4 --animate --fade-out --fade-out-duration 2.0
-dirplot watch . --output treemap.png --animate --fade-out --fade-out-color transparent  # APNG only
+# Log all events to a JSONL file (replay later with dirplot replay)
+dirplot watch src --event-log events.jsonl
+dirplot watch src --snapshot treemap.png --event-log events.jsonl
 ```
 
 ### Options
 
 | Flag | Default | Description |
 |---|---|---|
-| `--output` / `-o` | required | Output file (`.png`, `.apng`, `.mp4`) |
+| `--snapshot` | — | Write the current treemap as a PNG to this file on each change |
 | `--debounce` | `0.5` | Seconds of quiet before regenerating; `0` disables |
 | `--event-log` | — | Write raw events as JSONL on Ctrl-C exit |
-| `--animate` / `--no-animate` | off | Capture frames and write APNG or MP4 on Ctrl-C |
-| `--fade-out` / `--no-fade-out` | off | Append a fade-out sequence at the end (animate only) |
-| `--fade-out-duration` | `1.0` | Duration of the fade-out in seconds |
-| `--fade-out-frames` | 4 × duration | Number of fade frames; defaults to 4 per second |
-| `--fade-out-color` | `auto` | Fade target: `auto` (black/white per mode), `transparent` (PNG/APNG only), CSS name, or hex |
-| `--crf` | `23` | MP4 quality: 0 = lossless, 51 = worst. Ignored for APNG |
-| `--codec` | `libx264` | MP4 codec: `libx264` (H.264) or `libx265` (H.265) |
 | `--log-scale` | `0` (off) | Log-scale compression ratio; any value > 1 enables it |
 | `--size` | terminal size | Output dimensions as `WIDTHxHEIGHT` |
 | `--depth` | — | Maximum recursion depth |
