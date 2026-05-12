@@ -314,3 +314,145 @@ def build_tree_from_git(
     """Convenience wrapper: full scan of *commit* → Node tree."""
     files = git_initial_files(repo, commit, exclude)
     return build_node_tree(repo, files, depth)
+
+
+def build_tree_git_worktree(
+    repo: Path,
+    exclude: frozenset[str] = frozenset(),
+    depth: int | None = None,
+) -> Node:
+    """Build a Node tree from the working tree, restricted to git-tracked files.
+
+    Uses ``git ls-files`` to enumerate tracked paths, then reads actual on-disk
+    sizes. Untracked files are ignored — this matches ``git diff HEAD`` semantics.
+    """
+    result = subprocess.run(
+        ["git", "-C", str(repo), "ls-files"],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    files: dict[str, int] = {}
+    for filepath in result.stdout.splitlines():
+        if not filepath:
+            continue
+        if filepath.split("/")[0] in exclude:
+            continue
+        abs_path = repo / filepath
+        try:
+            size = max(1, abs_path.stat().st_size)
+        except OSError:
+            size = 1
+        files[filepath] = size
+    return build_node_tree(repo, files, depth)
+
+
+def git_worktree_hashes(repo: Path) -> dict[str, str]:
+    """Return ``{relative_filepath: sha1}`` for tracked files in the working tree.
+
+    Computes the blob SHA of each file's current on-disk content using
+    ``git hash-object``, so it matches the format returned by :func:`git_file_hashes`.
+    """
+    ls = subprocess.run(
+        ["git", "-C", str(repo), "ls-files"],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    paths = [p for p in ls.stdout.splitlines() if p]
+    if not paths:
+        return {}
+    # git hash-object reads stdin paths separated by NUL
+    abs_paths = [str(repo / p) for p in paths]
+    ho = subprocess.run(
+        ["git", "hash-object", "--stdin-paths"],
+        input="\n".join(abs_paths) + "\n",
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    hashes = ho.stdout.splitlines()
+    return dict(zip(paths, hashes, strict=False))
+
+
+def git_file_hashes(repo: Path, ref: str) -> dict[str, str]:
+    """Return ``{relative_filepath: blob_sha}`` for all tracked blobs at *ref*.
+
+    Used for accurate change detection between two git refs — size alone is
+    insufficient because a file's content can change while its size stays the same.
+    """
+    result = subprocess.run(
+        ["git", "-C", str(repo), "ls-tree", "-r", "--long", ref],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    hashes: dict[str, str] = {}
+    for line in result.stdout.splitlines():
+        if not line.strip():
+            continue
+        meta, sep, filepath = line.partition("\t")
+        if not sep or not filepath:
+            continue
+        parts = meta.split()
+        if len(parts) < 4 or parts[1] != "blob":
+            continue
+        hashes[filepath] = parts[2]  # blob SHA
+    return hashes
+
+
+def is_git_ref_path(s: str) -> bool:
+    """Return True if *s* looks like ``<local-path>@<git-ref>``.
+
+    The path component must exist on disk and be a git repository.
+    The ref component must be non-empty and must not look like a URL
+    scheme (``://``) so that ``github://owner/repo@branch`` is not
+    mistakenly matched.
+    """
+    if "://" in s:
+        return False
+    at = s.rfind("@")
+    if at <= 0:
+        return False
+    path_part = s[:at]
+    ref_part = s[at + 1 :]
+    if not ref_part:
+        return False
+    repo_path = Path(path_part)
+    if not repo_path.exists():
+        return False
+    result = subprocess.run(
+        ["git", "-C", str(repo_path), "rev-parse", "--git-dir"],
+        capture_output=True,
+    )
+    return result.returncode == 0
+
+
+def parse_git_ref_path(s: str) -> tuple[Path, str]:
+    """Split ``<local-path>@<git-ref>`` into ``(Path(local-path), ref)``."""
+    at = s.rfind("@")
+    return Path(s[:at]), s[at + 1 :]
+
+
+def build_tree_git_ref(
+    s: str,
+    exclude: frozenset[str] = frozenset(),
+    depth: int | None = None,
+) -> tuple[Node, str]:
+    """Scan a local git repo at a specific ref.
+
+    *s* must be in ``<local-path>@<git-ref>`` format.
+    Returns ``(root_node, display_title)`` where *display_title* is
+    ``repo-name@ref``.
+    """
+    repo, ref = parse_git_ref_path(s)
+    # Resolve the ref to a full SHA so the title is unambiguous.
+    result = subprocess.run(
+        ["git", "-C", str(repo), "rev-parse", "--short", ref],
+        capture_output=True,
+        text=True,
+    )
+    short_sha = result.stdout.strip() if result.returncode == 0 else ref
+    display_title = f"{repo.resolve().name}@{short_sha}"
+    node = build_tree_from_git(repo.resolve(), ref, exclude=exclude, depth=depth)
+    return node, display_title

@@ -10,6 +10,7 @@ import typer
 
 from dirplot.archives import PasswordRequired, build_tree_archive, is_archive_path
 from dirplot.docker import build_tree_docker, is_docker_path, parse_docker_path
+from dirplot.git_scanner import build_tree_git_ref, is_git_ref_path
 from dirplot.github import build_tree_github, is_github_path, parse_github_path
 from dirplot.k8s import build_tree_pod, is_pod_path, parse_pod_path
 from dirplot.pathlist import parse_pathlist
@@ -90,6 +91,7 @@ def scan_tree(
                     is_s3_path,
                     is_ssh_path,
                     is_archive_path,
+                    is_git_ref_path,
                 )
             ):
                 typer.echo(
@@ -209,6 +211,16 @@ def scan_tree(
             client.close()
         if progress[0] >= 100:
             print("", file=sys.stderr)
+    elif is_git_ref_path(root):
+        _emit(f"Scanning git repo {root} ...")
+        try:
+            root_node, git_ref_title = build_tree_git_ref(
+                root, exclude=frozenset(exclude), depth=depth
+            )
+        except Exception as exc:
+            typer.echo(f"Error: {exc}", err=True)
+            raise typer.Exit(1) from exc
+        display_title = git_ref_title
     elif is_archive_path(root):
         archive_path = Path(root)
         if not archive_path.exists():

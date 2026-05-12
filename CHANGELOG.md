@@ -7,17 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`dirplot diff` enhancements** — single-argument shorthand: `dirplot diff .` diffs the
+  working tree against HEAD (git) or tip (hg). Supports `<path>@<ref>` syntax for local git
+  repos (e.g. `dirplot diff .@HEAD~5 .@HEAD`). When a source is a local git or hg repo,
+  only tracked files are scanned (untracked files ignored). Change detection uses blob hash
+  comparison — edits that don't change file size are caught, and Git LFS files are handled
+  transparently (pointer size vs disk size no longer causes false positives).
+
 ## [0.4.4] - 2026-05-12
 
 ### Added
 
 - **`dirplot diff` command** — compares two directory trees A and B as a treemap. Files are
-  sized by B. Borders show diff status: green = added, red = removed, blue = changed (size
+  sized by B. Borders show diff status: green = added, red = removed, blue = changed (content
   differs). Unchanged files show no border. Supports `--context/--no-context` (default: on,
-  i.e. unchanged files are shown). All visual options from `dirplot map` are available:
+  i.e. unchanged files are shown). A and B accept any source supported by `dirplot map`:
+  local directories, `github://owner/repo[@ref]`, archives (`.zip`, `.tar.gz`, …), `s3://`,
+  `ssh://`, `docker://`, and `pod://`. All visual and remote-access options are available:
   `--output`, `--format`, `--show/--no-show`, `--inline`, `--font-size`, `--colormap`,
   `--exclude`, `--depth`, `--size`, `--cushion/--no-cushion`, `--dark/--light`,
-  `--log-scale`, `--header/--no-header`, and `--quiet`.
+  `--log-scale`, `--header/--no-header`, `--quiet`, `--ssh-key`, `--ssh-password-file`,
+  `--aws-profile`, `--no-sign`, `--github-token-file`, `--k8s-namespace`,
+  `--k8s-container`, `--password-file`, and `--no-input`.
 
 ### Changed
 

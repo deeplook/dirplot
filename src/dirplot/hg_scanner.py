@@ -1,10 +1,14 @@
 """Build a Node tree from a Mercurial changeset and compute per-changeset change highlights."""
 
+import hashlib
 import os
 import subprocess
 import tempfile
 from datetime import datetime
 from pathlib import Path
+
+from dirplot.git_scanner import build_node_tree
+from dirplot.scanner import Node
 
 
 def hg_log(
@@ -201,3 +205,64 @@ def hg_apply_diff(
         files[fp] = max(1, len(r.stdout))
 
     return highlights
+
+
+def is_hg_repo(path: Path) -> bool:
+    """Return True if *path* is the root of a Mercurial repository."""
+    return (path / ".hg").is_dir()
+
+
+def build_tree_hg_worktree(
+    repo: Path,
+    exclude: frozenset[str] = frozenset(),
+    depth: int | None = None,
+) -> "Node":
+    """Build a Node tree from the working tree, restricted to hg-tracked files.
+
+    Uses ``hg locate`` to enumerate tracked paths, then reads actual on-disk
+    sizes. Untracked files are ignored — matches ``hg diff`` semantics.
+    """
+    result = subprocess.run(
+        ["hg", "locate", "-0"],
+        capture_output=True,
+        cwd=str(repo),
+    )
+    files: dict[str, int] = {}
+    for filepath in result.stdout.split(b"\x00"):
+        rel = filepath.decode("utf-8", errors="replace").strip()
+        if not rel:
+            continue
+        if rel.split("/")[0] in exclude:
+            continue
+        abs_path = repo / rel
+        try:
+            size = max(1, abs_path.stat().st_size)
+        except OSError:
+            size = 1
+        files[rel] = size
+    return build_node_tree(repo, files, depth)
+
+
+def hg_worktree_hashes(repo: Path) -> dict[str, str]:
+    """Return ``{relative_filepath: sha1}`` for tracked files in the hg working tree.
+
+    Hashes the on-disk content of each tracked file so change detection is
+    accurate regardless of file size.
+    """
+    result = subprocess.run(
+        ["hg", "locate", "-0"],
+        capture_output=True,
+        cwd=str(repo),
+    )
+    hashes: dict[str, str] = {}
+    for filepath in result.stdout.split(b"\x00"):
+        rel = filepath.decode("utf-8", errors="replace").strip()
+        if not rel:
+            continue
+        abs_path = repo / rel
+        try:
+            content = abs_path.read_bytes()
+            hashes[rel] = hashlib.sha1(content).hexdigest()
+        except OSError:
+            pass
+    return hashes
