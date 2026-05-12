@@ -576,16 +576,15 @@ def _build_root_label(
     """
     human = _human_bytes(total_bytes)
     ls = f"  logscale:{logscale:g}×" if logscale > 1 else ""
-    sf = f"  [{title_suffix}]" if title_suffix else ""
+    sf = f"[{title_suffix}]  " if title_suffix else ""
 
     candidates = [
-        f"{name} \u2014 {n_files:,} files, {n_dirs:,} dirs,"
-        f" {human} ({total_bytes:,} bytes), depth: {depth}{ls}{sf}",
-        f"{name} \u2014 {n_files:,} files, {n_dirs:,} dirs, {human}, depth: {depth}{ls}{sf}",
-        f"{name} \u2014 {n_files:,} files, {n_dirs:,} dirs, {human}, depth: {depth}{sf}",
-        f"{name} \u2014 {n_files:,} files, {n_dirs:,} dirs, {human}, depth: {depth}",
-        f"{name} \u2014 {n_files:,} files, {n_dirs:,} dirs, {human}",
-        f"{name} \u2014 {n_files:,} files, {human}",
+        f"{sf}{name} \u2014 {n_files:,} files, {n_dirs:,} dirs,"
+        f" {human} ({total_bytes:,} bytes), depth: {depth}{ls}",
+        f"{sf}{name} \u2014 {n_files:,} files, {n_dirs:,} dirs, {human}, depth: {depth}{ls}",
+        f"{sf}{name} \u2014 {n_files:,} files, {n_dirs:,} dirs, {human}, depth: {depth}",
+        f"{sf}{name} \u2014 {n_files:,} files, {n_dirs:,} dirs, {human}",
+        f"{sf}{name} \u2014 {n_files:,} files, {human}",
     ]
     for candidate in candidates:
         if _text_w(draw, candidate, font) <= max_w:
