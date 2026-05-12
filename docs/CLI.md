@@ -474,6 +474,49 @@ Examples produced:
 
 ---
 
+## Running dirplot via Docker
+
+Build the image once from the repo root:
+
+```bash
+docker build -t dirplot .
+```
+
+Then run any `dirplot` command inside the container. Since the container has no display, use `--output -` to stream the PNG to stdout and display it on the host.
+
+**Save to a local file:**
+
+```bash
+docker run --rm -v "$PWD":/out dirplot dirplot map github://steipete/birdclaw \
+  --output /out/birdclaw.png --no-show
+open birdclaw.png
+```
+
+**Display inline (iTerm2 with `imgcat`):**
+
+```bash
+docker run --rm dirplot dirplot map github://steipete/birdclaw \
+  --output - --no-show | imgcat
+```
+
+**Display inline (any iTerm2-compatible terminal, no extra tools):**
+
+```bash
+docker run --rm dirplot dirplot map github://steipete/birdclaw \
+  --output - --no-show | python3 -c "
+import sys, base64
+data = sys.stdin.buffer.read()
+sys.stdout.buffer.write(
+    b'\033]1337;File=inline=1;size=' + str(len(data)).encode()
+    + b':' + base64.b64encode(data) + b'\a\n'
+)
+"
+```
+
+> **Note:** `--inline` does not work when running inside a container — dirplot cannot probe your host terminal from within Docker. Use `--output -` and display the bytes on the host side instead, as shown above.
+
+---
+
 ## Inline terminal display
 
 The `--inline` flag renders the image directly in the terminal. The protocol is auto-detected at runtime.
