@@ -71,7 +71,7 @@ def diff_cmd(
         help="Colormap for file-extension fill colours (default: tab20 uses Linguist palette)",
     ),
     exclude: list[str] = typer.Option([], "--exclude", "-e", help="Paths to exclude (repeatable)"),
-    includes: list[str] = typer.Option(
+    include: list[str] = typer.Option(
         [],
         "--include",
         help="Show only this subtree (repeatable; supports nested paths). Allowlist complement to --exclude.",  # noqa: E501
@@ -365,8 +365,8 @@ def diff_cmd(
 
     root_node = build_node_tree(virtual_root_b, combined_files, depth)
 
-    if includes:
-        root_node = prune_to_subtrees(root_node, set(includes))
+    if include:
+        root_node = prune_to_subtrees(root_node, set(include))
 
     if log_scale > 1:
         apply_log_sizes(root_node, log_scale)

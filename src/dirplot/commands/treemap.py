@@ -105,7 +105,7 @@ def main(
         ),
     ),
     exclude: list[str] = typer.Option([], "--exclude", "-e", help="Paths to exclude (repeatable)"),
-    includes: list[str] = typer.Option(
+    include: list[str] = typer.Option(
         [],
         "--include",
         "--subtree",  # hidden backwards-compat alias
@@ -252,8 +252,8 @@ def main(
         log=_info if header else None,
     )
 
-    if includes:
-        root_node = prune_to_subtrees(root_node, set(includes))
+    if include:
+        root_node = prune_to_subtrees(root_node, set(include))
 
     tree_depth = max_depth(root_node)
 

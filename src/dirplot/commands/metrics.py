@@ -23,7 +23,7 @@ def metrics_command(
         metavar="FILE",
     ),
     exclude: list[str] = typer.Option([], "--exclude", "-e", help="Paths to exclude (repeatable)"),
-    includes: list[str] = typer.Option(
+    include: list[str] = typer.Option(
         [],
         "--include",
         help="Show only this subtree (repeatable; supports nested paths). Allowlist complement to --exclude.",  # noqa: E501
@@ -126,8 +126,8 @@ def metrics_command(
         no_input=no_input,
         log=_metrics_log,
     )
-    if includes:
-        root_node = prune_to_subtrees(root_node, set(includes))
+    if include:
+        root_node = prune_to_subtrees(root_node, set(include))
     if sort_by not in ("count", "size"):
         typer.echo(f"Invalid --sort-by value '{sort_by}'. Choose: count, size", err=True)
         raise typer.Exit(1)
