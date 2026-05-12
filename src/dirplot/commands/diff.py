@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import os
+import subprocess
 import time
 import webbrowser
 from pathlib import Path
@@ -27,6 +29,9 @@ _DIFF_EPILOG = (
     "  dirplot diff v1/ v2/ --no-show --output diff.svg  [dim]# SVG output[/dim]\n\n"
     "  dirplot diff v1/ v2/ --size 1920x1080  [dim]# fixed resolution[/dim]\n\n"
     "  dirplot diff v1/ v2/ --depth 3  [dim]# limit directory depth[/dim]\n\n"
+    "  dirplot diff github://owner/repo@v1 github://owner/repo@v2"
+    "  [dim]# compare two GitHub tags[/dim]\n\n"
+    "  dirplot diff archive_v1.tar.gz archive_v2.zip  [dim]# compare two archives[/dim]\n\n"
     "\n[bold]Highlight colours (borders only)[/bold]\n\n"
     "  [green]green[/green]  — added (in B, not in A)\n"
     "  [red]red[/red]    — removed (in A, not in B)\n"
@@ -36,8 +41,14 @@ _DIFF_EPILOG = (
 
 @app.command(name="diff", epilog=_DIFF_EPILOG)
 def diff_cmd(
-    tree_a: str = typer.Argument(..., metavar="A", help="Source tree (baseline)"),
-    tree_b: str = typer.Argument(..., metavar="B", help="Target tree (comparison)"),
+    tree_a: str = typer.Argument(
+        ...,
+        metavar="A",
+        help="Source tree (baseline), or a local git/hg repo for uncommitted changes",
+    ),
+    tree_b: str | None = typer.Argument(
+        None, metavar="B", help="Target tree (comparison). Omit to diff A against its working tree."
+    ),
     output: Path | None = typer.Option(None, "--output", "-o", help="Save image to file"),
     fmt: str | None = typer.Option(
         None,
@@ -78,8 +89,50 @@ def diff_cmd(
     ),
     header: bool = typer.Option(True, "--header/--no-header", help="Print info lines to stderr"),
     quiet: bool = typer.Option(False, "--quiet", "-q", help="Suppress non-error output"),
+    ssh_key: str | None = typer.Option(
+        None, "--ssh-key", help="SSH private key file (default: ~/.ssh/id_rsa)"
+    ),
+    aws_profile: str | None = typer.Option(
+        None, "--aws-profile", envvar="AWS_PROFILE", help="AWS profile name for S3 access"
+    ),
+    no_sign: bool = typer.Option(
+        False, "--no-sign", help="Skip AWS signing for anonymous access to public S3 buckets"
+    ),
+    k8s_namespace: str | None = typer.Option(
+        None, "--k8s-namespace", help="Kubernetes namespace (overrides @namespace in pod URL)"
+    ),
+    k8s_container: str | None = typer.Option(
+        None, "--k8s-container", help="Container name for multi-container pods"
+    ),
+    password_file: Path | None = typer.Option(
+        None,
+        "--password-file",
+        help="File containing the archive password (avoids exposing it in shell history).",
+        metavar="FILE",
+    ),
+    ssh_password_file: Path | None = typer.Option(
+        None,
+        "--ssh-password-file",
+        help="File containing the SSH password (avoids exposing it in shell history).",
+        metavar="FILE",
+    ),
+    github_token_file: Path | None = typer.Option(
+        None,
+        "--github-token-file",
+        help="File containing a GitHub personal access token (avoids exposing it in shell history).",  # noqa: E501
+        metavar="FILE",
+    ),
+    no_input: bool = typer.Option(
+        False,
+        "--no-input",
+        help="Disable all interactive prompts; fail instead of prompting for passwords.",
+    ),
 ) -> None:
     """Compare two directory trees A and B as a treemap with diff highlights.
+
+    A and B can be local directories, GitHub repos (github://owner/repo[@ref]),
+    archives (.zip/.tar.gz), S3 paths (s3://bucket/prefix), SSH paths, Docker
+    containers, or Kubernetes pods — any source supported by the map command.
 
     Files are sized by their size in B (the target tree). Borders indicate
     diff status: [green]green[/green] = added, [red]red[/red] = removed,
@@ -90,14 +143,51 @@ def diff_cmd(
 
     import cmap as _cmap_lib
 
-    from dirplot.git_scanner import build_node_tree
+    from dirplot.git_scanner import (
+        build_node_tree,
+        build_tree_git_worktree,
+        git_file_hashes,
+        git_worktree_hashes,
+        is_git_ref_path,
+        parse_git_ref_path,
+    )
+    from dirplot.helpers.scan import scan_tree
+    from dirplot.hg_scanner import (
+        build_tree_hg_worktree,
+        hg_worktree_hashes,
+        is_hg_repo,
+    )
     from dirplot.render_png import create_treemap
-    from dirplot.scanner import apply_log_sizes, build_tree
+    from dirplot.scanner import apply_log_sizes
     from dirplot.svg_render import create_treemap_svg
 
     def _info(msg: str) -> None:
         if not quiet:
             typer.echo(msg, err=True)
+
+    # Single-argument shorthand: `dirplot diff .` → `dirplot diff .@HEAD .`
+    resolved_b: str
+    if tree_b is None:
+        p = Path(tree_a)
+        is_git = (
+            p.is_dir()
+            and subprocess.run(
+                ["git", "-C", str(p), "rev-parse", "--git-dir"], capture_output=True
+            ).returncode
+            == 0
+        )
+        is_hg = p.is_dir() and (p / ".hg").is_dir()
+        if is_git:
+            resolved_b = tree_a
+            tree_a = f"{tree_a}@HEAD"
+        elif is_hg:
+            resolved_b = tree_a
+            tree_a = f"{tree_a}@tip"
+        else:
+            typer.echo("Error: B is required when A is not a local git or hg repository.", err=True)
+            raise typer.Exit(1)
+    else:
+        resolved_b = tree_b
 
     # Validate colormap
     _valid_cmaps = set(_cmap_lib.Catalog().short_keys())
@@ -106,25 +196,78 @@ def diff_cmd(
         typer.echo(f"Unknown colormap '{colormap}'. Valid options:\n{valid}", err=True)
         raise typer.Exit(1)
 
-    path_a = Path(tree_a)
-    path_b = Path(tree_b)
+    # Resolve credentials/tokens from files
+    github_token: str | None = os.environ.get("GITHUB_TOKEN")
+    ssh_password: str | None = None
+    password: str | None = None
 
-    for label, p in (("A", path_a), ("B", path_b)):
-        if not p.exists():
-            typer.echo(f"Error: tree {label} not found: {p}", err=True)
+    if password_file is not None:
+        if not password_file.exists():
+            typer.echo(f"Error: --password-file not found: {password_file}", err=True)
             raise typer.Exit(1)
+        password = password_file.read_text().strip()
+
+    if ssh_password_file is not None:
+        if not ssh_password_file.exists():
+            typer.echo(f"Error: --ssh-password-file not found: {ssh_password_file}", err=True)
+            raise typer.Exit(1)
+        ssh_password = ssh_password_file.read_text().strip()
+
+    if github_token_file is not None:
+        if not github_token_file.exists():
+            typer.echo(f"Error: --github-token-file not found: {github_token_file}", err=True)
+            raise typer.Exit(1)
+        github_token = github_token_file.read_text().strip()
+
+    def _is_local_git_repo(s: str) -> bool:
+        import subprocess as _sp
+
+        p = Path(s)
         if not p.is_dir():
-            typer.echo(f"Error: tree {label} is not a directory: {p}", err=True)
-            raise typer.Exit(1)
+            return False
+        return (
+            _sp.run(
+                ["git", "-C", str(p), "rev-parse", "--git-dir"],
+                capture_output=True,
+            ).returncode
+            == 0
+        )
 
-    excluded = frozenset(Path(e).resolve() for e in exclude)
+    def _scan(label: str, src: str) -> tuple[object, str | None]:
+        p = Path(src)
+        if not is_git_ref_path(src) and _is_local_git_repo(src):
+            _info(f"Scanning {label}: {src} (tracked files only) ...")
+            excluded_set = frozenset(Path(e).name for e in exclude)
+            node = build_tree_git_worktree(p.resolve(), excluded_set, depth)
+            return node, None
+        if not is_git_ref_path(src) and p.is_dir() and is_hg_repo(p.resolve()):
+            _info(f"Scanning {label}: {src} (tracked files only) ...")
+            excluded_set = frozenset(Path(e).name for e in exclude)
+            node = build_tree_hg_worktree(p.resolve(), excluded_set, depth)
+            return node, None
+        return scan_tree(
+            roots=[src],
+            paths_from=None,
+            exclude=exclude,
+            depth=depth,
+            ssh_key=ssh_key,
+            ssh_password=ssh_password,
+            aws_profile=aws_profile,
+            no_sign=no_sign,
+            github_token=github_token,
+            k8s_namespace=k8s_namespace,
+            k8s_container=k8s_container,
+            password=password,
+            no_input=no_input,
+            log=_info,
+        )[::2]  # (node, title) — drop t_scan
 
     # Scan both trees
     t0 = time.monotonic()
-    _info(f"Scanning A: {path_a} ...")
-    node_a = build_tree(path_a, exclude=excluded, depth=depth)
-    _info(f"Scanning B: {path_b} ...")
-    node_b = build_tree(path_b, exclude=excluded, depth=depth)
+    _info(f"Scanning A: {tree_a} ...")
+    node_a, title_a = _scan("A", tree_a)
+    _info(f"Scanning B: {resolved_b} ...")
+    node_b, title_b = _scan("B", resolved_b)
     t_scan = time.monotonic() - t0
     _info(f"Scanned in {t_scan:.1f}s")
 
@@ -145,19 +288,44 @@ def diff_cmd(
     files_a = _flatten(node_a)
     files_b = _flatten(node_b)
 
+    # Use a stable virtual root path for highlight key generation.
+    # build_node_tree keys highlights as (virtual_root / rel).as_posix().
+    virtual_root_b = Path(resolved_b)
+
+    # For git ref sources, compare blob hashes for accurate change detection.
+    # Size comparison alone misses edits that don't change the file size.
+    hashes_a: dict[str, str] = {}
+    hashes_b: dict[str, str] = {}
+    if is_git_ref_path(tree_a):
+        repo_a, ref_a = parse_git_ref_path(tree_a)
+        hashes_a = git_file_hashes(repo_a.resolve(), ref_a)
+    elif _is_local_git_repo(tree_a):
+        hashes_a = git_worktree_hashes(Path(tree_a).resolve())
+    elif is_hg_repo(Path(tree_a).resolve()):
+        hashes_a = hg_worktree_hashes(Path(tree_a).resolve())
+    if is_git_ref_path(resolved_b):
+        repo_b, ref_b = parse_git_ref_path(resolved_b)
+        hashes_b = git_file_hashes(repo_b.resolve(), ref_b)
+    elif _is_local_git_repo(resolved_b):
+        hashes_b = git_worktree_hashes(Path(resolved_b).resolve())
+    elif is_hg_repo(Path(resolved_b).resolve()):
+        hashes_b = hg_worktree_hashes(Path(resolved_b).resolve())
+
     # Compute diff highlights keyed to match rect_map keys produced by build_node_tree.
-    # build_node_tree uses node.path.as_posix() which preserves whatever path was passed
-    # as root (relative or absolute), so we must use the same base path here.
     highlights: dict[str, str] = {}
     all_keys = set(files_a) | set(files_b)
     for rel in all_keys:
-        key = (path_b / rel).as_posix()
+        key = (virtual_root_b / rel).as_posix()
         if rel in files_a and rel not in files_b:
             highlights[key] = DIFF_COLORS["removed"]
         elif rel not in files_a and rel in files_b:
             highlights[key] = DIFF_COLORS["added"]
-        elif rel in files_a and rel in files_b and files_a[rel] != files_b[rel]:
-            highlights[key] = DIFF_COLORS["changed"]
+        elif rel in files_a and rel in files_b:
+            if hashes_a and hashes_b:
+                if hashes_a.get(rel) != hashes_b.get(rel):
+                    highlights[key] = DIFF_COLORS["changed"]
+            elif files_a[rel] != files_b[rel]:
+                highlights[key] = DIFF_COLORS["changed"]
 
     n_removed = sum(1 for v in highlights.values() if v == DIFF_COLORS["removed"])
     n_added = sum(1 for v in highlights.values() if v == DIFF_COLORS["added"])
@@ -167,13 +335,18 @@ def diff_cmd(
     # Build combined node tree sized by B.
     # With --context: include all files (unchanged for context + diff files).
     # With --no-context: include only files that changed, were added, or were removed.
-    changed_keys = {
-        rel
-        for rel in set(files_a) | set(files_b)
-        if rel not in files_b  # removed
-        or rel not in files_a  # added
-        or files_a[rel] != files_b[rel]  # changed
-    }
+    # Use hash comparison when available so LFS files (pointer size != disk size)
+    # are not falsely counted as changed.
+    def _is_changed(rel: str) -> bool:
+        if rel not in files_b:
+            return True  # removed
+        if rel not in files_a:
+            return True  # added
+        if hashes_a and hashes_b:
+            return hashes_a.get(rel) != hashes_b.get(rel)
+        return files_a[rel] != files_b[rel]
+
+    changed_keys = {rel for rel in set(files_a) | set(files_b) if _is_changed(rel)}
     if context:
         combined_files = dict(files_b)
         for rel in files_a:
@@ -184,7 +357,7 @@ def diff_cmd(
             rel: (files_b[rel] if rel in files_b else files_a[rel]) for rel in changed_keys
         }
 
-    root_node = build_node_tree(path_b, combined_files, depth)
+    root_node = build_node_tree(virtual_root_b, combined_files, depth)
 
     if log_scale > 1:
         apply_log_sizes(root_node, log_scale)
@@ -216,7 +389,9 @@ def diff_cmd(
     else:
         use_svg = False
 
-    title_suffix = f"{path_a.name} → {path_b.name}"
+    label_a = title_a or Path(tree_a).name
+    label_b = title_b or Path(resolved_b).name
+    title_suffix = f"{label_a} → {label_b}"
 
     t_render_start = time.monotonic()
     if use_svg:

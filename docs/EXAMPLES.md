@@ -37,6 +37,60 @@ dirplot map . --metrics --no-show
 
 ---
 
+## Diff
+
+`dirplot diff` compares two trees and renders a treemap with colour-coded diff borders. A and B accept **any source supported by `dirplot map`** — local directories, GitHub repos, archives, S3 paths, SSH hosts, Docker containers, or Kubernetes pods.
+
+When a source is a **local git or hg repository**, only tracked files are scanned (untracked files are invisible, matching `git diff` / `hg diff` semantics). Change detection uses blob hash comparison, so edits that don't change file size are caught correctly. Git LFS files are handled transparently.
+
+```bash
+# Uncommitted changes in the current repo (single-argument shorthand)
+dirplot diff .
+dirplot diff /path/to/repo
+
+# Uncommitted changes — only show changed files
+dirplot diff . --no-context
+
+# Compare two commits in the current repo
+dirplot diff .@HEAD~5 .@HEAD
+
+# Compare two commits by SHA
+dirplot diff .@abc1234 .@def5678
+
+# Local directories (non-git)
+dirplot diff old/ new/
+
+# Save to file without opening a viewer
+dirplot diff old/ new/ --output diff.png --no-show
+
+# Show only changed/added/removed files (hide unchanged context)
+dirplot diff old/ new/ --no-context
+
+# Two GitHub tags
+dirplot diff github://owner/repo@v1.0 github://owner/repo@v2.0
+
+# Two GitHub commits
+dirplot diff github://owner/repo@abc1234 github://owner/repo@def5678
+
+# Two GitHub tags — private repo
+dirplot diff github://my-org/private@v1 github://my-org/private@v2 \
+  --github-token-file ~/.github-token
+
+# Two archives
+dirplot diff release-1.0.tar.gz release-2.0.tar.gz
+
+# S3 prefix vs local directory
+dirplot diff s3://my-bucket/v1 ./v2 --aws-profile prod
+
+# Two SSH paths
+dirplot diff ssh://alice@host/srv/v1 ssh://alice@host/srv/v2
+
+# Docker containers (baseline vs new image)
+dirplot diff docker://app-v1:/app docker://app-v2:/app
+```
+
+---
+
 ## Remote Access
 
 *dirplot* can scan directory trees on remote sources (remote servers via SSH, AWS S3 buckets, Github repositories, Docker containers, and Kubernetes pods) without copying files locally. Remote backends are optional dependencies — install only what you need.

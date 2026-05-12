@@ -175,26 +175,49 @@ dirplot map . --metrics --no-show
 
 ## `dirplot diff` — compare two directory trees
 
-Compares two directory trees A and B as a treemap. Tiles are sized by B (the new tree). Colour-coded borders indicate the diff status of each file: **green** = added (present in B, absent in A), **red** = removed (present in A, absent in B), **blue** = changed (present in both, but size differs). Unchanged files have no border. By default, unchanged files are included as context (`--context`); pass `--no-context` to show only changed, added, and removed files.
+Compares two directory trees A and B as a treemap. Tiles are sized by B (the new tree). Colour-coded borders indicate the diff status of each file: **green** = added (present in B, absent in A), **red** = removed (present in A, absent in B), **blue** = changed (present in both, but content differs). Unchanged files have no border. By default, unchanged files are included as context (`--context`); pass `--no-context` to show only changed, added, and removed files.
+
+A and B can be **any source supported by `dirplot map`** — local directories, GitHub repos, archives, S3 paths, SSH hosts, Docker containers, or Kubernetes pods.
+
+**When a source is a local git or hg repository**, only tracked files are scanned (equivalent to `git diff` / `hg diff` semantics — untracked files are ignored). Change detection uses blob hash comparison, not file size, so edits that don't change file size are caught correctly. Git LFS files are handled transparently.
+
+**Single-argument shorthand** — pass only one argument to diff the working tree against HEAD (git) or tip (hg):
+
+```bash
+dirplot diff .                  # uncommitted changes in current repo
+dirplot diff /path/to/repo      # uncommitted changes in that repo
+```
 
 ```bash
 # Basic comparison — open in system viewer
 dirplot diff old/ new/
 
+# Uncommitted changes in current git/hg repo
+dirplot diff .
+
+# Uncommitted changes, only show changed files
+dirplot diff . --no-context
+
+# Compare two commits in the current repo
+dirplot diff .@HEAD~5 .@HEAD
+
+# Compare two git commits by SHA
+dirplot diff .@abc1234 .@def5678
+
+# Compare two GitHub tags
+dirplot diff github://owner/repo@v1.0 github://owner/repo@v2.0
+
+# Compare two archives
+dirplot diff release-1.0.tar.gz release-2.0.tar.gz
+
+# Compare an S3 prefix against a local directory
+dirplot diff s3://my-bucket/v1 ./v2
+
 # Save to file
 dirplot diff old/ new/ --output diff.png --no-show
 
-# Hide unchanged files (only show the diff)
-dirplot diff old/ new/ --no-context
-
 # Light mode, SVG output
 dirplot diff old/ new/ --light --output diff.svg --no-show
-
-# Exclude build artefacts and limit depth
-dirplot diff old/ new/ --exclude .git --exclude __pycache__ --depth 4
-
-# Custom colormap and font size
-dirplot diff old/ new/ --colormap viridis --font-size 14 --output diff.png --no-show
 ```
 
 ### Options
@@ -216,6 +239,15 @@ dirplot diff old/ new/ --colormap viridis --font-size 14 --output diff.png --no-
 | `--log-scale` | | `0` (off) | Log-scale compression ratio; any value > 1 enables it |
 | `--header/--no-header` | | `--header` | Print info lines before rendering |
 | `--quiet` | | off | Suppress all status output |
+| `--ssh-key` | | `~/.ssh/id_rsa` | SSH private key file |
+| `--ssh-password-file` | | — | File containing SSH password |
+| `--aws-profile` | | `$AWS_PROFILE` | Named AWS profile for S3 access |
+| `--no-sign` | | off | Anonymous access for public S3 buckets |
+| `--github-token-file` | | `$GITHUB_TOKEN` | File containing GitHub personal access token |
+| `--k8s-namespace` | | — | Kubernetes namespace |
+| `--k8s-container` | | — | Container name for multi-container pods |
+| `--password-file` | | — | File containing archive password |
+| `--no-input` | | off | Fail instead of prompting for passwords |
 
 ---
 
