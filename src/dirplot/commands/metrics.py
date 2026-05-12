@@ -9,8 +9,21 @@ from dirplot.app import app
 from dirplot.helpers.scan import scan_tree
 from dirplot.scanner import prune_to_subtrees, tree_metrics, tree_metrics_dict
 
+_METRICS_EPILOG = (
+    "[bold]Examples[/bold]\n\n"
+    "  dirplot metrics .  [dim]# current directory[/dim]\n\n"
+    "  dirplot metrics . --sort-by size  [dim]# sort extensions by total bytes[/dim]\n\n"
+    "  dirplot metrics . --top 5  [dim]# limit each list to 5 entries[/dim]\n\n"
+    "  dirplot metrics . --json  [dim]# machine-readable JSON output[/dim]\n\n"
+    "  dirplot metrics . --json | jq '.largest_files[0]'  [dim]# pipe into jq[/dim]\n\n"
+    "  dirplot metrics . -e .venv -e .git  [dim]# exclude paths[/dim]\n\n"
+    "  dirplot metrics github://pallets/flask  [dim]# GitHub repo[/dim]\n\n"
+    "  dirplot metrics s3://my-bucket --no-sign  [dim]# public S3 bucket[/dim]\n\n"
+    "  dirplot map . --metrics --no-show  [dim]# treemap + metrics in one pass[/dim]"
+)
 
-@app.command(name="metrics")
+
+@app.command(name="metrics", epilog=_METRICS_EPILOG)
 def metrics_command(
     roots: list[str] = typer.Argument(
         default=None,
@@ -73,7 +86,7 @@ def metrics_command(
         help="Sort top extensions by: count (default) or size.",
         metavar="FIELD",
     ),
-    as_json: bool = typer.Option(False, "--json/--no-json", help="Output metrics as JSON."),
+    as_json: bool = typer.Option(False, "--json", help="Output metrics as JSON."),
     quiet: bool = typer.Option(False, "--quiet", "-q", help="Suppress non-error output."),
     no_input: bool = typer.Option(
         False,
@@ -81,7 +94,10 @@ def metrics_command(
         help="Disable all interactive prompts; fail instead of prompting for passwords.",
     ),
 ) -> None:
-    """Print detailed metrics for a scanned directory tree."""
+    """Print detailed metrics for a scanned directory tree.
+
+    Example: dirplot metrics . --top 20
+    """
     roots = roots or []
 
     github_token: str | None = os.environ.get("GITHUB_TOKEN")

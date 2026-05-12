@@ -3,10 +3,13 @@
 import sys
 import time
 import webbrowser
+from collections.abc import Generator
+from contextlib import contextmanager
 from pathlib import Path
 
 import cmap as _cmap_lib
 import typer
+from rich.console import Console as _Console
 
 from dirplot.app import app
 from dirplot.defaults import DEFAULT_COLORMAP, DEFAULT_FONT_SIZE
@@ -23,6 +26,12 @@ from dirplot.scanner import (
 )
 from dirplot.svg_render import create_treemap_svg
 from dirplot.terminal import default_canvas_size
+
+
+@contextmanager
+def _no_op_ctx() -> Generator[None, None, None]:
+    yield
+
 
 _EPILOG = (
     "[bold]Examples[/bold]\n\n"
@@ -70,7 +79,6 @@ def main(
     fmt: str | None = typer.Option(
         None,
         "--format",
-        "-f",
         help="Output format: png or svg. Defaults to svg if --output ends in .svg, else png.",
         metavar="FORMAT",
     ),
@@ -192,7 +200,10 @@ def main(
         help="Disable all interactive prompts; fail instead of prompting for passwords.",
     ),
 ) -> None:
-    """Create a nested treemap bitmap for a directory tree."""
+    """Create a nested treemap bitmap for a directory tree.
+
+    Example: dirplot map . --inline
+    """
     import os
 
     roots = roots or []
@@ -299,24 +310,34 @@ def main(
     else:
         use_svg = False
 
+    _stderr_console = _Console(stderr=True)
     t_render_start = time.monotonic()
-    if use_svg:
-        buf = create_treemap_svg(
-            root_node, width_px, height_px, font_size, colormap, legend, cushion, tree_depth, dark
-        )
-    else:
-        buf = create_treemap(
-            root_node,
-            width_px,
-            height_px,
-            font_size,
-            colormap,
-            legend,
-            cushion,
-            tree_depth,
-            dark=dark,
-            logscale=logscale,
-        )
+    with _stderr_console.status("Rendering…", spinner="dots") if not quiet else _no_op_ctx():
+        if use_svg:
+            buf = create_treemap_svg(
+                root_node,
+                width_px,
+                height_px,
+                font_size,
+                colormap,
+                legend,
+                cushion,
+                tree_depth,
+                dark,
+            )
+        else:
+            buf = create_treemap(
+                root_node,
+                width_px,
+                height_px,
+                font_size,
+                colormap,
+                legend,
+                cushion,
+                tree_depth,
+                dark=dark,
+                logscale=logscale,
+            )
     t_render = time.monotonic() - t_render_start
 
     if output is not None:

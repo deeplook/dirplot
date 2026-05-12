@@ -42,10 +42,14 @@ _HG_EPILOG = (
     "  [dim]# full history, APNG[/dim]\n\n"
     "  dirplot hg . -o history.mp4 --animate"
     "  [dim]# full history, MP4 (H.264, CRF 23)[/dim]\n\n"
+    "  dirplot hg . -o history.mp4 --animate --crf 18 --codec libx265"
+    "  [dim]# high-quality H.265[/dim]\n\n"
     "  dirplot hg .@my-branch -o history.mp4 --animate"
-    "  [dim]# specific revision range[/dim]\n\n"
+    "  [dim]# specific branch[/dim]\n\n"
     "  dirplot hg . -o history.mp4 --animate --last 30d"
-    "  [dim]# last 30 days of changesets[/dim]"
+    "  [dim]# last 30 days of changesets[/dim]\n\n"
+    "  dirplot hg . -o history.apng --animate --max-commits 50 --total-duration 30"
+    "  [dim]# cap commits, proportional timing[/dim]"
 )
 
 

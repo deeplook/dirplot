@@ -3,11 +3,15 @@
 import os
 import sys
 
-# Handle --no-color before any Rich/Typer imports so the env var takes effect
-# at console creation time (Rich reads NO_COLOR in Console.__init__).
+# Handle --no-color and TERM=dumb before any Rich/Typer imports so the env var
+# takes effect at console creation time (Rich reads NO_COLOR in Console.__init__).
 if "--no-color" in sys.argv:
     os.environ["NO_COLOR"] = "1"
     sys.argv = [a for a in sys.argv if a != "--no-color"]
+if os.environ.get("TERM") == "dumb":
+    os.environ["NO_COLOR"] = "1"
+if os.environ.get("FORCE_COLOR"):
+    os.environ.pop("NO_COLOR", None)
 
 from dirplot.main import app
 
