@@ -105,7 +105,7 @@ def test_scan_to_flat_excludes_dir(tmp_path: Path) -> None:
     excl = tmp_path / "excluded"
     excl.mkdir()
     (excl / "secret.py").write_bytes(b"x" * 10)
-    files = scan_to_flat(tmp_path, exclude=frozenset([excl.resolve()]))
+    files = scan_to_flat(tmp_path, exclude=frozenset(["excluded"]))
     assert "keep.py" in files
     assert not any("excluded" in k for k in files)
 
@@ -207,7 +207,7 @@ def test_apply_events_excluded_skipped(tmp_path: Path) -> None:
     f = tmp_path / "secret.py"
     f.write_bytes(b"x" * 10)
     files: dict[str, int] = {}
-    apply_events(files, tmp_path, [(1.0, "created", str(f), "")], frozenset([f.resolve()]))
+    apply_events(files, tmp_path, [(1.0, "created", str(f), "")], frozenset(["secret.py"]))
     assert not files
 
 
