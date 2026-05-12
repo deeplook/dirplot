@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **`--include` flag** (replaces `--subtree`, which remains as a hidden alias) — available on
+  `map`, `diff`, and `metrics`. Keeps only the named subtrees after scanning; supports nested
+  paths (`--include src/dirplot/fonts`). Allowlist complement to `--exclude`.
+
 - **Glob patterns in `--exclude`** — the `--exclude` flag now accepts glob patterns on all
   commands and all backends (local, git, hg, SSH, S3, GitHub, Docker, Kubernetes, archives).
   Plain names (`.git`, `node_modules`) still work as before and match any path component.

@@ -20,9 +20,9 @@ dirplot map . --exclude .venv --exclude .git
 dirplot map . --exclude "*.egg-info" --exclude "**/__pycache__"
 dirplot map . --exclude src/vendor
 
-# Focus on named subtrees
-dirplot map . --subtree src --subtree tests
-dirplot map . --subtree src/dirplot/fonts
+# Focus on named subtrees (allowlist complement to --exclude)
+dirplot map . --include src --include tests
+dirplot map . --include src/dirplot/fonts
 
 # Multiple roots shown under their common parent
 dirplot map src tests
@@ -89,7 +89,7 @@ dirplot map pod://my-pod:/app
 | `--font-size` | | `12` | Directory label font size in pixels |
 | `--colormap` | | `tab20` | Matplotlib colormap for unknown extensions |
 | `--exclude` | `-e` | — | Pattern to exclude (repeatable): plain name, glob (``*.egg-info``), ``**`` glob, or relative path |
-| `--subtree` | | — | Show only this named subtree (repeatable); supports nested paths |
+| `--include` | | — | Show only this subtree (repeatable); supports nested paths; allowlist complement to `--exclude` |
 | `--depth` | | unlimited | Maximum recursion depth |
 | `--size` | | terminal size | Output dimensions as `WIDTHxHEIGHT` (e.g. `1920x1080`) |
 | `--header/--no-header` | | `--header` | Print info lines before rendering |
@@ -162,6 +162,7 @@ dirplot map . --metrics --no-show
 | `--sort-by` | | `count` | Sort top extensions by `count` (files) or `size` (bytes) |
 | `--json` / `--no-json` | | off | Output all metrics as JSON |
 | `--exclude` | `-e` | — | Pattern to exclude (repeatable): plain name, glob (``*.egg-info``), ``**`` glob, or relative path |
+| `--include` | | — | Show only this subtree (repeatable); allowlist complement to `--exclude` |
 | `--depth` | | unlimited | Maximum recursion depth |
 | `--paths-from` | | — | File with path list (`tree`/`find` output); `-` for stdin |
 | `--password-file` | | — | File containing archive password; prompted interactively if needed |
@@ -234,6 +235,7 @@ dirplot diff old/ new/ --light --output diff.svg --no-show
 | `--font-size` | | `12` | Directory label font size in pixels |
 | `--colormap` | | `tab20` | Colormap for unknown extensions |
 | `--exclude` | `-e` | — | Pattern to exclude (repeatable): plain name, glob (``*.egg-info``), ``**`` glob, or relative path |
+| `--include` | | — | Show only this subtree (repeatable); allowlist complement to `--exclude` |
 | `--depth` | | unlimited | Maximum recursion depth |
 | `--size` | | terminal size | Output dimensions as `WIDTHxHEIGHT` (e.g. `1920x1080`) |
 | `--cushion/--no-cushion` | | `--cushion` | Van Wijk cushion shading for a raised 3-D look |
