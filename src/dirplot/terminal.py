@@ -47,3 +47,9 @@ def get_terminal_pixel_size() -> tuple[int, int, int]:
     """
     cols, rows, width_px, height_px = get_terminal_size()
     return width_px, height_px, height_px // rows if rows > 0 else 16
+
+
+def default_canvas_size() -> tuple[int, int]:
+    """Return (width_px, height_px) for the default terminal canvas size."""
+    w, h, row_px = get_terminal_pixel_size()
+    return w + 1, h - 3 * row_px

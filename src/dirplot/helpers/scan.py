@@ -15,7 +15,7 @@ from dirplot.github import build_tree_github, is_github_path, parse_github_path
 from dirplot.k8s import build_tree_pod, is_pod_path, parse_pod_path
 from dirplot.pathlist import parse_pathlist
 from dirplot.s3 import build_tree_s3, is_s3_path, make_s3_client, parse_s3_path
-from dirplot.scanner import Node, build_tree, build_tree_multi
+from dirplot.scanner import NO_EXT, Node, build_tree, build_tree_multi
 from dirplot.ssh import build_tree_ssh, connect, is_ssh_path, parse_ssh_path
 
 
@@ -269,7 +269,7 @@ def scan_tree(
                 file_size = max(1, rp.stat().st_size)
             except OSError:
                 file_size = 1
-            ext = rp.suffix.lower() if rp.suffix else "(no ext)"
+            ext = rp.suffix.lower() if rp.suffix else NO_EXT
             file_node = Node(name=rp.name, path=rp, size=file_size, is_dir=False, extension=ext)
             root_node = Node(
                 name=rp.parent.name,

@@ -8,8 +8,9 @@ import drawsvg
 import squarify
 
 from dirplot.colors import RGBAColor, assign_colors
+from dirplot.defaults import DEFAULT_COLORMAP, DEFAULT_FONT_SIZE, DEFAULT_LEGEND_MAX_ROWS
 from dirplot.render_png import _human_bytes, build_metadata
-from dirplot.scanner import Node, collect_extensions, count_nodes, max_depth
+from dirplot.scanner import BREADCRUMB_SEP, Node, collect_extensions, count_nodes, max_depth
 
 _CHAR_ASPECT = 0.6  # approximate width/height ratio for monospace font
 _FONT_FAMILY = "JetBrains Mono, Consolas, monospace"
@@ -268,12 +269,12 @@ def _truncate_breadcrumb_svg(name: str, font_size: int, max_w: float) -> str:
     ``first / … / last`` form is too long.
     """
     char_w = font_size * _CHAR_ASPECT
-    parts = name.split(" / ")
+    parts = name.split(BREADCRUMB_SEP)
     if len(parts) <= 1:
         return _truncate(name, font_size, max_w)
     if len(name) * char_w <= max_w:
         return name
-    candidate = parts[0] + " / \u2026 / " + parts[-1]
+    candidate = parts[0] + BREADCRUMB_SEP + "\u2026" + BREADCRUMB_SEP + parts[-1]
     if len(candidate) * char_w <= max_w:
         return candidate
     return _truncate(candidate, font_size, max_w)
@@ -485,7 +486,7 @@ def _draw_legend_svg(
     height_px: int,
     font_size: int,
     corner: str,
-    max_rows: int = 20,
+    max_rows: int = DEFAULT_LEGEND_MAX_ROWS,
     dark: bool = True,
 ) -> None:
     margin = 4
@@ -597,8 +598,8 @@ def create_treemap_svg(
     root_node: Node,
     width_px: int,
     height_px: int,
-    font_size: int = 12,
-    colormap: str = "tab20",
+    font_size: int = DEFAULT_FONT_SIZE,
+    colormap: str = DEFAULT_COLORMAP,
     legend: int | None = None,
     cushion: bool = True,
     tree_depth: int | None = None,

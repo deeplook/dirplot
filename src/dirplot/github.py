@@ -12,7 +12,7 @@ from pathlib import Path, PurePosixPath
 from typing import Any
 
 from dirplot.filters import matches_exclude
-from dirplot.scanner import Node
+from dirplot.scanner import NO_EXT, Node
 
 
 def is_github_path(s: str) -> bool:
@@ -254,7 +254,7 @@ def _items_to_tree(
                         None if current_depth is None else current_depth - 1,
                     )
             else:
-                ext = PurePosixPath(item["_name"]).suffix.lower() or "(no ext)"
+                ext = PurePosixPath(item["_name"]).suffix.lower() or NO_EXT
                 child = Node(
                     name=item["_name"],
                     path=Path(item["path"]),

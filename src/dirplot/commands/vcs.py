@@ -8,6 +8,7 @@ from pathlib import Path
 import typer
 
 from dirplot.app import app
+from dirplot.defaults import DEFAULT_COLORMAP, DEFAULT_FONT_SIZE
 from dirplot.helpers.animation import (
     proportional_durations,
     resolve_fade_color,
@@ -15,7 +16,7 @@ from dirplot.helpers.animation import (
 )
 from dirplot.helpers.time import parse_last_period
 from dirplot.scanner import apply_log_sizes
-from dirplot.terminal import get_terminal_pixel_size
+from dirplot.terminal import default_canvas_size
 
 _GIT_EPILOG = (
     "[bold]Examples[/bold]\n\n"
@@ -223,8 +224,10 @@ def git_cmd(
     exclude: list[str] = typer.Option(
         [], "--exclude", "-e", help="Top-level paths to exclude (repeatable)"
     ),
-    font_size: int = typer.Option(12, "--font-size", help="Directory label font size in pixels"),
-    colormap: str = typer.Option("tab20", "--colormap", help="Matplotlib colormap"),
+    font_size: int = typer.Option(
+        DEFAULT_FONT_SIZE, "--font-size", help="Directory label font size in pixels"
+    ),
+    colormap: str = typer.Option(DEFAULT_COLORMAP, "--colormap", help="Matplotlib colormap"),
     size: str | None = typer.Option(
         None, "--size", help="Output size as WIDTHxHEIGHT", metavar="WIDTHxHEIGHT"
     ),
@@ -414,9 +417,7 @@ def git_cmd(
             typer.echo(f"Invalid --size '{size}'. Expected WIDTHxHEIGHT.", err=True)
             raise typer.Exit(1) from None
     else:
-        term_w, term_h, row_px = get_terminal_pixel_size()
-        width_px = term_w + 1
-        height_px = term_h - 3 * row_px
+        width_px, height_px = default_canvas_size()
 
     if not quiet:
         typer.echo(f"Reading git log from {repo} ...", err=True)
@@ -635,8 +636,10 @@ def hg_cmd(
     exclude: list[str] = typer.Option(
         [], "--exclude", "-e", help="Top-level paths to exclude (repeatable)"
     ),
-    font_size: int = typer.Option(12, "--font-size", help="Directory label font size in pixels"),
-    colormap: str = typer.Option("tab20", "--colormap", help="Matplotlib colormap"),
+    font_size: int = typer.Option(
+        DEFAULT_FONT_SIZE, "--font-size", help="Directory label font size in pixels"
+    ),
+    colormap: str = typer.Option(DEFAULT_COLORMAP, "--colormap", help="Matplotlib colormap"),
     size: str | None = typer.Option(
         None, "--size", help="Output size as WIDTHxHEIGHT", metavar="WIDTHxHEIGHT"
     ),
@@ -764,9 +767,7 @@ def hg_cmd(
             typer.echo(f"Invalid --size '{size}'. Expected WIDTHxHEIGHT.", err=True)
             raise typer.Exit(1) from None
     else:
-        term_w, term_h, row_px = get_terminal_pixel_size()
-        width_px = term_w + 1
-        height_px = term_h - 3 * row_px
+        width_px, height_px = default_canvas_size()
 
     if not quiet:
         typer.echo(f"Reading hg log from {repo} ...", err=True)

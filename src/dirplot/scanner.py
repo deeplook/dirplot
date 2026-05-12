@@ -7,6 +7,9 @@ from typing import TypedDict
 
 from dirplot.filters import matches_exclude
 
+NO_EXT = "(no ext)"
+BREADCRUMB_SEP = " / "
+
 
 class _ExtEntry(TypedDict):
     ext: str
@@ -83,7 +86,7 @@ def build_tree(
                 size = max(1, entry.stat().st_size)
             except OSError:
                 size = 1
-            ext = entry.suffix.lower() if entry.suffix else "(no ext)"
+            ext = entry.suffix.lower() if entry.suffix else NO_EXT
             child = Node(name=entry.name, path=entry, size=size, is_dir=False, extension=ext)
         else:
             continue
@@ -158,7 +161,7 @@ def build_tree_multi(
             file_size = max(1, r.stat().st_size)
         except OSError:
             file_size = 1
-        ext = r.suffix.lower() if r.suffix else "(no ext)"
+        ext = r.suffix.lower() if r.suffix else NO_EXT
         return Node(name=r.name, path=r, size=file_size, is_dir=False, extension=ext)
 
     scanned: list[tuple[Path, Node]] = [(r, _scan_one(r)) for r in resolved]
@@ -258,7 +261,7 @@ def _apply_breadcrumbs_recursive(node: Node) -> Node:
     file_children = [c for c in node.children if not c.is_dir]
     if node.is_dir and len(dir_children) == 1 and len(file_children) == 0:
         child = dir_children[0]
-        node.name = f"{node.name} / {child.name}"
+        node.name = f"{node.name}{BREADCRUMB_SEP}{child.name}"
         node.children = child.children
     return node
 
@@ -359,7 +362,7 @@ def tree_metrics_dict(
 
     top_extensions: list[_ExtEntry] = [
         _ExtEntry(
-            ext=ext if ext else "(no ext)",
+            ext=ext if ext else NO_EXT,
             count=ext_counts_raw[ext],
             size_bytes=ext_sizes[ext],
         )

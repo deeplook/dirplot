@@ -7,8 +7,9 @@ from pathlib import Path
 import typer
 
 from dirplot.app import app
+from dirplot.defaults import DEFAULT_COLORMAP, DEFAULT_FONT_SIZE
 from dirplot.helpers.animation import resolve_fade_color
-from dirplot.terminal import get_terminal_pixel_size
+from dirplot.terminal import default_canvas_size
 
 
 @app.command(name="watch")
@@ -18,8 +19,10 @@ def watch_cmd(
         ..., "--output", "-o", help="Output file (.png, .apng, .mp4, or .svg)"
     ),
     exclude: list[str] = typer.Option([], "--exclude", "-e", help="Paths to exclude (repeatable)"),
-    font_size: int = typer.Option(12, "--font-size", help="Directory label font size in pixels"),
-    colormap: str = typer.Option("tab20", "--colormap", help="Matplotlib colormap"),
+    font_size: int = typer.Option(
+        DEFAULT_FONT_SIZE, "--font-size", help="Directory label font size in pixels"
+    ),
+    colormap: str = typer.Option(DEFAULT_COLORMAP, "--colormap", help="Matplotlib colormap"),
     size: str | None = typer.Option(
         None, "--size", help="Output size as WIDTHxHEIGHT", metavar="WIDTHxHEIGHT"
     ),
@@ -126,9 +129,7 @@ def watch_cmd(
             typer.echo(f"Invalid --size '{size}'. Expected WIDTHxHEIGHT.", err=True)
             raise typer.Exit(1) from None
     else:
-        term_w, term_h, row_px = get_terminal_pixel_size()
-        width_px = term_w + 1
-        height_px = term_h - 3 * row_px
+        width_px, height_px = default_canvas_size()
 
     excluded = frozenset(exclude)
     roots = [path.resolve() for path in paths]

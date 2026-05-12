@@ -9,6 +9,7 @@ import cmap as _cmap_lib
 import typer
 
 from dirplot.app import app
+from dirplot.defaults import DEFAULT_COLORMAP, DEFAULT_FONT_SIZE
 from dirplot.display import display_inline, display_window
 from dirplot.helpers.scan import scan_tree
 from dirplot.render_png import create_treemap
@@ -21,7 +22,7 @@ from dirplot.scanner import (
     tree_metrics,
 )
 from dirplot.svg_render import create_treemap_svg
-from dirplot.terminal import get_terminal_pixel_size
+from dirplot.terminal import default_canvas_size
 
 _EPILOG = (
     "[bold]Examples[/bold]\n\n"
@@ -86,10 +87,10 @@ def main(
         metavar="N",
     ),
     font_size: int = typer.Option(
-        12, "--font-size", help="Directory label font size in pixels (default: 12)"
+        DEFAULT_FONT_SIZE, "--font-size", help="Directory label font size in pixels (default: 12)"
     ),
     colormap: str = typer.Option(
-        "tab20",
+        DEFAULT_COLORMAP,
         "--colormap",
         help=(
             "Matplotlib colormap for file-extension colours (default: tab20). "
@@ -283,9 +284,7 @@ def main(
         if header:
             _info(f"Output size: {width_px}x{height_px}px")
     else:
-        term_w, term_h, row_px = get_terminal_pixel_size()
-        width_px = term_w + 1
-        height_px = term_h - 3 * row_px
+        width_px, height_px = default_canvas_size()
         if header:
             _info(f"Terminal size: {width_px}x{height_px}px")
 

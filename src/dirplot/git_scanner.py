@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from dirplot.filters import matches_exclude
-from dirplot.scanner import Node
+from dirplot.scanner import NO_EXT, Node
 
 
 def git_log(
@@ -224,7 +224,7 @@ def build_node_tree(
                 child = _to_node(child_name, child_path, child_val)
             else:
                 dot_idx = child_name.rfind(".")
-                ext = child_name[dot_idx:].lower() if dot_idx > 0 else "(no ext)"
+                ext = child_name[dot_idx:].lower() if dot_idx > 0 else NO_EXT
                 child = Node(
                     name=child_name,
                     path=child_path,

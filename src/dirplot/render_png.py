@@ -17,7 +17,8 @@ from numpy.typing import NDArray
 from PIL import Image, ImageDraw, ImageFont, PngImagePlugin
 
 from dirplot.colors import RGBAColor, assign_colors
-from dirplot.scanner import Node, collect_extensions, count_nodes, max_depth
+from dirplot.defaults import DEFAULT_COLORMAP, DEFAULT_FONT_SIZE, DEFAULT_LEGEND_MAX_ROWS
+from dirplot.scanner import BREADCRUMB_SEP, Node, collect_extensions, count_nodes, max_depth
 
 DIRPLOT_URL = "https://github.com/deeplook/dirplot"
 
@@ -172,12 +173,12 @@ def _truncate_breadcrumb(
     finally falls back to ``_truncate`` for plain names or when even the
     ``first / … / last`` form is too long.
     """
-    parts = name.split(" / ")
+    parts = name.split(BREADCRUMB_SEP)
     if len(parts) <= 1:
         return _truncate(name, draw, font, max_w)
     if _text_w(draw, name, font) <= max_w:
         return name
-    candidate = parts[0] + " / … / " + parts[-1]
+    candidate = parts[0] + BREADCRUMB_SEP + "…" + BREADCRUMB_SEP + parts[-1]
     if _text_w(draw, candidate, font) <= max_w:
         return candidate
     return _truncate(candidate, draw, font, max_w)
@@ -239,7 +240,7 @@ def draw_node(
     h: int,
     color_map: dict[str, RGBAColor],
     font: ImageFont.FreeTypeFont,
-    font_size: int = 12,
+    font_size: int = DEFAULT_FONT_SIZE,
     cushion: bool = True,
     img: Image.Image | None = None,
     root_label: str | None = None,
@@ -437,7 +438,7 @@ def _draw_legend(
     height_px: int,
     corner: str,
     font: ImageFont.FreeTypeFont,
-    max_rows: int = 20,
+    max_rows: int = DEFAULT_LEGEND_MAX_ROWS,
     dark: bool = True,
 ) -> None:
     margin = 4
@@ -596,8 +597,8 @@ def create_treemap(
     root_node: Node,
     width_px: int,
     height_px: int,
-    font_size: int = 12,
-    colormap: str = "tab20",
+    font_size: int = DEFAULT_FONT_SIZE,
+    colormap: str = DEFAULT_COLORMAP,
     legend: int | None = None,
     cushion: bool = True,
     tree_depth: int | None = None,
