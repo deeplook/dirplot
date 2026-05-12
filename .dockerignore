@@ -9,3 +9,10 @@ dist/
 .ruff_cache/
 *.png
 *.svg
+*.mp4
+*.apng
+*.mov
+misc/
+scripts/
+docs/
+examples/
