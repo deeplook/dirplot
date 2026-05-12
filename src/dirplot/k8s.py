@@ -6,6 +6,7 @@ import subprocess
 import sys
 from pathlib import Path, PurePosixPath
 
+from dirplot.filters import matches_exclude
 from dirplot.scanner import Node
 
 
@@ -188,8 +189,7 @@ def build_tree_pod(
         name = PurePosixPath(rel_path).name
         if name.startswith("."):
             continue
-        abs_path = remote_path.rstrip("/") + "/" + rel_path
-        if abs_path in exclude or any(abs_path.startswith(ex.rstrip("/") + "/") for ex in exclude):
+        if matches_exclude(rel_path, exclude):
             continue
         try:
             size = int(size_str)

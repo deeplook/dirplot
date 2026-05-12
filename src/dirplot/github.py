@@ -11,6 +11,7 @@ from collections import defaultdict
 from pathlib import Path, PurePosixPath
 from typing import Any
 
+from dirplot.filters import matches_exclude
 from dirplot.scanner import Node
 
 
@@ -235,7 +236,7 @@ def _items_to_tree(
         for item in sorted(by_parent.get(rel_prefix, []), key=lambda i: i["_name"]):
             if item["_name"].startswith("."):
                 continue
-            if item["path"] in exclude:
+            if matches_exclude(item["path"], exclude):
                 continue
             if item["type"] == "tree":
                 if current_depth is not None and current_depth <= 1:

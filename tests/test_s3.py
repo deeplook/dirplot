@@ -126,9 +126,7 @@ def test_build_tree_s3_recurses_into_subdirs() -> None:
 def test_build_tree_s3_exclude() -> None:
     s3 = make_s3([{"Contents": [obj("project/keep.py", 100), obj("project/skip.py", 200)]}])
 
-    node = build_tree_s3(
-        s3, "bucket", "project/", exclude=frozenset({"s3://bucket/project/skip.py"})
-    )
+    node = build_tree_s3(s3, "bucket", "project/", exclude=frozenset({"skip.py"}))
     names = {c.name for c in node.children}
     assert "keep.py" in names
     assert "skip.py" not in names

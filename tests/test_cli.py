@@ -119,8 +119,7 @@ def test_cli_saves_output(sample_tree: Path, tmp_path: Path) -> None:
 
 
 def test_cli_exclude(sample_tree: Path) -> None:
-    src = sample_tree / "src"
-    result = runner.invoke(app, ["map", str(sample_tree), "--no-show", "--exclude", str(src)])
+    result = runner.invoke(app, ["map", str(sample_tree), "--no-show", "--exclude", "src"])
     assert result.exit_code == 0
     # Only docs/ and README.md remain: 80 + 50 = 130 bytes
     assert "130" in result.output
@@ -757,9 +756,8 @@ def test_metrics_invalid_path() -> None:
 
 
 def test_metrics_exclude(sample_tree: Path) -> None:
-    # Exclude src/ by full path — its 300 bytes should disappear from total
-    src_path = str(sample_tree / "src")
-    result_excl = runner.invoke(app, ["metrics", str(sample_tree), "-e", src_path])
+    # Exclude src/ by name pattern — its 300 bytes should disappear from total
+    result_excl = runner.invoke(app, ["metrics", str(sample_tree), "-e", "src"])
     assert result_excl.exit_code == 0
     # Without src (300 bytes), total is 130 B; "300" and "app.py"/"util.py" gone
     assert "app.py" not in result_excl.output

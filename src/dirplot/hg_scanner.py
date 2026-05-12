@@ -7,6 +7,7 @@ import tempfile
 from datetime import datetime
 from pathlib import Path
 
+from dirplot.filters import matches_exclude
 from dirplot.git_scanner import build_node_tree
 from dirplot.scanner import Node
 
@@ -106,8 +107,7 @@ def hg_initial_files(
                 rel_posix = full.relative_to(archive_root).as_posix()
                 if rel_posix == ".hg_archival.txt":
                     continue
-                top = rel_posix.split("/")[0]
-                if top in exclude:
+                if matches_exclude(rel_posix, exclude):
                     continue
                 try:
                     size = max(1, full.stat().st_size)
@@ -170,26 +170,26 @@ def hg_apply_diff(
                 source = lines[i + 1].lstrip()
                 rename_sources.add(source)
                 i += 1
-                if fp.split("/")[0] not in exclude:
+                if not matches_exclude(fp, exclude):
                     to_add.append(fp)
                     highlights[(repo / fp).as_posix()] = "created"
-                if source.split("/")[0] not in exclude:
+                if not matches_exclude(source, exclude):
                     files.pop(source, None)
                     highlights[(repo / source).as_posix()] = "deleted"
             else:
-                if fp.split("/")[0] not in exclude:
+                if not matches_exclude(fp, exclude):
                     to_add.append(fp)
                     highlights[(repo / fp).as_posix()] = "created"
 
         elif line.startswith("M "):
             fp = line[2:]
-            if fp.split("/")[0] not in exclude:
+            if not matches_exclude(fp, exclude):
                 to_add.append(fp)
                 highlights[(repo / fp).as_posix()] = "modified"
 
         elif line.startswith("R "):
             fp = line[2:]
-            if fp not in rename_sources and fp.split("/")[0] not in exclude:
+            if fp not in rename_sources and not matches_exclude(fp, exclude):
                 files.pop(fp, None)
                 highlights[(repo / fp).as_posix()] = "deleted"
 
@@ -232,7 +232,7 @@ def build_tree_hg_worktree(
         rel = filepath.decode("utf-8", errors="replace").strip()
         if not rel:
             continue
-        if rel.split("/")[0] in exclude:
+        if matches_exclude(rel, exclude):
             continue
         abs_path = repo / rel
         try:

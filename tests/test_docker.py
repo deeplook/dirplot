@@ -254,7 +254,7 @@ def test_build_tree_docker_skips_dotfiles() -> None:
 def test_build_tree_docker_exclude() -> None:
     output = "keep.py\t100\tf\nskip.py\t200\tf\n"
     with patch("subprocess.run", side_effect=_mock_run(output)):
-        node = build_tree_docker("my-container", "/app", exclude=frozenset({"/app/skip.py"}))
+        node = build_tree_docker("my-container", "/app", exclude=frozenset({"skip.py"}))
     names = {c.name for c in node.children}
     assert "keep.py" in names
     assert "skip.py" not in names
@@ -362,9 +362,7 @@ def test_docker_integration_total_size(docker_container: str) -> None:
 @pytest.mark.docker
 def test_docker_integration_exclude(docker_container: str) -> None:
     """Excluded paths are omitted from the result."""
-    node = build_tree_docker(
-        docker_container, "/testdata", exclude=frozenset({"/testdata/README.md"})
-    )
+    node = build_tree_docker(docker_container, "/testdata", exclude=frozenset({"README.md"}))
     names = {c.name for c in node.children}
     assert "README.md" not in names
     assert "src" in names

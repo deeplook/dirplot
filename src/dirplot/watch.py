@@ -25,7 +25,7 @@ class TreemapEventHandler(FileSystemEventHandler):
         roots: list[Path],
         output: Path,
         *,
-        exclude: frozenset[Path] = frozenset(),
+        exclude: frozenset[str] = frozenset(),
         width_px: int,
         height_px: int,
         font_size: int,
