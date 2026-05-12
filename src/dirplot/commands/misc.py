@@ -10,8 +10,32 @@ import typer
 from dirplot.app import app
 from dirplot.terminal import get_terminal_size
 
+_TERMSIZE_EPILOG = (
+    "[bold]Examples[/bold]\n\n"
+    "  dirplot termsize  [dim]# print cols × rows and pixel dimensions[/dim]\n\n"
+    "  dirplot termsize  [dim]# run before dirplot map to check the default canvas size[/dim]"
+)
 
-@app.command(name="termsize")
+_READ_META_EPILOG = (
+    "[bold]Examples[/bold]\n\n"
+    "  dirplot read-meta treemap.png  [dim]# read metadata from a PNG[/dim]\n\n"
+    "  dirplot read-meta treemap.svg  [dim]# read metadata from an SVG[/dim]\n\n"
+    "  dirplot read-meta history.mp4  [dim]# read metadata from an MP4 (requires ffprobe)[/dim]\n\n"
+    "  dirplot read-meta a.png b.png c.svg  [dim]# multiple files[/dim]\n\n"
+    "  dirplot read-meta *.png  [dim]# glob expansion[/dim]"
+)
+
+_DEMO_EPILOG = (
+    "[bold]Examples[/bold]\n\n"
+    "  dirplot demo  [dim]# run all examples, save to ./demo/[/dim]\n\n"
+    "  dirplot demo --output ~/dirplot-demo  [dim]# custom output folder[/dim]\n\n"
+    "  dirplot demo --github-url https://github.com/pallets/flask"
+    "  [dim]# use a different GitHub repo for remote examples[/dim]\n\n"
+    "  dirplot demo --interactive  [dim]# step through each command with confirmation[/dim]"
+)
+
+
+@app.command(name="termsize", epilog=_TERMSIZE_EPILOG)
 def termsize() -> None:
     """Show the current terminal size in characters and pixels."""
     cols, rows, width_px, height_px = get_terminal_size()
@@ -19,7 +43,7 @@ def termsize() -> None:
     typer.echo(f"Pixels     : {width_px} × {height_px}")
 
 
-@app.command(name="read-meta")
+@app.command(name="read-meta", epilog=_READ_META_EPILOG)
 def read_meta(
     files: list[Path] = typer.Argument(
         ..., help="PNG, SVG, or MP4/MOV file(s) to read dirplot metadata from"
@@ -115,7 +139,7 @@ def read_meta(
         raise typer.Exit(1)
 
 
-@app.command(name="demo")
+@app.command(name="demo", epilog=_DEMO_EPILOG)
 def demo_cmd(
     output: Path = typer.Option(
         Path("demo"), "--output", "-o", help="Folder for generated output files"

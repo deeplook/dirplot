@@ -10,8 +10,20 @@ from dirplot.app import app
 from dirplot.defaults import DEFAULT_COLORMAP, DEFAULT_FONT_SIZE
 from dirplot.terminal import default_canvas_size
 
+_WATCH_EPILOG = (
+    "[bold]Examples[/bold]\n\n"
+    "  dirplot watch .  [dim]# watch current directory[/dim]\n\n"
+    "  dirplot watch src tests  [dim]# watch multiple directories[/dim]\n\n"
+    "  dirplot watch . --snapshot treemap.png  [dim]# write PNG on each change[/dim]\n\n"
+    "  dirplot watch . --snapshot treemap.png --debounce 1.0  [dim]# 1-second debounce[/dim]\n\n"
+    "  dirplot watch . --snapshot treemap.png --debounce 0  [dim]# immediate regeneration[/dim]\n\n"
+    "  dirplot watch src --event-log events.jsonl  [dim]# record events for replay[/dim]\n\n"
+    "  dirplot watch src --snapshot treemap.png --event-log events.jsonl"
+    "  [dim]# snapshot + log[/dim]"
+)
 
-@app.command(name="watch")
+
+@app.command(name="watch", epilog=_WATCH_EPILOG)
 def watch_cmd(
     paths: list[Path] = typer.Argument(..., help="Directories to watch"),
     exclude: list[str] = typer.Option([], "--exclude", "-e", help="Paths to exclude (repeatable)"),
@@ -57,7 +69,10 @@ def watch_cmd(
     ),
     quiet: bool = typer.Option(False, "--quiet", "-q", help="Suppress non-error output."),
 ) -> None:
-    """Watch one or more directories and regenerate the treemap on every file change."""
+    """Watch one or more directories and regenerate the treemap on every file change.
+
+    Example: dirplot watch . --snapshot out.png
+    """
     from dirplot.watch import TreemapEventHandler
 
     try:

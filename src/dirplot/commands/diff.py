@@ -55,7 +55,6 @@ def diff_cmd(
     fmt: str | None = typer.Option(
         None,
         "--format",
-        "-f",
         help="Output format: png or svg (inferred from --output extension if omitted)",
         metavar="FORMAT",
     ),
@@ -139,6 +138,8 @@ def diff_cmd(
 ) -> None:
     """Compare two directory trees A and B as a treemap with diff highlights.
 
+    Example: dirplot diff old/ new/ --inline
+
     A and B can be local directories, GitHub repos (github://owner/repo[@ref]),
     archives (.zip/.tar.gz), S3 paths (s3://bucket/prefix), SSH paths, Docker
     containers, or Kubernetes pods — any source supported by the map command.
@@ -171,7 +172,7 @@ def diff_cmd(
     from dirplot.svg_render import create_treemap_svg
 
     def _info(msg: str) -> None:
-        if not quiet:
+        if not quiet and header:
             typer.echo(msg, err=True)
 
     # Single-argument shorthand: `dirplot diff .` → `dirplot diff .@HEAD .`

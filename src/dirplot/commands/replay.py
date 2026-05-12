@@ -27,8 +27,12 @@ _REPLAY_EPILOG = (
     "  [dim]# MP4, higher quality[/dim]\n\n"
     "  dirplot replay events.jsonl -o replay.mp4 --codec libx265 --crf 28"
     "  [dim]# H.265, smaller file[/dim]\n\n"
-    "  dirplot replay events.jsonl -o replay.mp4 --bucket 10"
-    "  [dim]# finer-grained 10-second buckets[/dim]"
+    "  dirplot replay events.jsonl -o replay.apng --bucket 10 --frame-duration 200"
+    "  [dim]# finer-grained 10-second buckets[/dim]\n\n"
+    "  dirplot replay events.jsonl -o replay.mp4 --total-duration 30 --fade-out"
+    "  [dim]# fade to black at the end[/dim]\n\n"
+    "  dirplot replay events.jsonl -o replay.apng --total-duration 30"
+    "  --fade-out --fade-out-color white  [dim]# fade to white (light mode)[/dim]"
 )
 
 
