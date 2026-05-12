@@ -5,6 +5,7 @@ import json
 import sys
 import threading
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -199,7 +200,7 @@ class TreemapEventHandler(FileSystemEventHandler):
         with self._lock:
             self._events.append(
                 {
-                    "timestamp": time.time(),
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
                     "type": verb,
                     "path": src_s,
                     "dest_path": dest_s,
