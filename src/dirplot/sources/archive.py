@@ -1,16 +1,22 @@
-"""Archive tree source implementation."""
+"""Archive tree source implementation using VirtualPath."""
 
 from __future__ import annotations
 
 from pathlib import Path
 
-from dirplot.archives import build_tree_archive, is_archive_path
+from dirplot.archives import is_archive_path
 from dirplot.scanner import Node
+from dirplot.scanner_v2 import build_tree_v2
 from dirplot.sources import register_source
+from dirplot.vpath import ArchiveRoot
 
 
 class ArchiveSource:
-    """Tree source for archive files (zip, tar, etc.)."""
+    """Tree source for archive files (zip, tar, etc.) using VirtualPath.
+    
+    This implementation uses the VirtualPath abstraction, making archive
+    handling transparent - archives are just another VirtualPath.
+    """
 
     @property
     def name(self) -> str:
@@ -27,7 +33,7 @@ class ArchiveSource:
         exclude: frozenset[str] = frozenset(),
         depth: int | None = None,
     ) -> Node:
-        """Scan an archive file.
+        """Scan an archive file using VirtualPath.
 
         Args:
             path: Path to the archive file.
@@ -42,12 +48,9 @@ class ArchiveSource:
         if not archive_path.exists():
             raise FileNotFoundError(f"Archive not found: {path}")
 
-        # Use the existing build_tree_archive function
-        return build_tree_archive(
-            archive_path,
-            exclude=exclude,
-            depth=depth,
-        )
+        # Use VirtualPath-based scanner (v2)
+        with ArchiveRoot(archive_path) as root:
+            return build_tree_v2(root, exclude=exclude, depth=depth)
 
     def get_display_name(self, path: str) -> str:
         """Get archive name with contents indicator."""

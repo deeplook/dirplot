@@ -12,7 +12,9 @@ from typing import TYPE_CHECKING
 from dirplot.scanner import Node, NO_EXT
 
 if TYPE_CHECKING:
-    from dirplot.vpath import VirtualPath
+    from dirplot.vpath import VirtualPath, StatResult
+else:
+    from dirplot.vpath import StatResult
 
 
 def build_tree_v2(
@@ -109,6 +111,47 @@ def _matches_exclude(name: str, patterns: frozenset[str]) -> bool:
             if fnmatch.fnmatch(name, pattern[3:]):
                 return True
     return False
+
+
+def build_tree_multi_v2(
+    roots: list[VirtualPath],
+    exclude: frozenset[str] = frozenset(),
+    depth: int | None = None,
+) -> Node:
+    """Build a Node tree from multiple VirtualPath roots.
+
+    Scans each path independently, then wraps them under their common parent.
+
+    Args:
+        roots: List of VirtualPath roots to scan
+        exclude: Glob patterns to skip
+        depth: Maximum recursion depth
+
+    Returns:
+        Root Node containing all scanned paths
+    """
+    import os
+
+    if not roots:
+        raise ValueError("At least one root is required")
+
+    # Find common parent
+    resolved = [r.path for r in roots]
+    common_str = os.path.commonpath(resolved) if len(resolved) > 1 else str(Path(resolved[0]).parent)
+    common = Path(common_str)
+
+    # Build synthetic root
+    synthetic_root = type('SyntheticPath', (), {
+        'name': common.name or '/',
+        'path': str(common),
+        'iterdir': lambda: iter(roots),
+        'is_dir': lambda: True,
+        'is_file': lambda: False,
+        'stat': lambda: StatResult(st_size=0),
+        'exists': lambda: True,
+    })()
+
+    return build_tree_v2(synthetic_root, exclude=exclude, depth=depth + 1 if depth else None)
 
 
 def scan_any_v2(

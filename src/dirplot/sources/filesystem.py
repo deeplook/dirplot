@@ -1,15 +1,21 @@
-"""Filesystem tree source implementation."""
+"""Filesystem tree source implementation using VirtualPath."""
 
 from __future__ import annotations
 
 from pathlib import Path
 
-from dirplot.scanner import Node, build_tree, build_tree_multi
+from dirplot.scanner import Node
+from dirplot.scanner_v2 import build_tree_v2, build_tree_multi_v2
 from dirplot.sources import register_source
+from dirplot.vpath import FileSystemPath
 
 
 class FileSystemSource:
-    """Tree source for local filesystem directories."""
+    """Tree source for local filesystem directories using VirtualPath.
+
+    This implementation uses the VirtualPath abstraction, unifying
+    filesystem handling with other path types.
+    """
 
     @property
     def name(self) -> str:
@@ -42,7 +48,7 @@ class FileSystemSource:
         exclude: frozenset[str] = frozenset(),
         depth: int | None = None,
     ) -> Node:
-        """Scan a local directory.
+        """Scan a local directory using VirtualPath.
 
         Args:
             path: Directory path to scan.
@@ -56,7 +62,7 @@ class FileSystemSource:
             FileNotFoundError: If the path doesn't exist.
             NotADirectoryError: If the path isn't a directory.
         """
-        root = Path(path)
+        root = FileSystemPath(path)
 
         if not root.exists():
             raise FileNotFoundError(f"Directory not found: {path}")
@@ -64,7 +70,7 @@ class FileSystemSource:
         if not root.is_dir():
             raise NotADirectoryError(f"Path is not a directory: {path}")
 
-        return build_tree(root, exclude=exclude, depth=depth)
+        return build_tree_v2(root, exclude=exclude, depth=depth)
 
     def get_display_name(self, path: str) -> str:
         """Get the resolved absolute path as display name."""
@@ -81,8 +87,8 @@ class FileSystemSource:
 
         This is a convenience method for scanning multiple roots.
         """
-        roots = [Path(p) for p in paths]
-        return build_tree_multi(roots, exclude=exclude, depth=depth)
+        vpaths = [FileSystemPath(p) for p in paths]
+        return build_tree_multi_v2(vpaths, exclude=exclude, depth=depth)
 
 
 # Register the source
