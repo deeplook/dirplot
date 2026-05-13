@@ -214,6 +214,8 @@ def main(
         raise typer.Exit()
 
     to_stdout = output is not None and str(output) == "-"
+    if to_stdout:
+        show = False
 
     github_token: str | None = os.environ.get("GITHUB_TOKEN")
     ssh_password: str | None = None

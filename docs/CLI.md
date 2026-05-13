@@ -59,8 +59,8 @@ dirplot map . --output treemap.svg --no-show
 dirplot map . --format svg --output treemap.svg --no-show
 
 # Pipe PNG bytes to stdout
-dirplot map . --output - --no-show | convert - -resize 50% small.png
-dirplot map . --output - --format svg --no-show > treemap.svg
+dirplot map . --output - | convert - -resize 50% small.png
+dirplot map . --output - --format svg > treemap.svg
 
 # Archive files — no unpacking needed
 dirplot map project.zip
@@ -496,14 +496,14 @@ open birdclaw.png
 
 ```bash
 docker run --rm dirplot dirplot map github://steipete/birdclaw \
-  --output - --no-show | imgcat
+  --output - | imgcat
 ```
 
 **Display inline (any iTerm2-compatible terminal, no extra tools):**
 
 ```bash
 docker run --rm dirplot dirplot map github://steipete/birdclaw \
-  --output - --no-show | python3 -c "
+  --output - | python3 -c "
 import sys, base64
 data = sys.stdin.buffer.read()
 sys.stdout.buffer.write(
