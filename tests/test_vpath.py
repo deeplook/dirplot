@@ -17,7 +17,8 @@ from dirplot.vpath import (
     ZipMember,
     open_path,
 )
-from dirplot.scanner_v2 import build_tree_v2, scan_any_v2
+from dirplot.scanner import build_tree_v2, build_tree_multi_v2
+from dirplot.vpath import open_path
 
 
 class TestStatResult:
@@ -230,7 +231,7 @@ class TestOpenPath:
         assert isinstance(result, ArchiveRoot)
 
 
-class TestScannerV2:
+class TestScannerWithVirtualPath:
     """Test scanner_v2 with VirtualPath."""
 
     def test_build_tree_v2_for_filesystem(self, tmp_path):
@@ -267,22 +268,25 @@ class TestScannerV2:
         level1 = next(c for c in tree.children if c.name == "level1")
         assert level1.is_dir is True
 
-    def test_scan_any_v2_for_filesystem(self, tmp_path):
-        """scan_any_v2 works for filesystem paths."""
+    def test_scan_with_open_path_for_filesystem(self, tmp_path):
+        """open_path + build_tree_v2 works for filesystem paths."""
         (tmp_path / "file.txt").write_text("x")
 
-        tree = scan_any_v2(tmp_path)
+        vpath = open_path(tmp_path)
+        tree = build_tree_v2(vpath)
 
         assert tree.is_dir is True
         assert any(c.name == "file.txt" for c in tree.children)
 
-    def test_scan_any_v2_for_zip(self, tmp_path):
-        """scan_any_v2 works for ZIP archives."""
+    def test_scan_with_open_path_for_zip(self, tmp_path):
+        """open_path + build_tree_v2 works for ZIP archives."""
         zip_path = tmp_path / "test.zip"
         with zipfile.ZipFile(zip_path, "w") as zf:
             zf.writestr("archive_file.txt", "archive content")
 
-        tree = scan_any_v2(zip_path)
+        vpath = open_path(zip_path)
+        with vpath:
+            tree = build_tree_v2(vpath)
 
         assert tree.name == "test.zip"
         assert any(c.name == "archive_file.txt" for c in tree.children)

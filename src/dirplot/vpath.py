@@ -98,6 +98,9 @@ class FileSystemPath:
         """Yield FileSystemPath for each entry."""
         try:
             for entry in os.scandir(self._path):
+                # Skip symlinks (matching original scanner behavior)
+                if entry.is_symlink():
+                    continue
                 yield FileSystemPath(entry.path)
         except PermissionError:
             return
@@ -108,13 +111,20 @@ class FileSystemPath:
     def is_file(self) -> bool:
         return self._path.is_file()
     
+    def is_symlink(self) -> bool:
+        return self._path.is_symlink()
+    
     def stat(self) -> StatResult:
-        st = self._path.stat()
-        return StatResult(
-            st_size=st.st_size,
-            st_mtime=st.st_mtime,
-            st_mode=st.st_mode,
-        )
+        try:
+            st = self._path.stat()
+            return StatResult(
+                st_size=st.st_size,
+                st_mtime=st.st_mtime,
+                st_mode=st.st_mode,
+            )
+        except OSError:
+            # Return default stat on error (matching original scanner behavior)
+            return StatResult(st_size=1, st_mtime=0, st_mode=0o644)
     
     def exists(self) -> bool:
         return self._path.exists()

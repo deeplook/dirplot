@@ -4,8 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from dirplot.scanner import Node
-from dirplot.scanner_v2 import build_tree_v2, build_tree_multi_v2
+from dirplot.scanner import Node, build_tree_v2, build_tree_multi_v2
 from dirplot.sources import register_source
 from dirplot.vpath import FileSystemPath
 

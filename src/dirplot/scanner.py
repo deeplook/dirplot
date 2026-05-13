@@ -1,11 +1,22 @@
-"""Directory scanning and tree construction."""
+"""Directory scanning and tree construction using VirtualPath.
+
+This module provides unified tree scanning for filesystem paths and archives
+using the VirtualPath abstraction. The public API remains unchanged for
+backward compatibility.
+"""
+
+from __future__ import annotations
 
 import math
+import os
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import TypedDict
+from typing import TYPE_CHECKING, TypedDict
 
 from dirplot.filters import matches_exclude
+
+if TYPE_CHECKING:
+    from dirplot.vpath import VirtualPath
 
 NO_EXT = "(no ext)"
 BREADCRUMB_SEP = " / "
@@ -48,6 +59,95 @@ class Node:
     original_size: int = 0  # set by apply_log_sizes; 0 means size was never transformed
 
 
+def _matches_exclude(name: str, path: str, patterns: frozenset[str]) -> bool:
+    """Check if name or path matches any exclude pattern."""
+    import fnmatch
+
+    for pattern in patterns:
+        if fnmatch.fnmatch(name, pattern):
+            return True
+        if fnmatch.fnmatch(path, pattern):
+            return True
+        # Also check without leading **/
+        if pattern.startswith("**/"):
+            if fnmatch.fnmatch(name, pattern[3:]):
+                return True
+    return False
+
+
+def build_tree_v2(
+    root: VirtualPath,
+    exclude: frozenset[str] = frozenset(),
+    depth: int | None = None,
+) -> Node:
+    """Build a Node tree from a VirtualPath (internal implementation)."""
+    if not root.exists():
+        raise FileNotFoundError(f"Path not found: {root.path}")
+
+    # Note: We don't check is_dir() here - we let iterdir() fail naturally
+    # This matches the original scanner behavior and handles edge cases in tests
+
+    children: list[Node] = []
+    total = 0
+
+    try:
+        entries = list(root.iterdir())
+    except PermissionError:
+        return Node(name=root.name, path=Path(root.path), size=0, is_dir=True)
+
+    for entry in sorted(entries, key=lambda e: e.name):
+        # Apply exclude patterns
+        if _matches_exclude(entry.name, entry.path, exclude):
+            continue
+        
+        # Skip symlinks (already filtered by FileSystemPath.iterdir, but check for safety)
+        if hasattr(entry, 'is_symlink') and entry.is_symlink():
+            continue
+        
+        # Skip special files that are neither files nor directories
+        if not entry.is_dir() and not entry.is_file():
+            continue
+
+        if entry.is_dir():
+            if depth is not None and depth <= 1:
+                child = Node(
+                    name=entry.name,
+                    path=Path(entry.path),
+                    size=1,
+                    is_dir=True,
+                )
+            else:
+                child = build_tree_v2(
+                    entry,
+                    exclude,
+                    None if depth is None else depth - 1,
+                )
+        elif entry.is_file():
+            stat = entry.stat()
+            size = max(1, stat.st_size)
+            ext = Path(entry.name).suffix.lower() if "." in entry.name else NO_EXT
+            child = Node(
+                name=entry.name,
+                path=Path(entry.path),
+                size=size,
+                is_dir=False,
+                extension=ext,
+            )
+        else:
+            continue
+
+        children.append(child)
+        total += child.size
+
+    return Node(
+        name=root.name,
+        path=Path(root.path),
+        size=total,
+        is_dir=True,
+        children=children,
+    )
+
+
 def build_tree(
     root: Path,
     exclude: frozenset[str] = frozenset(),
@@ -64,36 +164,9 @@ def build_tree(
     Returns:
         Root node whose ``size`` is the total size of all descendants.
     """
-    children: list[Node] = []
-    total = 0
-    try:
-        entries = list(root.iterdir())
-    except PermissionError:
-        return Node(name=root.name, path=root, size=0, is_dir=True)
+    from dirplot.vpath import FileSystemPath
 
-    for entry in sorted(entries, key=lambda e: e.name):
-        if matches_exclude(str(entry.relative_to(root)), exclude):
-            continue
-        if entry.is_symlink():
-            continue
-        if entry.is_dir():
-            if depth is not None and depth <= 1:
-                child = Node(name=entry.name, path=entry, size=1, is_dir=True)
-            else:
-                child = build_tree(entry, exclude, None if depth is None else depth - 1)
-        elif entry.is_file():
-            try:
-                size = max(1, entry.stat().st_size)
-            except OSError:
-                size = 1
-            ext = entry.suffix.lower() if entry.suffix else NO_EXT
-            child = Node(name=entry.name, path=entry, size=size, is_dir=False, extension=ext)
-        else:
-            continue
-        children.append(child)
-        total += child.size
-
-    return Node(name=root.name, path=root, size=total, is_dir=True, children=children)
+    return build_tree_v2(FileSystemPath(root), exclude=exclude, depth=depth)
 
 
 def prune_to_subtrees(node: Node, paths: set[str]) -> Node:
@@ -133,6 +206,52 @@ def prune_to_subtrees(node: Node, paths: set[str]) -> Node:
     )
 
 
+def build_tree_multi_v2(
+    roots: list[VirtualPath],
+    exclude: frozenset[str] = frozenset(),
+    depth: int | None = None,
+) -> Node:
+    """Build a Node tree from multiple VirtualPath roots (internal implementation)."""
+    if not roots:
+        raise ValueError("At least one root is required")
+
+    # Find common parent
+    resolved = [r.path for r in roots]
+    common_str = os.path.commonpath(resolved) if len(resolved) > 1 else str(Path(resolved[0]).parent)
+    common = Path(common_str)
+
+    # Build synthetic root
+    class SyntheticPath:
+        def __init__(self, name: str, path: str, children: list[VirtualPath]):
+            self.name = name
+            self.path = path
+            self._children = children
+
+        def iterdir(self):
+            return iter(self._children)
+
+        def is_dir(self):
+            return True
+
+        def is_file(self):
+            return False
+
+        def stat(self):
+            from dirplot.vpath import StatResult
+            return StatResult(st_size=0)
+
+        def exists(self):
+            return True
+
+    synthetic = SyntheticPath(
+        name=common.name or '/',
+        path=str(common),
+        children=roots,
+    )
+
+    return build_tree_v2(synthetic, exclude=exclude, depth=depth + 1 if depth else None)
+
+
 def build_tree_multi(
     roots: list[Path],
     exclude: frozenset[str] = frozenset(),
@@ -144,48 +263,13 @@ def build_tree_multi(
     represented as synthetic (empty-except-for-the-chain) nodes — they are
     not scanned for other contents.
     """
-    import os
+    from dirplot.vpath import FileSystemPath
 
-    resolved = [r.resolve() for r in roots]
+    if len(roots) == 1:
+        return build_tree(roots[0], exclude, depth)
 
-    if len(resolved) == 1:
-        return build_tree(resolved[0], exclude, depth)
-
-    common = Path(os.path.commonpath([str(r) for r in resolved]))
-
-    # Scan each target independently (dirs recurse; files become leaf nodes)
-    def _scan_one(r: Path) -> Node:
-        if r.is_dir():
-            return build_tree(r, exclude, depth)
-        try:
-            file_size = max(1, r.stat().st_size)
-        except OSError:
-            file_size = 1
-        ext = r.suffix.lower() if r.suffix else NO_EXT
-        return Node(name=r.name, path=r, size=file_size, is_dir=False, extension=ext)
-
-    scanned: list[tuple[Path, Node]] = [(r, _scan_one(r)) for r in resolved]
-
-    def _combine(parent: Path, targets: list[tuple[Path, Node]]) -> Node:
-        """Build a synthetic Node for *parent* containing exactly the given *targets*."""
-        groups: dict[Path, list[tuple[Path, Node]]] = {}
-        for tpath, tnode in targets:
-            direct = parent / tpath.relative_to(parent).parts[0]
-            groups.setdefault(direct, []).append((tpath, tnode))
-
-        children: list[Node] = []
-        for child_path, child_targets in sorted(groups.items(), key=lambda kv: kv[0].name):
-            if len(child_targets) == 1 and child_targets[0][0] == child_path:
-                # Direct child IS the scanned target
-                children.append(child_targets[0][1])
-            else:
-                # Need a synthetic intermediate node
-                children.append(_combine(child_path, child_targets))
-
-        total = sum(c.size for c in children)
-        return Node(name=parent.name, path=parent, size=total, is_dir=True, children=children)
-
-    return _combine(common, scanned)
+    vpaths = [FileSystemPath(r) for r in roots]
+    return build_tree_multi_v2(vpaths, exclude=exclude, depth=depth)
 
 
 def apply_log_sizes(node: Node, logscale: float = 4.0) -> None:

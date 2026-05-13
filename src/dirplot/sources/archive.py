@@ -5,8 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from dirplot.archives import is_archive_path
-from dirplot.scanner import Node
-from dirplot.scanner_v2 import build_tree_v2
+from dirplot.scanner import Node, build_tree_v2
 from dirplot.sources import register_source
 from dirplot.vpath import ArchiveRoot
 
@@ -48,7 +47,7 @@ class ArchiveSource:
         if not archive_path.exists():
             raise FileNotFoundError(f"Archive not found: {path}")
 
-        # Use VirtualPath-based scanner (v2)
+        # Use VirtualPath-based scanner
         with ArchiveRoot(archive_path) as root:
             return build_tree_v2(root, exclude=exclude, depth=depth)
 
