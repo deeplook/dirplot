@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import re
 import stat
 import sys
 import urllib.parse
@@ -45,7 +46,11 @@ def load_ssh_config(host: str) -> dict[str, Any]:
 
 def is_ssh_path(path_str: str) -> bool:
     """Return True if *path_str* looks like an SSH URI."""
-    return path_str.startswith("ssh://") or ("@" in path_str and ":" in path_str)
+    if path_str.startswith("ssh://"):
+        return True
+    # SCP syntax is user@host:/path. Do not treat local paths containing a
+    # drive colon or git ref marker (for example C:\repo@HEAD) as SSH.
+    return re.match(r"^[^/\\:@]+@[^/\\:@]+:.+", path_str) is not None
 
 
 def parse_ssh_path(path_str: str) -> tuple[str, str, str]:

@@ -86,7 +86,16 @@ def test_is_ssh_path_scp_style() -> None:
     assert is_ssh_path("user@host:/path")
 
 
-@pytest.mark.parametrize("path", ["/local/path", "relative/path", "."])
+@pytest.mark.parametrize(
+    "path",
+    [
+        "/local/path",
+        "relative/path",
+        ".",
+        r"C:\Users\runneradmin\AppData\Local\Temp\repo@HEAD",
+        "/tmp/repo@feature:branch",
+    ],
+)
 def test_is_ssh_path_local(path: str) -> None:
     assert not is_ssh_path(path)
 
