@@ -64,10 +64,6 @@ All remote backends return a `Node` tree using the same dataclass, so `create_tr
 
 To add a new command: create `src/dirplot/commands/mycommand.py` with a Typer app, then import and add it in `app.py`.
 
-## Architecture Notes
-
-For a detailed design document covering the SSH backend architecture (connection handling, authentication, fallbacks), see [docs/SSH_DESIGN.md](docs/SSH_DESIGN.md). This level of detail is not typical for other backends but serves as a reference for complex authentication flows.
-
 ## Submitting Changes
 
 1. Fork the repository and create a feature branch (`feature/my-thing`).
