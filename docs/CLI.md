@@ -1,5 +1,19 @@
 # CLI Reference
 
+- [dirplot map](#dirplot-map--treemap-for-any-directory-tree)
+- [dirplot metrics](#dirplot-metrics--directory-metrics)
+- [dirplot diff](#dirplot-diff--compare-two-directory-trees)
+- [dirplot watch](#dirplot-watch--live-watch-mode)
+- [dirplot replay](#dirplot-replay--event-log-replay)
+- [dirplot git](#dirplot-git--git-history-animation)
+- [dirplot read-meta](#dirplot-read-meta--read-embedded-metadata)
+- [dirplot demo](#dirplot-demo--run-example-commands)
+- [Inline terminal display](#inline-terminal-display)
+- [Running via Docker](#running-dirplot-via-docker)
+- [Troubleshooting](#troubleshooting)
+
+---
+
 ## `dirplot map` — treemap for any directory tree
 
 ```bash
@@ -20,7 +34,7 @@ dirplot map . --exclude .venv --exclude .git
 dirplot map . --exclude "*.egg-info" --exclude "**/__pycache__"
 dirplot map . --exclude src/vendor
 
-# Focus on named subtrees (allowlist complement to --exclude)
+# Focus on named subtrees (keeps only these paths; repeatable)
 dirplot map . --include src --include tests
 dirplot map . --include src/dirplot/fonts
 
@@ -42,21 +56,10 @@ dirplot map . --size 1920x1080 --output treemap.png --no-show
 dirplot map . --colormap Set2 --font-size 18
 
 # Log scale — use when one large file dominates and squashes everything else
-dirplot map . --log-scale 2
-
-# Disable cushion shading
-dirplot map . --no-cushion
-
-# Show a file-count legend
-dirplot map . --legend           # up to 20 entries
-dirplot map . --legend 10        # cap at 10
-
-# Disable breadcrumb collapsing
-dirplot map . --no-breadcrumbs
+dirplot map . --log-scale 4
 
 # Interactive SVG output (hover highlight + floating tooltip)
 dirplot map . --output treemap.svg --no-show
-dirplot map . --format svg --output treemap.svg --no-show
 
 # Pipe PNG bytes to stdout
 dirplot map . --output - | convert - -resize 50% small.png
@@ -65,7 +68,6 @@ dirplot map . --output - --format svg > treemap.svg
 # Archive files — no unpacking needed
 dirplot map project.zip
 dirplot map release.tar.gz --depth 2
-dirplot map app.jar
 
 # Remote sources
 dirplot map ssh://alice@prod.example.com/var/www
@@ -76,6 +78,8 @@ dirplot map docker://my-container:/app
 dirplot map pod://my-pod:/app
 ```
 
+See [EXAMPLES.md](EXAMPLES.md) for detailed examples of each remote backend and git history animation.
+
 ### Options
 
 | Flag | Short | Default | Description |
@@ -83,18 +87,18 @@ dirplot map pod://my-pod:/app
 | `--paths-from` | | — | File with path list (`tree`/`find` output); `-` for stdin |
 | `--output` | `-o` | — | Save to this path (PNG or SVG); `-` for stdout |
 | `--format` | `-f` | auto | Output format: `png` or `svg` |
-| `--show/--no-show` | | `--show` | Display the image after rendering |
-| `--inline` | | off | Display in terminal (auto-detected protocol; PNG only) |
+| `--show/--no-show` | | `--show` | Display the image after rendering (`--output -` implies `--no-show`) |
+| `--inline` | | off | Display in terminal (auto-detected protocol; PNG only) — see [Inline terminal display](#inline-terminal-display) |
 | `--legend [N]` | | off | File-count legend; `N` = max entries (default: 20) |
 | `--font-size` | | `12` | Directory label font size in pixels |
 | `--colormap` | | `tab20` | Matplotlib colormap for unknown extensions |
-| `--exclude` | `-e` | — | Pattern to exclude (repeatable): plain name, glob (``*.egg-info``), ``**`` glob, or relative path |
-| `--include` | | — | Show only this subtree (repeatable); supports nested paths; allowlist complement to `--exclude` |
+| `--exclude` | `-e` | — | Pattern to exclude (repeatable): plain name, glob (`*.egg-info`), `**` glob, or relative path |
+| `--include` | | — | Keep only these subtrees (repeatable, supports nested paths); the inverse of `--exclude` |
 | `--depth` | | unlimited | Maximum recursion depth |
 | `--size` | | terminal size | Output dimensions as `WIDTHxHEIGHT` (e.g. `1920x1080`) |
 | `--header/--no-header` | | `--header` | Print info lines before rendering |
 | `--cushion/--no-cushion` | | `--cushion` | Van Wijk cushion shading for a raised 3-D look |
-| `--log-scale` | | `0` (off) | Log-scale compression ratio; any value > 1 enables it |
+| `--log-scale` | | `0` (off) | Log-scale compression ratio; any value > 1 enables it (e.g. `4` = largest tile is at most 4× the smallest) |
 | `--breadcrumbs/--no-breadcrumbs` | | `--breadcrumbs` | Collapse single-child chains into `foo / bar / baz` labels |
 | `--metrics/--no-metrics` | | off | Print detailed metrics after scanning (same output as `dirplot metrics`) |
 | `--password-file` | | — | File containing archive password; prompted interactively if not supplied |
@@ -139,7 +143,7 @@ dirplot map . --metrics --no-show
   Files:      1,011
   Dirs:       70  (0 empty)
   Total size: 4.5 MB
-  Depth:      7
+  Depth:      7          ← maximum nesting level in the tree
   Scan time:  1.28s
   Top extensions (10) [by count]:
     .py                    962    2.3 MB
@@ -161,8 +165,8 @@ dirplot map . --metrics --no-show
 | `--top` | | `10` | Number of entries to show in each list |
 | `--sort-by` | | `count` | Sort top extensions by `count` (files) or `size` (bytes) |
 | `--json` / `--no-json` | | off | Output all metrics as JSON |
-| `--exclude` | `-e` | — | Pattern to exclude (repeatable): plain name, glob (``*.egg-info``), ``**`` glob, or relative path |
-| `--include` | | — | Show only this subtree (repeatable); allowlist complement to `--exclude` |
+| `--exclude` | `-e` | — | Pattern to exclude (repeatable): plain name, glob (`*.egg-info`), `**` glob, or relative path |
+| `--include` | | — | Keep only these subtrees (repeatable); the inverse of `--exclude` |
 | `--depth` | | unlimited | Maximum recursion depth |
 | `--paths-from` | | — | File with path list (`tree`/`find` output); `-` for stdin |
 | `--password-file` | | — | File containing archive password; prompted interactively if needed |
@@ -191,27 +195,21 @@ dirplot diff .                  # uncommitted changes in current repo
 dirplot diff /path/to/repo      # uncommitted changes in that repo
 ```
 
+**`@ref` syntax** — append `@<ref>` to any local path or GitHub URL to pin it to a specific commit, tag, or branch:
+
+```bash
+dirplot diff .@HEAD~5 .@HEAD           # last 5 commits
+dirplot diff .@abc1234 .@def5678       # two specific SHAs
+dirplot diff .@v1.0 .@v2.0             # two tags
+dirplot diff github://owner/repo@v1.0 github://owner/repo@v2.0   # GitHub tags
+```
+
 ```bash
 # Basic comparison — open in system viewer
 dirplot diff old/ new/
 
-# Uncommitted changes in current git/hg repo
-dirplot diff .
-
 # Uncommitted changes, only show changed files
 dirplot diff . --no-context
-
-# Compare two commits in the current repo
-dirplot diff .@HEAD~5 .@HEAD
-
-# Compare two git commits by SHA
-dirplot diff .@abc1234 .@def5678
-
-# Compare two GitHub tags
-dirplot diff github://owner/repo@v1.0 github://owner/repo@v2.0
-
-# Compare two archives
-dirplot diff release-1.0.tar.gz release-2.0.tar.gz
 
 # Compare an S3 prefix against a local directory
 dirplot diff s3://my-bucket/v1 ./v2
@@ -229,13 +227,13 @@ dirplot diff old/ new/ --light --output diff.svg --no-show
 |---|---|---|---|
 | `--output` | `-o` | — | Save to this path (PNG or SVG); `-` for stdout |
 | `--format` | `-f` | auto | Output format: `png` or `svg` |
-| `--show/--no-show` | | `--show` | Display the image after rendering |
+| `--show/--no-show` | | `--show` | Display the image after rendering (`--output -` implies `--no-show`) |
 | `--inline` | | off | Display in terminal (auto-detected protocol; PNG only) |
 | `--context/--no-context` | | `--context` | Include unchanged files in the treemap |
 | `--font-size` | | `12` | Directory label font size in pixels |
 | `--colormap` | | `tab20` | Colormap for unknown extensions |
-| `--exclude` | `-e` | — | Pattern to exclude (repeatable): plain name, glob (``*.egg-info``), ``**`` glob, or relative path |
-| `--include` | | — | Show only this subtree (repeatable); allowlist complement to `--exclude` |
+| `--exclude` | `-e` | — | Pattern to exclude (repeatable): plain name, glob (`*.egg-info`), `**` glob, or relative path |
+| `--include` | | — | Keep only these subtrees (repeatable); the inverse of `--exclude` |
 | `--depth` | | unlimited | Maximum recursion depth |
 | `--size` | | terminal size | Output dimensions as `WIDTHxHEIGHT` (e.g. `1920x1080`) |
 | `--cushion/--no-cushion` | | `--cushion` | Van Wijk cushion shading for a raised 3-D look |
@@ -288,10 +286,10 @@ dirplot watch src --snapshot treemap.png --event-log events.jsonl
 | `--log-scale` | `0` (off) | Log-scale compression ratio; any value > 1 enables it |
 | `--size` | terminal size | Output dimensions as `WIDTHxHEIGHT` |
 | `--depth` | — | Maximum recursion depth |
-| `--exclude` / `-e` | — | Pattern to exclude (repeatable): plain name, glob (``*.egg-info``), ``**`` glob, or relative path |
+| `--exclude` / `-e` | — | Pattern to exclude (repeatable): plain name, glob (`*.egg-info`), `**` glob, or relative path |
 | `--colormap` | `tab20` | Matplotlib colormap |
 | `--font-size` | `12` | Directory label font size in pixels |
-| `--cushion` / `--no-cushion` | on | Van Wijk cushion shading |
+| `--cushion/--no-cushion` | `--cushion` | Van Wijk cushion shading |
 
 ---
 
@@ -336,10 +334,10 @@ dirplot replay events.jsonl --output replay.png --total-duration 30 --fade-out -
 | `--log-scale` | `0` (off) | Log-scale compression ratio; any value > 1 enables it |
 | `--size` | terminal size | Output dimensions as `WIDTHxHEIGHT` |
 | `--depth` | — | Maximum directory depth |
-| `--exclude` / `-e` | — | Pattern to exclude (repeatable): plain name, glob (``*.egg-info``), ``**`` glob, or relative path |
+| `--exclude` / `-e` | — | Pattern to exclude (repeatable): plain name, glob (`*.egg-info`), `**` glob, or relative path |
 | `--colormap` | `tab20` | Matplotlib colormap |
 | `--font-size` | `12` | Directory label font size in pixels |
-| `--cushion` / `--no-cushion` | on | Van Wijk cushion shading |
+| `--cushion/--no-cushion` | `--cushion` | Van Wijk cushion shading |
 
 ---
 
@@ -360,8 +358,6 @@ For GitHub URLs, dirplot clones into a temporary directory (shallow when `--max-
 # Full git history as APNG or MP4
 dirplot git . --output history.apng --animate --exclude .git
 dirplot git . --output history.mp4 --animate
-dirplot git . --output history.mp4 --animate --crf 18           # higher quality
-dirplot git . --output history.mp4 --animate --codec libx265    # smaller file
 
 # Specific local branch
 dirplot git .@my-branch --output history.mp4 --animate
@@ -370,25 +366,18 @@ dirplot git .@my-branch --output history.mp4 --animate
 dirplot git . --output history.apng --animate \
   --range main~50..main --total-duration 30
 
-# Specific revision range at fixed resolution
-dirplot git /path/to/repo --output history.apng --animate \
-  --range v1.0..HEAD --size 1920x1080 --exclude node_modules
-
 # GitHub repo — no local clone needed
 dirplot git github://owner/repo --output history.apng --animate --max-commits 100
-dirplot git github://owner/repo@main --output history.apng --animate --max-commits 50
 
 # Filter by time period
 dirplot git . --output history.mp4 --animate --last 30d
 dirplot git . --output history.mp4 --animate --last 24h
-dirplot git github://owner/repo --output history.mp4 --animate --last 2w --max-commits 10
 
-# Fade out to black at the end (animate only)
-dirplot git . --output history.png --animate --fade-out
+# Fade out to black at the end
 dirplot git . --output history.mp4 --animate --fade-out --fade-out-duration 2.0
-dirplot git . --output history.png --animate --fade-out --fade-out-color transparent  # APNG/PNG only
-dirplot git . --output history.mp4 --animate --fade-out --fade-out-color "#1a1a2e"
 ```
+
+See [EXAMPLES.md — Git History Animation](EXAMPLES.md#git-history-animation) for more examples including video output.
 
 ### Options
 
@@ -411,10 +400,10 @@ dirplot git . --output history.mp4 --animate --fade-out --fade-out-color "#1a1a2
 | `--log-scale` | `0` (off) | Log-scale compression ratio; any value > 1 enables it |
 | `--size` | terminal size | Output dimensions as `WIDTHxHEIGHT` |
 | `--depth` | — | Maximum directory depth |
-| `--exclude` / `-e` | — | Pattern to exclude (repeatable): plain name, glob (``*.egg-info``), ``**`` glob, or relative path |
+| `--exclude` / `-e` | — | Pattern to exclude (repeatable): plain name, glob (`*.egg-info`), `**` glob, or relative path |
 | `--colormap` | `tab20` | Matplotlib colormap |
 | `--font-size` | `12` | Directory label font size in pixels |
-| `--cushion` / `--no-cushion` | on | Van Wijk cushion shading |
+| `--cushion/--no-cushion` | `--cushion` | Van Wijk cushion shading |
 | `--github-token-file` | `$GITHUB_TOKEN` | File containing GitHub personal access token |
 
 ---
@@ -474,6 +463,29 @@ Examples produced:
 
 ---
 
+## Inline terminal display
+
+The `--inline` flag renders the image directly in the terminal. The protocol is auto-detected at runtime.
+
+| Terminal | Platform | Protocol |
+|---|---|---|
+| [iTerm2](https://iterm2.com/) | macOS | iTerm2 |
+| [WezTerm](https://wezfurlong.org/wezterm/) | macOS, Linux, Windows | Kitty & iTerm2 |
+| [Warp](https://www.warp.dev/) | macOS, Linux | iTerm2 |
+| [Hyper](https://hyper.is/) | macOS, Linux, Windows | iTerm2 |
+| [Kitty](https://sw.kovidgoyal.net/kitty/) | macOS, Linux | Kitty |
+| [Ghostty](https://ghostty.org/) | macOS, Linux | Kitty |
+
+The default `--show` mode opens the image in the system viewer (`open` on macOS, `xdg-open` on Linux) and works in any terminal.
+
+> **Windows:** Common shells and terminal emulators (PowerShell, cmd, Windows Terminal) do not support inline image protocols. [WezTerm](https://wezfurlong.org/wezterm/) is currently the only mainstream Windows terminal with support (Kitty protocol). WSL2 is treated as Linux and has full support.
+
+> **AI coding assistants:** `--inline` does not work in Claude Code, Cursor, or GitHub Copilot Chat — these tools intercept terminal output as plain text. Use `--show` or `--output` instead.
+
+> **Tip:** In supported terminals, the rendered image can often be dragged directly out of the terminal window into another application.
+
+---
+
 ## Running dirplot via Docker
 
 Build the image once from the repo root:
@@ -514,26 +526,62 @@ sys.stdout.buffer.write(
 ```
 
 > **Note:** `--inline` does not work when running inside a container — dirplot cannot probe your host terminal from within Docker. Use `--output -` and display the bytes on the host side instead, as shown above.
+>
+> **Terminal size:** the container has no tty, so dirplot cannot detect your terminal dimensions. The default 1280×720 fallback is used unless you pass `--size WIDTHxHEIGHT` explicitly or set `-e COLUMNS=$(tput cols) -e LINES=$(tput lines)`.
 
 ---
 
-## Inline terminal display
+## Troubleshooting
 
-The `--inline` flag renders the image directly in the terminal. The protocol is auto-detected at runtime.
+### Image is the wrong size or too small in `--inline` mode
 
-| Terminal | Platform | Protocol |
-|---|---|---|
-| [iTerm2](https://iterm2.com/) | macOS | iTerm2 |
-| [WezTerm](https://wezfurlong.org/wezterm/) | macOS, Linux, Windows | Kitty & iTerm2 |
-| [Warp](https://www.warp.dev/) | macOS, Linux | iTerm2 |
-| [Hyper](https://hyper.is/) | macOS, Linux, Windows | iTerm2 |
-| [Kitty](https://sw.kovidgoyal.net/kitty/) | macOS, Linux | Kitty |
-| [Ghostty](https://ghostty.org/) | macOS, Linux | Kitty |
+dirplot reads the terminal pixel size via `TIOCGWINSZ`. This can fail or return wrong values when:
 
-The default `--show` mode opens the image in the system viewer (`open` on macOS, `xdg-open` on Linux) and works in any terminal.
+- **stdout is a pipe** (e.g. `uv run`, `nohup`, CI): pass `--size WIDTHxHEIGHT` explicitly, or set `COLUMNS` and `LINES` env vars.
+- **Inside Docker**: same as above — the container has no tty.
+- **`--inline` in Docker**: not supported; use `--output - | imgcat` instead (see [Running via Docker](#running-dirplot-via-docker)).
 
-> **Windows:** Common shells and terminal emulators (PowerShell, cmd, Windows Terminal) do not support inline image protocols. [WezTerm](https://wezfurlong.org/wezterm/) is currently the only mainstream Windows terminal with support (Kitty protocol). WSL2 is treated as Linux and has full support.
+### `--inline` shows nothing or garbled output
 
-> **AI coding assistants:** `--inline` does not work in Claude Code, Cursor, or GitHub Copilot Chat — these tools intercept terminal output as plain text. Use `--show` or `--output` instead.
+- Confirm your terminal is in the supported list above.
+- In tmux/screen, the inline protocol may be blocked. Try running dirplot in a bare terminal session.
+- AI coding tool terminals (Claude Code, Cursor, Copilot Chat) do not support inline images — use `--show` or `--output`.
 
-> **Tip:** In supported terminals, the rendered image can often be dragged directly out of the terminal window into another application.
+### GitHub rate limit errors
+
+Without a token, GitHub allows 60 unauthenticated API requests per IP per hour. Authenticate via:
+
+```bash
+gh auth login                        # Option 1: gh CLI (picked up automatically)
+export GITHUB_TOKEN=ghp_…            # Option 2: env var
+dirplot map github://… --github-token-file ~/.github-token   # Option 3: token file
+```
+
+See [EXAMPLES.md — GitHub Repositories](EXAMPLES.md#github-repositories) for full authentication details.
+
+### Large remote trees are slow or truncated
+
+- Use `--depth N` to limit recursion (start with `--depth 3`).
+- GitHub's Git Trees API truncates responses above ~100k entries; dirplot warns and renders what it received.
+- For SSH scans, slow hosts may time out on very large trees — use `--depth` to reduce the `find` traversal.
+- If one large file squashes everything else into tiny tiles, add `--log-scale 4`.
+
+### Archive errors
+
+- **`libarchive-c` import error**: the Python binding is installed but the system C library is missing. Install it:
+  ```bash
+  brew install libarchive        # macOS
+  sudo apt install libarchive-dev  # Debian/Ubuntu
+  ```
+- **Password-protected archive**: pass `--password-file <file>` or let dirplot prompt interactively. Use `--no-input` to fail instead of prompting.
+- **`.deb` / UDIF `.dmg` not supported**: see [ARCHIVES.md — Intentionally unsupported formats](ARCHIVES.md#intentionally-unsupported-formats).
+
+### MP4 output fails
+
+Ensure `ffmpeg` is installed and on `PATH`:
+
+```bash
+ffmpeg -version   # should print version info
+brew install ffmpeg   # macOS
+sudo apt install ffmpeg   # Debian/Ubuntu
+```

@@ -3,29 +3,70 @@
 ## Development Setup
 
 ```bash
-git clone https://github.com/deeplook/dirplot
+git clone -c credential.helper= https://github.com/deeplook/dirplot
 cd dirplot
-uv sync --all-extras
-uv run pre-commit install
+uv sync --all-extras   # install all dependencies including dev tools and extras
+uv run pre-commit install  # install git hooks for formatting/linting
+```
+
+## Running Tests
+
+```bash
+make test       # run the full test suite
+make coverage   # run with coverage report (target: 90% line coverage)
+```
+
+To run a specific test file or test:
+
+```bash
+uv run pytest tests/test_cli.py
+uv run pytest tests/test_drawing.py::test_cushion_shading -v
 ```
 
 ## Code Style
 
-This project uses [ruff](https://docs.astral.sh/ruff/) for linting and formatting, and [mypy](https://mypy.readthedocs.io/) for type checking.
+This project uses [ruff](https://docs.astral.sh/ruff/) for linting and formatting, and [mypy](https://mypy.readthedocs.io/) for type checking. Pre-commit hooks run these automatically on each commit.
 
 ```bash
 make format   # auto-format and fix lint issues
 make lint     # check only (no changes)
 ```
 
-## Testing
+## Code Organisation
 
-```bash
-make test       # run the test suite
-make coverage   # run with coverage report
+```
+src/dirplot/
+  app.py            — Typer app entry point; imports all subcommands
+  main.py           — CLI entry point called by the `dirplot` script
+  commands/
+    treemap.py      — `dirplot map` command
+    diff.py         — `dirplot diff` command
+    vcs.py          — `dirplot git` and `dirplot hg` commands
+    watch.py        — `dirplot watch` command
+    replay.py       — `dirplot replay` command
+    misc.py         — `dirplot demo`, `dirplot termsize`, `dirplot read-meta`
+  render_png.py     — PNG treemap renderer (Pillow)
+  render_svg.py     — SVG treemap renderer
+  layout.py         — squarified treemap layout algorithm
+  scanner.py        — local filesystem scanner and metrics
+  display.py        — inline terminal display (iTerm2 / Kitty protocols)
+  terminal.py       — terminal size detection
+  github.py         — GitHub Git Trees API backend
+  ssh.py            — SSH backend (paramiko)
+  s3.py             — AWS S3 backend (boto3)
+  docker.py         — Docker backend (docker exec)
+  k8s.py            — Kubernetes backend (kubectl exec)
+  archive.py        — archive reading (zip, tar, 7z, rar, libarchive)
+  node.py           — Node dataclass (shared tree representation)
 ```
 
-Target: 90 % line coverage.
+All remote backends return a `Node` tree using the same dataclass, so `create_treemap` and `create_treemap_svg` work identically regardless of source.
+
+To add a new command: create `src/dirplot/commands/mycommand.py` with a Typer app, then import and add it in `app.py`.
+
+## Architecture Notes
+
+For a detailed design document covering the SSH backend architecture (connection handling, authentication, fallbacks), see [docs/SSH_DESIGN.md](docs/SSH_DESIGN.md). This level of detail is not typical for other backends but serves as a reference for complex authentication flows.
 
 ## Submitting Changes
 

@@ -15,6 +15,7 @@
 
 - Squarified treemap layout; file area proportional to size; per-extension colours (GitHub Linguist palette for known types, configurable Matplotlib colormap for the rest).
 - PNG, animated PNG (APNG), MP4, and MOV output for single frames and animations; interactive SVG for static maps; renders at terminal pixel size or a custom `WIDTHxHEIGHT`.
+- **Inline terminal display** — renders directly into iTerm2, Kitty, Ghostty, WezTerm, and Warp without opening a separate window; protocol auto-detected.
 - **Animate git history** (`dirplot git`), **Mercurial history** (`dirplot hg`), and **replay filesystem event logs** (`dirplot replay`) — output APNG, MP4, or MOV. **Watch live filesystems** (`dirplot watch`) with optional snapshot and event logging.
 - **Scan metrics** (`dirplot metrics`) — file/dir counts, total size, depth, top extensions by count or size, largest files and directories with percentage of total; JSON output supported.
 - **Compare two trees** (`dirplot diff`) — treemap diff of any two sources (local dirs, GitHub repos, archives, S3, SSH, Docker, K8s, or two commits/tags); `dirplot diff .` shows uncommitted changes; files sized by B; colour-coded borders show added (green), removed (red), and changed (blue) files. Git/hg repos scan only tracked files; change detection uses blob hashes (LFS-aware).
@@ -35,19 +36,29 @@ pipx install dirplot
 pip install dirplot
 ```
 
-Optional extras: `pip install "dirplot[ssh]"`, `"dirplot[s3]"`, `"dirplot[libarchive]"`.
+**Optional extras** — install only what you need:
 
-`dirplot watch` uses [watchdog](https://github.com/gorakhargosh/watchdog) for filesystem monitoring — installed automatically as a dependency.
+| Extra | Enables | Install |
+|---|---|---|
+| `ssh` | Scan remote servers via SSH (adds [paramiko](https://www.paramiko.org/)) | `pip install "dirplot[ssh]"` |
+| `s3` | Scan AWS S3 buckets (adds [boto3](https://boto3.amazonaws.com/)) | `pip install "dirplot[s3]"` |
+| `libarchive` | Additional archive formats: `.tar.zst`, `.iso`, `.dmg`, `.rpm`, `.cab`, … (requires system [libarchive](https://libarchive.org/)) | `pip install "dirplot[libarchive]"` |
 
-`dirplot git` requires `git` on `PATH`; `dirplot hg` requires `hg` (Mercurial) on `PATH`. MP4 output (`dirplot git`, `dirplot hg`, `dirplot replay`) requires [ffmpeg](https://ffmpeg.org/) on `PATH`. `dirplot read-meta` on `.mp4` files also requires `ffprobe` (bundled with ffmpeg).
+**Other runtime requirements:**
+
+- `dirplot watch` — [watchdog](https://github.com/gorakhargosh/watchdog) is installed automatically.
+- `dirplot git` — requires `git` on `PATH`.
+- `dirplot hg` — requires `hg` (Mercurial) on `PATH`.
+- MP4 output (`dirplot git`, `dirplot hg`, `dirplot replay`) — requires [ffmpeg](https://ffmpeg.org/) on `PATH`.
+- `dirplot read-meta` on `.mp4` files — requires `ffprobe` (bundled with ffmpeg).
 
 ## Quick start
 
 ```bash
 dirplot map .                                                    # current directory
-dirplot map . --inline                                           # display in terminal
+dirplot map . --inline                                           # display in terminal (iTerm2/Kitty)
 dirplot map . --output treemap.png --no-show                     # save to file
-dirplot map . --log-scale 4 --inline                              # log scale (4× ratio), inline
+dirplot map . --log-scale 4 --inline                             # log scale (4× ratio), inline
 dirplot map github://pallets/flask                               # GitHub repo
 dirplot map docker://my-container:/app                           # Docker container
 dirplot map project.zip                                          # archive file
@@ -71,21 +82,29 @@ dirplot metrics . --sort-by size                                 # sort extensio
 dirplot metrics . --top 5 --json                                 # top-5 entries as JSON
 dirplot map . --metrics --no-show                                # treemap + metrics in one pass
 
-dirplot diff .                                                    # uncommitted changes (git/hg)
-dirplot diff . --no-context                                       # only show changed files
-dirplot diff .@HEAD~5 .@HEAD                                      # last 5 commits
-dirplot diff old/ new/                                            # compare two directories
-dirplot diff old/ new/ --output diff.png --no-show                # save to file
-dirplot diff github://owner/repo@v1 github://owner/repo@v2        # compare two GitHub tags
-dirplot diff archive_v1.tar.gz archive_v2.zip                     # compare two archives
+dirplot diff .                                                   # uncommitted changes (git/hg)
+dirplot diff . --no-context                                      # only show changed files
+dirplot diff .@HEAD~5 .@HEAD                                     # last 5 commits
+dirplot diff old/ new/                                           # compare two directories
+dirplot diff old/ new/ --output diff.png --no-show               # save to file
+dirplot diff github://owner/repo@v1 github://owner/repo@v2       # compare two GitHub tags
+dirplot diff archive_v1.tar.gz archive_v2.zip                    # compare two archives
+```
+
+**Docker** — build once, then pipe output to the host:
+
+```bash
+docker build -t dirplot .
+docker run --rm dirplot dirplot map github://steipete/birdclaw --output - | imgcat
 ```
 
 ## Documentation
 
 - [CLI reference](docs/CLI.md) — all commands, flags, and usage examples
-- [Remote access](docs/EXAMPLES.md) — SSH, S3, GitHub, Docker, Kubernetes
-- [Archives](docs/ARCHIVES.md) — supported formats and dependencies
+- [Remote access & examples](docs/EXAMPLES.md) — SSH, S3, GitHub, Docker, Kubernetes, git history animation
+- [Archive formats](docs/ARCHIVES.md) — supported formats and dependencies
 - [Python API](docs/API.md) — programmatic usage
+- [Troubleshooting](docs/CLI.md#troubleshooting) — common issues and fixes
 
 ## Development
 
