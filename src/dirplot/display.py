@@ -113,11 +113,12 @@ def _open_tty_write_text() -> tuple[TextIO, bool]:
         return sys.stdout, False
 
 
-def _display_iterm2(buf: io.BytesIO) -> None:
+def _display_iterm2(buf: io.BytesIO, cols: int | None = None) -> None:
     """Display the PNG inline using the iTerm2 escape sequence protocol."""
     data = buf.read()
     b64 = base64.b64encode(data).decode()
-    payload = f"\x1b]1337;File=inline=1;size={len(data)};preserveAspectRatio=1:{b64}\a"
+    width_param = f";width={cols}" if cols is not None else ""
+    payload = f"\x1b]1337;File=inline=1;size={len(data)}{width_param};preserveAspectRatio=1:{b64}\a"
     f, owned = _open_tty_write_text()
     try:
         f.write(payload)
@@ -147,13 +148,19 @@ def display_kitty(buf: io.BytesIO) -> None:
             out.close()
 
 
-def display_inline(buf: io.BytesIO) -> None:
-    """Display the PNG inline, auto-detecting the terminal graphics protocol."""
+def display_inline(buf: io.BytesIO, cols: int | None = None) -> None:
+    """Display the PNG inline, auto-detecting the terminal graphics protocol.
+
+    *cols* — when provided, hints the number of character columns the image
+    should fill (iTerm2 protocol only).  Pass the terminal column count when
+    the image was generated to fill the full terminal width so that pixel→cell
+    rounding differences (scrollbar, DPI) do not leave empty columns.
+    """
     protocol = _detect_inline_protocol()
     if protocol == "kitty":
         display_kitty(buf)
     else:
-        _display_iterm2(buf)
+        _display_iterm2(buf, cols=cols)
 
 
 def display_window(buf: io.BytesIO, title: str | None = None) -> None:

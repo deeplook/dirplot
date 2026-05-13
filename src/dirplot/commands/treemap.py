@@ -25,7 +25,7 @@ from dirplot.scanner import (
     tree_metrics,
 )
 from dirplot.svg_render import create_treemap_svg
-from dirplot.terminal import default_canvas_size
+from dirplot.terminal import default_canvas_size, get_terminal_size
 
 
 @contextmanager
@@ -282,6 +282,7 @@ def main(
     if show_metrics:
         typer.echo(tree_metrics(root_node, t_scan), err=to_stdout)
 
+    inline_cols: int | None = None
     if size is not None:
         try:
             w_str, h_str = size.lower().split("x", 1)
@@ -296,6 +297,8 @@ def main(
             _info(f"Output size: {width_px}x{height_px}px")
     else:
         width_px, height_px = default_canvas_size()
+        if inline:
+            inline_cols, *_ = get_terminal_size()
         if header:
             _info(f"Terminal size: {width_px}x{height_px}px")
 
@@ -361,6 +364,6 @@ def main(
                     tmp.write(buf.read())
                     webbrowser.open(Path(tmp.name).resolve().as_uri())
         elif inline:
-            display_inline(buf)
+            display_inline(buf, cols=inline_cols)
         else:
             display_window(buf, title=_display_title)
