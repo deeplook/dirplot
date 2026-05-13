@@ -9,7 +9,33 @@
 
 **dirplot** creates nested treemap images for directory trees. It can display them in the system image viewer or inline in the terminal (iTerm2 and Kitty protocols, auto-detected). It also animates git history, watches live filesystems, and scans remote sources.
 
+```bash
+pip install dirplot
+dirplot map .          # treemap of current directory, opens in system viewer
+dirplot map . --inline # display inline in terminal (iTerm2 / Kitty / Ghostty)
+```
+
 ![dirplot output](https://raw.githubusercontent.com/deeplook/dirplot/main/docs/dirplot.png)
+
+## Where to start
+
+| I want to… | Go to |
+|---|---|
+| Scan a local directory or archive | [Quick start](#quick-start) |
+| Scan a GitHub repo, S3 bucket, SSH host, or container | [Remote access & examples](docs/EXAMPLES.md) |
+| Animate git history or watch live filesystems | [Git History Animation](docs/EXAMPLES.md#git-history-animation) |
+| Use dirplot from Python | [Python API](docs/API.md) |
+| Run in Docker | [Running via Docker](docs/CLI.md#running-dirplot-via-docker) |
+| Fix an error | [Troubleshooting](docs/CLI.md#troubleshooting) |
+
+## How to run dirplot
+
+| Method | Command | Notes |
+|---|---|---|
+| Installed CLI | `dirplot map .` | After `pip install` / `uv tool install` |
+| No install (uv) | `uvx dirplot map .` | Runs the latest release ephemerally |
+| Python API | `from dirplot import build_tree, create_treemap` | See [API.md](docs/API.md) |
+| Docker | `docker run --rm dirplot dirplot map … --output -` | See [Docker](docs/CLI.md#running-dirplot-via-docker) |
 
 ## Features
 
