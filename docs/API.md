@@ -19,8 +19,9 @@ Path("treemap.png").write_bytes(buf.read())
 buf = create_treemap_svg(root, width_px=1920, height_px=1080, cushion=True)
 Path("treemap.svg").write_bytes(buf.read())
 
-# Log scale — compress large size differences before rendering.
-# Original byte counts are preserved in node.original_size for display.
+# Log scale — use when one large file dominates the layout and squashes everything
+# else into tiny slivers. Compresses size differences before rendering; original
+# byte counts are preserved in node.original_size for display.
 apply_log_sizes(root)
 buf = create_treemap(root, width_px=1920, height_px=1080)
 ```
@@ -42,6 +43,7 @@ In a Jupyter notebook, PNG output renders automatically via PIL:
 ```python
 from PIL import Image
 buf = create_treemap(root, width_px=1280, height_px=720)
+buf.seek(0)  # rewind before opening
 Image.open(buf)  # Jupyter renders PIL images automatically via _repr_png_()
 ```
 
@@ -79,7 +81,7 @@ print(json.dumps(data, indent=2))
     "dirs": int,             # total directory count
     "empty_dirs": int,       # directories with no children
     "total_size_bytes": int,
-    "depth": int,            # maximum tree depth
+    "depth": int,            # maximum nesting depth (root = 0, first-level children = 1, …)
     "scan_time_s": float,
     "top_extensions": [
         {"ext": str, "count": int, "size_bytes": int},
@@ -98,7 +100,7 @@ print(json.dumps(data, indent=2))
 
 ## Remote backends
 
-Each remote backend exposes a `build_tree_*` function that returns the same `Node` type accepted by `create_treemap`:
+Each remote backend exposes a `build_tree_*` function that returns the same `Node` type accepted by `create_treemap`. See [EXAMPLES.md](EXAMPLES.md) for full per-backend documentation and authentication details.
 
 ```python
 # GitHub
@@ -109,8 +111,11 @@ root, branch = build_tree_github("pallets", "flask", token="ghp_…", depth=4)
 from dirplot.ssh import connect, build_tree_ssh
 client = connect("prod.example.com", "alice", ssh_key="~/.ssh/prod_key")
 sftp = client.open_sftp()
-root = build_tree_ssh(sftp, "/var/www", depth=5)
-sftp.close(); client.close()
+try:
+    root = build_tree_ssh(sftp, "/var/www", depth=5)
+finally:
+    sftp.close()
+    client.close()
 
 # S3
 from dirplot.s3 import make_s3_client, build_tree_s3

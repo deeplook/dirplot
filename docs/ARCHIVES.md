@@ -9,62 +9,69 @@ dirplot map project.zip
 dirplot map release.tar.gz --depth 2
 dirplot map app.jar
 dirplot map backup.7z --exclude node_modules
+dirplot map secret.zip --password-file ~/pwd.txt   # password-protected
 ```
 
 ## Supported formats
 
-| Extension(s) | Treated as | Library |
+### Standard library (no extra install)
+
+| Extension(s) | Format |
+|---|---|
+| `.zip` | ZIP |
+| `.jar`, `.war`, `.ear` | ZIP (Java archives) |
+| `.whl` | ZIP (Python wheel) |
+| `.apk` | ZIP (Android package) |
+| `.epub` | ZIP (eBook) |
+| `.xpi` | ZIP (browser extension) |
+| `.nupkg` | ZIP (NuGet package) |
+| `.vsix` | ZIP (VS Code extension) |
+| `.ipa` | ZIP (iOS app package) |
+| `.aab` | ZIP (Android App Bundle) |
+| `.tar`, `.tar.gz`, `.tgz` | TAR |
+| `.tar.bz2`, `.tbz2` | TAR |
+| `.tar.xz`, `.txz` | TAR |
+
+ZIP and all its synonyms (`.jar`, `.whl`, `.nupkg`, etc.) use the same stdlib `zipfile` module — the format is identical, only the extension differs.
+
+### Bundled dependencies (included with dirplot)
+
+| Extension(s) | Format | Library |
 |---|---|---|
-| `.zip` | ZIP | `zipfile` (stdlib) |
-| `.jar`, `.war`, `.ear` | ZIP (Java archives) | `zipfile` (stdlib) |
-| `.whl` | ZIP (Python wheel) | `zipfile` (stdlib) |
-| `.apk` | ZIP (Android package) | `zipfile` (stdlib) |
-| `.epub` | ZIP (eBook) | `zipfile` (stdlib) |
-| `.xpi` | ZIP (browser extension) | `zipfile` (stdlib) |
-| `.nupkg` | ZIP (NuGet package) | `zipfile` (stdlib) |
-| `.vsix` | ZIP (VS Code extension) | `zipfile` (stdlib) |
-| `.ipa` | ZIP (iOS app package) | `zipfile` (stdlib) |
-| `.aab` | ZIP (Android App Bundle) | `zipfile` (stdlib) |
-| `.tar`, `.tar.gz`, `.tgz` | TAR | `tarfile` (stdlib) |
-| `.tar.bz2`, `.tbz2` | TAR | `tarfile` (stdlib) |
-| `.tar.xz`, `.txz` | TAR | `tarfile` (stdlib) |
-| `.7z` | 7-Zip | `py7zr` (bundled) |
-| `.rar` | RAR | `rarfile` (bundled) |
-| `.tar.zst`, `.tzst` | TAR + Zstandard | `libarchive-c` (bundled) |
-| `.iso` | ISO 9660 disc image | `libarchive-c` (bundled) |
-| `.cpio` | CPIO archive | `libarchive-c` (bundled) |
-| `.xar` | XAR / macOS package | `libarchive-c` (bundled) |
-| `.pkg` | macOS installer package (XAR) | `libarchive-c` (bundled) |
-| `.dmg` | macOS disk image | `libarchive-c` (bundled) |
-| `.img` | Raw/FAT disk image | `libarchive-c` (bundled) |
-| `.rpm` | RPM package (Red Hat / Fedora / SUSE) | `libarchive-c` (bundled) |
-| `.cab` | Microsoft Cabinet (Windows installers/drivers) | `libarchive-c` (bundled) |
-| `.lha`, `.lzh` | LHA/LZH (legacy, common in Japanese software) | `libarchive-c` (bundled) |
-| `.a`, `.ar` | Unix static library / generic `ar` archive | `libarchive-c` (bundled) |
+| `.7z` | 7-Zip | `py7zr` |
+| `.rar` | RAR | `rarfile` |
 
-ZIP and all its synonyms (`.jar`, `.whl`, `.nupkg`, etc.) are read with the
-same stdlib `zipfile` module — the format is identical, only the extension
-differs.
+### Requires system libarchive (see [below](#system-libarchive-requirement))
 
-`.tar.zst` and `.tzst` are routed through libarchive rather than stdlib
-`tarfile`, which only gained zstd support in Python 3.12. This ensures
-consistent behaviour across all supported Python versions (3.10+).
+| Extension(s) | Format |
+|---|---|
+| `.tar.zst`, `.tzst` | TAR + Zstandard |
+| `.iso` | ISO 9660 disc image |
+| `.cpio` | CPIO archive |
+| `.xar` | XAR / macOS package |
+| `.pkg` | macOS installer package (XAR) |
+| `.dmg` | macOS disk image (plain HFS+/FAT only — see [notes](#intentionally-unsupported-formats)) |
+| `.img` | Raw/FAT disk image |
+| `.rpm` | RPM package (Red Hat / Fedora / SUSE) |
+| `.cab` | Microsoft Cabinet (Windows installers/drivers) |
+| `.lha`, `.lzh` | LHA/LZH (legacy, common in Japanese software) |
+| `.a`, `.ar` | Unix static library / generic `ar` archive |
 
-Symlinks inside TAR archives are silently skipped. Dotfiles (members whose
-filename starts with `.`) are skipped in all formats, consistent with the
-behaviour of local and remote directory scans.
+`.tar.zst` / `.tzst` are routed through libarchive rather than stdlib `tarfile`, which only gained zstd support in Python 3.12. This ensures consistent behaviour across all supported Python versions (3.10+).
+
+Symlinks inside TAR archives are silently skipped. Dotfiles (members whose filename starts with `.`) are skipped in all formats, consistent with the behaviour of local and remote directory scans.
 
 ## Python dependencies
 
-`py7zr`, `rarfile`, and `libarchive-c` are regular dependencies — no extra
-install flag is needed:
+`py7zr` and `rarfile` are bundled with dirplot — no extra install is needed:
 
 ```bash
-pip install dirplot        # py7zr, rarfile, and libarchive-c included
+pip install dirplot        # py7zr and rarfile included
 ```
 
-`libarchive-c` is a thin Python binding to the system **libarchive** C
-library.  The library itself must be installed separately:
+## System libarchive requirement
+
+`libarchive-c` is also bundled as a Python binding, but it wraps the **system libarchive C library**, which must be installed separately. Without it, the formats in the libarchive table above are unavailable (dirplot will report a clear error).
 
 ```bash
 # macOS
@@ -79,31 +86,28 @@ sudo dnf install libarchive-devel
 
 On macOS the Homebrew-installed libarchive includes support for reading Apple
 disk images (`.dmg`), ISO 9660 (`.iso`), XAR/PKG (`.xar`, `.pkg`), CPIO
-(`.cpio`), and raw disk images (`.img`).  Support for individual formats may
+(`.cpio`), and raw disk images (`.img`). Support for individual formats may
 vary across Linux distributions depending on how their libarchive package was
 compiled.
 
-## RAR: system tool requirement
+## RAR: rar CLI not required at runtime
 
-`rarfile` reads RAR metadata in pure Python, but the `rar` CLI must be
-present on `PATH` if any **extraction** is attempted.  dirplot only reads
-member metadata (names and uncompressed sizes) and never extracts content,
-so the CLI is **not required at runtime**.
+`rarfile` reads RAR metadata in pure Python. The `rar` CLI only needs to be
+present if **extraction** is attempted — dirplot only reads member metadata
+(names and uncompressed sizes) and never extracts content, so the CLI is
+**not required at runtime**.
 
-The CLI *is* required to generate the RAR test fixture:
+The CLI *is* required to regenerate the RAR test fixture:
 
 ```bash
-# macOS
-brew install rar
-
-# then regenerate fixtures (uses rar a -r to recurse into subdirectories)
+brew install rar   # macOS
 python scripts/make_fixtures.py
 ```
 
-### macOS Gatekeeper
+### macOS Gatekeeper note
 
 After installing `rar` via Homebrew on macOS you may see the process killed
-with `SIGKILL` (exit status -9 / `signal 9`):
+with `SIGKILL` (exit status -9):
 
 ```
 subprocess.CalledProcessError: Command '['/opt/homebrew/bin/rar', ...]'
@@ -111,7 +115,7 @@ died with <Signals.SIGKILL: 9>.
 ```
 
 This is macOS Gatekeeper quarantining the binary because WinRAR is not
-notarized by Apple.  Remove the quarantine flag once:
+notarized by Apple. Remove the quarantine flag once:
 
 ```bash
 xattr -d com.apple.quarantine /opt/homebrew/bin/rar
@@ -121,16 +125,14 @@ After that the binary runs normally.
 
 ## Test fixtures
 
-`tests/fixtures/` contains one pre-built archive per format.  They are
+`tests/fixtures/` contains one pre-built archive per format. They are
 generated by:
 
 ```bash
 python scripts/make_fixtures.py
 ```
 
-The script creates a small sample tree (identical to the `sample_tree` pytest
-fixture) and archives it in every supported format.  The RAR fixture is
-skipped automatically if the `rar` CLI is not found.
+The script creates a small sample tree and archives it in every supported format. The RAR fixture is skipped automatically if the `rar` CLI is not found.
 
 The pytest `sample_archives` session fixture in `tests/conftest.py` regenerates
 the same files into a temporary directory at test-session start, so running the
@@ -139,10 +141,10 @@ script is not required for CI or for running the test suite locally.
 ## Intentionally unsupported formats
 
 **`.deb` (Debian/Ubuntu packages)** — a `.deb` file is an `ar` archive whose
-members are `debian-binary`, `control.tar.*`, and `data.tar.*`.  libarchive
+members are `debian-binary`, `control.tar.*`, and `data.tar.*`. libarchive
 sees only those three `ar` members, not the actual file tree inside
-`data.tar.*`.  Showing three opaque tarball blobs is not useful, so `.deb` is
-not registered as a supported input.  To inspect the contents, extract the
+`data.tar.*`. Showing three opaque tarball blobs is not useful, so `.deb` is
+not registered as a supported input. To inspect the contents, extract the
 `data.tar.*` member first:
 
 ```bash
@@ -152,13 +154,13 @@ dirplot map data.tar.gz
 
 **macOS UDIF disk images (`.dmg`)** — most modern macOS disk images use the
 proprietary UDIF format, which is not supported by the open-source libarchive.
-dirplot will report a clear error if the format is unrecognised.  Plain
+dirplot will report a clear error if the format is unrecognised. Plain
 HFS+/FAT images without UDIF wrapping may still be readable.
 
 ## Behaviour notes
 
 - **Root name**: the archive filename without its suffix is used as the root
-  node name.  For compound suffixes like `.tar.gz` both suffixes are stripped
+  node name. For compound suffixes like `.tar.gz` both suffixes are stripped
   (`release.tar.gz` → `release`).
 - **Zero-size members**: reported as 1 byte so they remain visible in the
   treemap.
@@ -167,11 +169,11 @@ HFS+/FAT images without UDIF wrapping may still be readable.
   scan are treated as regular files — they are not recursively introspected.
 - **Password-protected archives**: supported for zip, 7z, rar, and libarchive
   formats via `--password-file <FILE>` (pass a file containing the password to
-  avoid exposing it in shell history).  If no password is supplied and the
+  avoid exposing it in shell history). If no password is supplied and the
   archive is encrypted, dirplot will prompt interactively unless `--no-input`
   is set, in which case it exits with an error.
 - **`--exclude` matching**: for local directory scans, excludes are resolved
-  to absolute paths.  For archives, excludes are matched against the member's
+  to absolute paths. For archives, excludes are matched against the member's
   filename component and its full path string inside the archive (e.g.
   `--exclude META-INF` skips any member named `META-INF` or whose path starts
   with `META-INF/`).

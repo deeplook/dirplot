@@ -1,5 +1,17 @@
 # Examples
 
+- [Metrics](#metrics)
+- [Diff](#diff)
+- [Remote Access](#remote-access)
+  - [SSH](#remote-servers-via-ssh)
+  - [AWS S3](#aws-s3)
+  - [GitHub Repositories](#github-repositories)
+  - [Docker Containers](#docker-containers)
+  - [Kubernetes Pods](#kubernetes-pods)
+- [Git History Animation](#git-history-animation)
+
+---
+
 ## Metrics
 
 `dirplot metrics` scans a directory tree and prints a structured text summary — file/dir counts, total size, depth, scan time, top extensions (by count or size), and the largest files and directories with their percentage of total size. It accepts the same sources as `dirplot map`.
@@ -43,6 +55,14 @@ dirplot map . --metrics --no-show
 
 When a source is a **local git or hg repository**, only tracked files are scanned (untracked files are invisible, matching `git diff` / `hg diff` semantics). Change detection uses blob hash comparison, so edits that don't change file size are caught correctly. Git LFS files are handled transparently.
 
+**`@ref` syntax** — append `@<ref>` to any local path or GitHub URL to pin it to a specific commit, tag, or branch. Works with commit SHAs, tag names, and branch names:
+
+```bash
+dirplot diff .@HEAD~5 .@HEAD           # last 5 commits
+dirplot diff .@abc1234 .@def5678       # two commit SHAs
+dirplot diff .@v1.0 .@v2.0             # two tags in the current repo
+```
+
 ```bash
 # Uncommitted changes in the current repo (single-argument shorthand)
 dirplot diff .
@@ -53,9 +73,6 @@ dirplot diff . --no-context
 
 # Compare two commits in the current repo
 dirplot diff .@HEAD~5 .@HEAD
-
-# Compare two commits by SHA
-dirplot diff .@abc1234 .@def5678
 
 # Local directories (non-git)
 dirplot diff old/ new/
@@ -93,12 +110,12 @@ dirplot diff docker://app-v1:/app docker://app-v2:/app
 
 ## Remote Access
 
-*dirplot* can scan directory trees on remote sources (remote servers via SSH, AWS S3 buckets, Github repositories, Docker containers, and Kubernetes pods) without copying files locally. Remote backends are optional dependencies — install only what you need.
+*dirplot* can scan directory trees on remote sources (remote servers via SSH, AWS S3 buckets, GitHub repositories, Docker containers, and Kubernetes pods) without copying files locally. Remote backends are optional dependencies — install only what you need.
 
-> **Warning:** Remote trees can contain hundreds of thousands of files. Use `--depth N` to limit how far down the tree dirplot recurses until you have a feel for the size of the target.
+> **Warning:** Remote trees can contain hundreds of thousands of files. Use `--depth N` to limit how far down the tree dirplot recurses until you have a feel for the size of the target. Start with `--depth 3`.
 
 > **Tip:** If one large file (a binary, dataset, or build artifact) dominates the layout and squashes everything else into tiny slivers, add `--log-scale 4` to use log-scaled file sizes instead — this makes small files much more visible.
-> The value controls the max/min layout-size ratio after compression: `--log-scale 4` means the largest file's tile is at most 4× the smallest. Values in the range **2–10** are most useful; below 2 the effect is subtle, and above ~10 you get diminishing returns toward raw log scaling where the ratio loses its intuitive meaning.
+> The value controls the max/min layout-size ratio after compression: `--log-scale 4` means the largest file's tile is at most 4× the smallest. Values in the range **2–10** are most useful.
 
 ---
 
@@ -204,13 +221,15 @@ dirplot map s3://my-bucket/data --aws-profile prod --depth 3 --output s3.png --n
 
 ### Authentication
 
-boto3's standard credential chain is used automatically — no extra configuration needed if your environment is already set up for AWS:
+boto3's standard credential chain is used automatically — no extra configuration needed if your environment is already set up for AWS. Credentials are resolved in this order:
 
-1. `--aws-profile` / `AWS_PROFILE` env var — named profile from `~/.aws/config`
+1. `--aws-profile` (or `AWS_PROFILE` env var) — named profile from `~/.aws/config`
 2. `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` environment variables
 3. `~/.aws/credentials` file
 4. IAM instance role (on EC2 / ECS / Lambda)
 5. `--no-sign` — skip signing entirely for anonymous access to public buckets
+
+`--aws-profile` takes precedence over `AWS_PROFILE` and all lower-priority methods in the chain.
 
 ### Options
 
@@ -241,14 +260,14 @@ buf = create_treemap(root, width_px=1920, height_px=1080)
 
 ### Public buckets to explore
 
-These buckets are publicly accessible with `--no-sign`:
+These buckets are publicly accessible with `--no-sign`. Use `--depth 2` or `--depth 3` on large buckets to avoid long scan times.
 
-| Bucket | Contents |
-|---|---|
-| `s3://noaa-ghcn-pds` | NOAA Global Historical Climatology Network |
-| `s3://noaa-goes16` | NOAA GOES-16 weather satellite imagery |
-| `s3://sentinel-s2-l1c` | Copernicus Sentinel-2 satellite data (eu-central-1) |
-| `s3://1000genomes` | 1000 Genomes Project |
+| Bucket | Contents | Quick start |
+|---|---|---|
+| `s3://noaa-ghcn-pds` | NOAA Global Historical Climatology Network | `dirplot map s3://noaa-ghcn-pds --no-sign --depth 2` |
+| `s3://noaa-goes16` | NOAA GOES-16 weather satellite imagery | `dirplot map s3://noaa-goes16 --no-sign --depth 3` |
+| `s3://sentinel-s2-l1c` | Copernicus Sentinel-2 satellite data (eu-central-1) | `dirplot map s3://sentinel-s2-l1c --no-sign --depth 2` |
+| `s3://1000genomes` | 1000 Genomes Project | `dirplot map s3://1000genomes --no-sign --depth 3` |
 
 <figure>
   <img src="s3.png" alt="NOAA GHCN S3 bucket treemap">
@@ -360,64 +379,6 @@ buf = create_treemap(root, width_px=1920, height_px=1080)
   <img src="flask.png" alt="Flask repository treemap">
   <figcaption><code>dirplot map github://pallets/flask --legend</code></figcaption>
 </figure>
-
----
-
-## Git History Animation
-
-Replay a repository's commit history as an animated treemap. Each commit becomes one frame; changed tiles receive colour-coded highlight borders (green = created, blue = modified, red = deleted). Works with local repositories and with `github://` URLs — the repo is cloned into a temporary directory and removed on exit.
-
-### Usage
-
-```bash
-# Animate the full history of a local repo, write APNG
-dirplot git . --animate --output history.png
-
-# Last 50 commits, 30-second animation with time-proportional frame durations
-dirplot git . --animate --max-commits 50 --total-duration 30 --output history.png
-
-# Specific commit range from a GitHub repository, MP4 output, log scale
-dirplot git github://openclaw/openclaw --range 871e8882..8445c9a5 \
-  --animate --log-scale 4 --size 1920x1080 --output openclaw.mp4
-
-# Last 30 days of activity
-dirplot git . --animate --last 30d --output history.mp4
-```
-
-<figure>
-  <video src="https://github.com/user-attachments/assets/b30b3434-ff48-4a43-a363-620899b86ebb" autoplay loop muted playsinline width="100%"></video>
-  <figcaption><code>dirplot git github://openclaw/openclaw --range 871e8882..8445c9a5 --animate --log-scale 4 --size 1920x1080 -o openclaw-871e8882-8445c9a5.mp4</code></figcaption>
-</figure>
-
-### Options
-
-| Flag | Default | Description |
-|---|---|---|
-| `--range` | full history | Git revision range passed to `git log` (e.g. `main~50..main`) |
-| `--max-commits` | unlimited | Cap the number of commits processed |
-| `--last` | — | Relative time filter: `30d`, `24h`, `2w`, `3mo` |
-| `--total-duration` | — | Target total animation length in seconds (time-proportional frame durations) |
-| `--frame-duration` | 1000 ms | Fixed frame duration when `--total-duration` is not set |
-| `--workers` | all cores | Number of parallel render workers |
-| `--log-scale` | 0 (off) | Log-scale compression ratio; any value > 1 enables it (e.g. `4` means largest tile is at most 4× the smallest) |
-| `--dark` / `--light` | dark | Background and label colour scheme |
-| `--github-token-file` | `$GITHUB_TOKEN` | File containing token for private repos or to raise rate limits |
-
-### Python API
-
-> **Note:** The programmatic Python API is still evolving and may change between releases without notice. Pin a specific version if you depend on it. The CLI interface is stable.
-
-```python
-from dirplot.github import build_tree_github
-from dirplot.render_png import create_treemap
-import os
-
-root, ref = build_tree_github(
-    "openclaw", "openclaw",
-    token=os.environ.get("GITHUB_TOKEN"),
-)
-buf = create_treemap(root, width_px=1920, height_px=1080, cushion=True)
-```
 
 ---
 
@@ -561,4 +522,87 @@ root = build_tree_pod(
     depth=5,
 )
 buf = create_treemap(root, width_px=1920, height_px=1080)
+```
+
+---
+
+## Git History Animation
+
+Replay a repository's commit history as an animated treemap. Each commit becomes one frame; changed tiles receive colour-coded highlight borders (green = created, blue = modified, red = deleted). Works with local repositories and with `github://` URLs — the repo is cloned into a temporary directory and removed on exit.
+
+> **Requires** `git` on `PATH`. `ffmpeg` is required for MP4 output.
+
+### Creating a video or animation
+
+The typical workflow is:
+
+1. Choose a source (local repo or `github://` URL)
+2. Pick a time range (`--last 30d`, `--max-commits N`, or `--range v1..v2`)
+3. Choose an output format (`.apng` for lossless animation, `.mp4` for small file size)
+4. Set `--total-duration` for a fixed-length video with time-proportional frame spacing
+
+```bash
+# Animate the full history of a local repo, write APNG
+dirplot git . --animate --output history.png
+
+# Last 50 commits, 30-second animation with time-proportional frame durations
+dirplot git . --animate --max-commits 50 --total-duration 30 --output history.png
+
+# Specific commit range from a GitHub repository, MP4 output, log scale
+dirplot git github://openclaw/openclaw --range 871e8882..8445c9a5 \
+  --animate --log-scale 4 --size 1920x1080 --output openclaw.mp4
+
+# Last 30 days of activity
+dirplot git . --animate --last 30d --output history.mp4
+
+# Fade out to black at the end
+dirplot git . --animate --last 7d --total-duration 20 \
+  --fade-out --fade-out-duration 2.0 --output history.mp4
+```
+
+<figure>
+  <video src="https://github.com/user-attachments/assets/b30b3434-ff48-4a43-a363-620899b86ebb" autoplay loop muted playsinline width="100%"></video>
+  <figcaption><code>dirplot git github://openclaw/openclaw --range 871e8882..8445c9a5 --animate --log-scale 4 --size 1920x1080 -o openclaw-871e8882-8445c9a5.mp4</code></figcaption>
+</figure>
+
+### From live filesystem events
+
+To animate real-time filesystem activity (e.g. a build or test run), use `dirplot watch` + `dirplot replay`:
+
+```bash
+# 1. Record events while you work
+dirplot watch . --event-log events.jsonl
+
+# 2. Replay as a video (Ctrl-C watch first)
+dirplot replay events.jsonl --output timelapse.mp4 --total-duration 30
+```
+
+### Options
+
+| Flag | Default | Description |
+|---|---|---|
+| `--range` | full history | Git revision range passed to `git log` (e.g. `main~50..main`, `v1.0..HEAD`) |
+| `--max-commits` | unlimited | Cap the number of commits processed |
+| `--last` | — | Relative time filter: `30d`, `24h`, `2w`, `3mo` |
+| `--total-duration` | — | Target total animation length in seconds (time-proportional frame durations) |
+| `--frame-duration` | 1000 ms | Fixed frame duration when `--total-duration` is not set |
+| `--workers` | all cores | Number of parallel render workers |
+| `--log-scale` | 0 (off) | Log-scale compression ratio; any value > 1 enables it |
+| `--dark` / `--light` | dark | Background and label colour scheme |
+| `--github-token-file` | `$GITHUB_TOKEN` | File containing token for private repos or to raise rate limits |
+
+### Python API
+
+> **Note:** The programmatic Python API is still evolving and may change between releases without notice. Pin a specific version if you depend on it. The CLI interface is stable.
+
+```python
+from dirplot.github import build_tree_github
+from dirplot.render_png import create_treemap
+import os
+
+root, ref = build_tree_github(
+    "openclaw", "openclaw",
+    token=os.environ.get("GITHUB_TOKEN"),
+)
+buf = create_treemap(root, width_px=1920, height_px=1080, cushion=True)
 ```
