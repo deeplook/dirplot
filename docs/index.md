@@ -146,4 +146,4 @@ See [CONTRIBUTING.md](https://github.com/deeplook/dirplot/blob/main/CONTRIBUTING
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT — see [LICENSE](https://github.com/deeplook/dirplot/blob/main/LICENSE).
