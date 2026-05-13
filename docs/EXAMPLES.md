@@ -631,8 +631,8 @@ dirplot git . --animate --last 7d --total-duration 20 \
 ```
 
 <figure>
-  <video src="https://github.com/user-attachments/assets/b30b3434-ff48-4a43-a363-620899b86ebb" autoplay loop muted playsinline width="100%"></video>
-  <figcaption><code>dirplot git github://openclaw/openclaw --range 871e8882..8445c9a5 --animate --log-scale 4 --size 1920x1080 -o openclaw-871e8882-8445c9a5.mp4</code></figcaption>
+  <video src="https://raw.githubusercontent.com/deeplook/dirplot/main/docs/steipete-birdclaw.mp4" autoplay loop muted playsinline width="100%"></video>
+  <figcaption><code>dirplot git https://github.com/steipete/birdclaw --size 1000x600 --animate -o steipete-birdclaw.mp4</code></figcaption>
 </figure>
 
 ### From live filesystem events
