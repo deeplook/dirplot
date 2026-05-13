@@ -10,6 +10,7 @@ import typer
 
 from dirplot.archives import PasswordRequired, build_tree_archive, is_archive_path
 from dirplot.docker import build_tree_docker, is_docker_path, parse_docker_path
+from dirplot.gdrive import build_tree_gdrive, is_gdrive_path, parse_gdrive_path
 from dirplot.git_scanner import build_tree_git_ref, is_git_ref_path
 from dirplot.github import build_tree_github, is_github_path, parse_github_path
 from dirplot.k8s import build_tree_pod, is_pod_path, parse_pod_path
@@ -88,6 +89,7 @@ def scan_tree(
                     is_docker_path,
                     is_pod_path,
                     is_github_path,
+                    is_gdrive_path,
                     is_s3_path,
                     is_ssh_path,
                     is_archive_path,
@@ -113,6 +115,23 @@ def scan_tree(
         common_str = os.path.commonpath([str(p) for p in root_paths])
         _emit(f"Scanning {len(roots)} paths under {common_str} ...")
         root_node = build_tree_multi(root_paths, excluded, depth)
+    elif is_gdrive_path(root):
+        gdrive_folder_id = parse_gdrive_path(root)
+        label = f"gdrive://{gdrive_folder_id}" if gdrive_folder_id else "gdrive://"
+        _emit(f"Scanning {label} ...")
+        progress = [0]
+        try:
+            root_node = build_tree_gdrive(
+                gdrive_folder_id,
+                exclude=frozenset(exclude),
+                depth=depth,
+                _progress=progress,
+            )
+        except (FileNotFoundError, OSError) as exc:
+            typer.echo(f"Error: {exc}", err=True)
+            raise typer.Exit(1) from exc
+        if progress[0] >= 100:
+            print("", file=sys.stderr)
     elif is_docker_path(root):
         docker_container, docker_path = parse_docker_path(root)
         _emit(f"Scanning docker://{docker_container}:{docker_path} ...")
