@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **`--inline` fills terminal width in iTerm2** — the iTerm2 inline image protocol now
+  receives an explicit `width=<cols>` parameter so the image always fills the full column
+  count, regardless of pixel-to-cell rounding differences (scrollbar width, DPI).  Ghostty
+  and Kitty are unaffected.
+
 ### Changed
 
 - **`dirplot watch` simplified** — animation output removed from `watch`; use `dirplot replay`

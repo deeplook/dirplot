@@ -14,7 +14,7 @@ from dirplot.app import app
 from dirplot.defaults import DEFAULT_COLORMAP, DEFAULT_FONT_SIZE
 from dirplot.display import display_inline, display_window
 from dirplot.scanner import prune_to_subtrees
-from dirplot.terminal import default_canvas_size
+from dirplot.terminal import default_canvas_size, get_terminal_size
 
 # Border colours for diff status — applied to file tile borders only.
 # Fill colours remain the standard Linguist/colormap palette.
@@ -377,6 +377,7 @@ def diff_cmd(
 
     # Resolve output size
     to_stdout = output is not None and str(output) == "-"
+    inline_cols: int | None = None
     if size is not None:
         try:
             w_str, h_str = size.lower().split("x", 1)
@@ -387,6 +388,8 @@ def diff_cmd(
         _info(f"Output size: {width_px}x{height_px}px")
     else:
         width_px, height_px = default_canvas_size()
+        if inline:
+            inline_cols, *_ = get_terminal_size()
         _info(f"Terminal size: {width_px}x{height_px}px")
 
     # Resolve format
@@ -446,6 +449,6 @@ def diff_cmd(
                     tmp.write(buf.read())
                     webbrowser.open(Path(tmp.name).resolve().as_uri())
         elif inline:
-            display_inline(buf)
+            display_inline(buf, cols=inline_cols)
         else:
             display_window(buf, title=f"dirplot diff: {title_suffix}")
