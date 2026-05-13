@@ -271,7 +271,7 @@ These buckets are publicly accessible with `--no-sign`. Use `--depth 2` or `--de
 | `s3://1000genomes` | 1000 Genomes Project | `dirplot map s3://1000genomes --no-sign --depth 3` |
 
 <figure>
-  <img src="s3.png" alt="NOAA GHCN S3 bucket treemap">
+  <img src="../s3.png" alt="NOAA GHCN S3 bucket treemap">
   <figcaption><code>dirplot map s3://noaa-ghcn-pds --no-sign --depth 2</code></figcaption>
 </figure>
 
@@ -298,19 +298,19 @@ dirplot map github://FastAPI/FastAPI --output fastapi.png --no-show
 ```
 
 <figure>
-  <img src="fastapi.png" alt="FastAPI repository treemap">
+  <img src="../fastapi.png" alt="FastAPI repository treemap">
   <figcaption><code>dirplot map github://FastAPI/FastAPI</code></figcaption>
 </figure>
 
 <!-- dirplot map github://torvalds/linux --inline -->
 
 <figure>
-  <img src="python.png" alt="CPython repository treemap">
+  <img src="../python.png" alt="CPython repository treemap">
   <figcaption><code>dirplot map github://python/cpython</code></figcaption>
 </figure>
 
 <figure>
-  <img src="pypy.png" alt="PyPy repository treemap">
+  <img src="../pypy.png" alt="PyPy repository treemap">
   <figcaption><code>dirplot map github://pypy/pypy</code></figcaption>
 </figure>
 
@@ -377,7 +377,7 @@ buf = create_treemap(root, width_px=1920, height_px=1080)
 ```
 
 <figure>
-  <img src="flask.png" alt="Flask repository treemap">
+  <img src="../flask.png" alt="Flask repository treemap">
   <figcaption><code>dirplot map github://pallets/flask --legend</code></figcaption>
 </figure>
 
@@ -475,7 +475,7 @@ docker rm -f pg-demo
 ```
 
 <figure>
-  <img src="docker.png" alt="Postgres container /usr treemap">
+  <img src="../docker.png" alt="Postgres container /usr treemap">
   <figcaption><code>dirplot map docker://pg-demo:/usr --log-scale 4</code></figcaption>
 </figure>
 
@@ -550,7 +550,7 @@ kubectl delete pod pg-demo --grace-period=0
 ```
 
 <figure>
-  <img src="k8s.png" alt="Postgres pod /var treemap">
+  <img src="../k8s.png" alt="Postgres pod /var treemap">
   <figcaption><code>dirplot map pod://pg-demo/var/</code></figcaption>
 </figure>
 
