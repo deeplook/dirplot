@@ -1,4 +1,8 @@
-"""Unified tree-scanning helper shared by the map and metrics commands."""
+"""Unified tree-scanning helper shared by the map and metrics commands.
+
+This module now uses the unified TreeSource protocol for all scanning operations.
+Legacy imports are maintained for backwards compatibility during transition.
+"""
 
 import os
 import sys
@@ -8,6 +12,8 @@ from pathlib import Path
 
 import typer
 
+# Import all sources to ensure they self-register
+from dirplot import sources  # noqa: F401
 from dirplot.archives import PasswordRequired, build_tree_archive, is_archive_path
 from dirplot.docker import build_tree_docker, is_docker_path, parse_docker_path
 from dirplot.gdrive import build_tree_gdrive, is_gdrive_path, parse_gdrive_path
@@ -17,7 +23,36 @@ from dirplot.k8s import build_tree_pod, is_pod_path, parse_pod_path
 from dirplot.pathlist import parse_pathlist
 from dirplot.s3 import build_tree_s3, is_s3_path, make_s3_client, parse_s3_path
 from dirplot.scanner import NO_EXT, Node, build_tree, build_tree_multi
+from dirplot.sources import registry as source_registry
 from dirplot.ssh import build_tree_ssh, connect, is_ssh_path, parse_ssh_path
+
+
+def scan_with_unified_sources(
+    root: str,
+    *,
+    exclude: frozenset[str] = frozenset(),
+    depth: int | None = None,
+) -> Node | None:
+    """Try to scan using the unified TreeSource registry.
+
+    This is the new preferred way to scan paths. It automatically detects
+    the source type and uses the appropriate scanner.
+
+    Args:
+        root: Path/URL to scan.
+        exclude: Glob patterns to skip.
+        depth: Maximum recursion depth.
+
+    Returns:
+        Root node if a source can handle the path, None otherwise.
+    """
+    try:
+        # Check if any source can handle this path
+        source = source_registry.find_source(root)
+        return source.scan(root, exclude=exclude, depth=depth)
+    except ValueError:
+        # No source found
+        return None
 
 
 def scan_tree(
@@ -275,33 +310,73 @@ def scan_tree(
             typer.echo(f"Error: {exc}", err=True)
             raise typer.Exit(1) from exc
     else:
-        root_path = Path(root)
-        if not root_path.exists():
-            typer.echo(f"Path does not exist: {root}", err=True)
-            raise typer.Exit(1)
-        if not root_path.is_dir():
-            if not root_path.is_file():
-                typer.echo(f"Not a file or directory: {root}", err=True)
-                raise typer.Exit(1)
-            rp = root_path.resolve()
-            try:
-                file_size = max(1, rp.stat().st_size)
-            except OSError:
-                file_size = 1
-            ext = rp.suffix.lower() if rp.suffix else NO_EXT
-            file_node = Node(name=rp.name, path=rp, size=file_size, is_dir=False, extension=ext)
-            root_node = Node(
-                name=rp.parent.name,
-                path=rp.parent,
-                size=file_size,
-                is_dir=True,
-                children=[file_node],
+        # Try unified sources first (new architecture)
+        try:
+            unified_result = scan_with_unified_sources(
+                root, exclude=frozenset(exclude), depth=depth
             )
-            _emit(f"Scanning {root} ...")
+        except FileNotFoundError as exc:
+            typer.echo(f"Path does not exist: {root}", err=True)
+            raise typer.Exit(1) from exc
+        except NotADirectoryError as exc:
+            # Handle single file case - construct tree directly
+            root_path = Path(root)
+            if root_path.is_file():
+                rp = root_path.resolve()
+                try:
+                    file_size = max(1, rp.stat().st_size)
+                except OSError:
+                    file_size = 1
+                ext = rp.suffix.lower() if rp.suffix else NO_EXT
+                file_node = Node(name=rp.name, path=rp, size=file_size, is_dir=False, extension=ext)
+                root_node = Node(
+                    name=rp.parent.name,
+                    path=rp.parent,
+                    size=file_size,
+                    is_dir=True,
+                    children=[file_node],
+                )
+                _emit(f"Scanning {root} ...")
+                # Skip the rest of the else block - we already have root_node
+                t_scan = time.monotonic() - t_scan_start
+                return root_node, t_scan, display_title
+            else:
+                typer.echo(f"Not a file or directory: {root}", err=True)
+                raise typer.Exit(1) from exc
+
+        if unified_result is not None:
+            source = source_registry.find_source(root)
+            _emit(f"Scanning {source.get_display_name(root)} ...")
+            root_node = unified_result
         else:
-            excluded = frozenset(exclude)
-            _emit(f"Scanning {root} ...")
-            root_node = build_tree(root_path.resolve(), excluded, depth)
+            # Fall back to legacy filesystem handling
+            root_path = Path(root)
+            if not root_path.exists():
+                typer.echo(f"Path does not exist: {root}", err=True)
+                raise typer.Exit(1)
+            if not root_path.is_dir():
+                if not root_path.is_file():
+                    typer.echo(f"Not a file or directory: {root}", err=True)
+                    raise typer.Exit(1)
+                rp = root_path.resolve()
+                try:
+                    file_size = max(1, rp.stat().st_size)
+                except OSError:
+                    file_size = 1
+                ext = rp.suffix.lower() if rp.suffix else NO_EXT
+                file_node = Node(name=rp.name, path=rp, size=file_size, is_dir=False, extension=ext)
+                root_node = Node(
+                    name=rp.parent.name,
+                    path=rp.parent,
+                    size=file_size,
+                    is_dir=True,
+                    children=[file_node],
+                )
+                _emit(f"Scanning {root} ...")
+            else:
+                excluded = frozenset(exclude)
+                _emit(f"Scanning {root} ...")
+                root_node = build_tree(root_path.resolve(), excluded, depth)
 
     t_scan = time.monotonic() - t_scan_start
     return root_node, t_scan, display_title
