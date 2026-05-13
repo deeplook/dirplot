@@ -23,6 +23,7 @@ dirplot map . --inline # display inline in terminal (iTerm2 / Kitty / Ghostty)
 |---|---|
 | Scan a local directory or archive | [Quick start](#quick-start) |
 | Scan a GitHub repo, S3 bucket, SSH host, or container | [Remote access & examples](docs/EXAMPLES.md) |
+| Scan Google Drive | [Google Drive](docs/EXAMPLES.md#google-drive) |
 | Animate git history or watch live filesystems | [Git History Animation](docs/EXAMPLES.md#git-history-animation) |
 | Use dirplot from Python | [Python API](docs/API.md) |
 | Run in Docker | [Running via Docker](docs/CLI.md#running-dirplot-via-docker) |
@@ -45,7 +46,7 @@ dirplot map . --inline # display inline in terminal (iTerm2 / Kitty / Ghostty)
 - **Animate git history** (`dirplot git`), **Mercurial history** (`dirplot hg`), and **replay filesystem event logs** (`dirplot replay`) — output APNG, MP4, or MOV. **Watch live filesystems** (`dirplot watch`) with optional snapshot and event logging.
 - **Scan metrics** (`dirplot metrics`) — file/dir counts, total size, depth, top extensions by count or size, largest files and directories with percentage of total; JSON output supported.
 - **Compare two trees** (`dirplot diff`) — treemap diff of any two sources (local dirs, GitHub repos, archives, S3, SSH, Docker, K8s, or two commits/tags); `dirplot diff .` shows uncommitted changes; files sized by B; colour-coded borders show added (green), removed (red), and changed (blue) files. Git/hg repos scan only tracked files; change detection uses blob hashes (LFS-aware).
-- Scan **SSH hosts**, **AWS S3**, **GitHub repos** (public and private), **Docker containers**, and **Kubernetes pods** — no extra deps beyond the respective CLI.
+- Scan **SSH hosts**, **AWS S3**, **GitHub repos** (public and private), **Docker containers**, **Kubernetes pods**, and **Google Drive** — no extra deps beyond the respective CLI.
 - Read **archives** directly (zip, tar, 7z, rar, jar, whl, …) without unpacking.
 - Works on macOS, Linux, and Windows (WSL2 fully supported).
 
@@ -86,6 +87,7 @@ dirplot map . --inline                                           # display in te
 dirplot map . --output treemap.png --no-show                     # save to file
 dirplot map . --log-scale 4 --inline                             # log scale (4× ratio), inline
 dirplot map github://pallets/flask                               # GitHub repo
+dirplot map gdrive://                                            # Google Drive root (requires gog)
 dirplot map docker://my-container:/app                           # Docker container
 dirplot map project.zip                                          # archive file
 tree src/ | dirplot map                                          # pipe tree output

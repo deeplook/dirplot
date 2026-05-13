@@ -6,6 +6,7 @@
   - [SSH](#remote-servers-via-ssh)
   - [AWS S3](#aws-s3)
   - [GitHub Repositories](#github-repositories)
+  - [Google Drive](#google-drive)
   - [Docker Containers](#docker-containers)
   - [Kubernetes Pods](#kubernetes-pods)
 - [Git History Animation](#git-history-animation)
@@ -379,6 +380,75 @@ buf = create_treemap(root, width_px=1920, height_px=1080)
   <img src="flask.png" alt="Flask repository treemap">
   <figcaption><code>dirplot map github://pallets/flask --legend</code></figcaption>
 </figure>
+
+---
+
+## Google Drive
+
+Scan a Google Drive using the [gog CLI](https://gogcli.sh/) — a unified Google Workspace CLI that handles OAuth2 authentication. No extra Python dependency is needed; dirplot shells out to `gog` the same way the Docker backend uses `docker exec`.
+
+### Setup
+
+```bash
+# Install gog
+brew install gogcli   # macOS
+
+# Authenticate once (opens browser for OAuth2)
+gog auth
+```
+
+### Usage
+
+```bash
+# Scan your entire Drive (My Drive + shared drives)
+dirplot map gdrive://
+
+# Scan with depth limit (recommended for large drives)
+dirplot map gdrive:// --depth 3
+
+# Scan a specific folder by its Drive folder ID
+dirplot map gdrive://1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms
+
+# Save to file
+dirplot map gdrive:// --depth 4 --output drive.png --no-show
+
+# Display inline in terminal
+dirplot map gdrive:// --depth 3 --log-scale 4 --inline
+```
+
+To find a folder ID: open the folder in Google Drive in your browser — the ID is the long string at the end of the URL (`https://drive.google.com/drive/folders/<FOLDER_ID>`).
+
+### Notes
+
+- **Google-native formats** (Docs, Sheets, Slides, Forms, …) have no byte size in the Drive API. dirplot shows them as 1 byte so they remain visible as tiles rather than disappearing.
+- **Authentication** is handled entirely by `gog`. Run `gog auth` once; tokens are cached and refreshed automatically.
+- **Large drives** can contain tens of thousands of files. Use `--depth N` to limit the scan until you have a feel for the size.
+- **Dotfiles** and dot-directories are skipped, consistent with local scanning behaviour.
+
+### Options
+
+| Flag | Default | Description |
+|---|---|---|
+| `--depth` | unlimited | Maximum recursion depth |
+| `--exclude` | — | Path pattern to skip (repeatable) |
+| `--log-scale` | 0 (off) | Useful when a few large files dominate the layout |
+
+### Python API
+
+> **Note:** The programmatic Python API is still evolving and may change between releases without notice. Pin a specific version if you depend on it. The CLI interface is stable.
+
+```python
+from dirplot.gdrive import build_tree_gdrive
+from dirplot.render_png import create_treemap
+
+# Scan from Drive root
+root = build_tree_gdrive(depth=3)
+
+# Scan a specific folder
+root = build_tree_gdrive("1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms", depth=5)
+
+buf = create_treemap(root, width_px=1920, height_px=1080)
+```
 
 ---
 

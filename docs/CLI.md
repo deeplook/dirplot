@@ -74,6 +74,8 @@ dirplot map ssh://alice@prod.example.com/var/www
 dirplot map s3://noaa-ghcn-pds --no-sign
 dirplot map github://pallets/flask
 dirplot map github://torvalds/linux@v6.12/Documentation
+dirplot map gdrive://                           # Google Drive root (requires gog)
+dirplot map gdrive://FOLDER_ID                  # specific Drive folder
 dirplot map docker://my-container:/app
 dirplot map pod://my-pod:/app
 ```
