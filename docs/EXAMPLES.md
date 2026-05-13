@@ -631,7 +631,7 @@ dirplot git . --animate --last 7d --total-duration 20 \
 ```
 
 <figure>
-  <video src="https://media.githubusercontent.com/media/deeplook/dirplot/main/docs/steipete-birdclaw.mp4" controls loop muted playsinline width="100%"></video>
+  <video src="https://media.githubusercontent.com/media/deeplook/dirplot/main/docs/steipete-birdclaw.mp4#t=12" controls loop muted playsinline width="100%"></video>
   <figcaption><code>dirplot git https://github.com/steipete/birdclaw --size 1000x600 --animate -o steipete-birdclaw.mp4</code></figcaption>
 </figure>
 
