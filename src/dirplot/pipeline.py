@@ -11,10 +11,13 @@ import io
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Callable, Literal, Protocol
+from typing import TYPE_CHECKING, Callable, Literal, Protocol
 
 from dirplot.scanner import Node
 from dirplot.sources import scan_any
+
+if TYPE_CHECKING:
+    from dirplot.console import ConsoleSession
 
 
 class Transform(Protocol):
@@ -113,6 +116,7 @@ class PipelineConfig:
 
     # Progress/logging
     log_callback: Callable[[str], None] | None = None
+    console: ConsoleSession | None = None  # Injected or auto-detected
 
 
 class RenderingPipeline:
@@ -132,6 +136,18 @@ class RenderingPipeline:
 
     def __init__(self, config: PipelineConfig):
         self.config = config
+        self._console: ConsoleSession | None = None
+
+    @property
+    def console(self) -> ConsoleSession:
+        """Get console session (detected or injected)."""
+        if self._console is None:
+            if self.config.console:
+                self._console = self.config.console
+            else:
+                from dirplot.console import ConsoleSession
+                self._console = ConsoleSession.detect()
+        return self._console
 
     def _log(self, msg: str) -> None:
         """Log a message if callback is configured."""
@@ -248,28 +264,19 @@ class RenderingPipeline:
 
     def display(self, buf: io.BytesIO, title: str | None = None) -> None:
         """Display the rendered buffer according to config."""
-        # Save to file if specified
+        # Determine display mode
         if self.config.output:
+            # Save to file
             self.config.output.write_bytes(buf.read())
             buf.seek(0)
             self._log(f"Saved to {self.config.output}")
 
-            # Don't show if outputting to file (unless show=True explicitly)
             if not self.config.show:
-                return
+                return  # File only, no display
 
-        # Show inline or window
-        if self.config.show:
-            if self.config.inline:
-                from dirplot.display import display_inline
-                from dirplot.terminal import get_terminal_size
-
-                cols, _ = get_terminal_size()
-                display_inline(buf, cols=cols)
-            else:
-                from dirplot.display import display_window
-
-                display_window(buf, title=title)
+        # Use console session for display
+        mode = "inline" if self.config.inline else "window"
+        self.console.display(buf, mode=mode, title=title)
 
     def run(self) -> io.BytesIO:
         """Execute the full pipeline: scan → transform → render → display.
