@@ -377,6 +377,8 @@ def diff_cmd(
 
     # Resolve output size
     to_stdout = output is not None and str(output) == "-"
+    if to_stdout:
+        show = False
     inline_cols: int | None = None
     if size is not None:
         try:

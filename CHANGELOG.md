@@ -16,6 +16,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **`--output -` implies `--no-show`** — piping to stdout no longer opens a viewer window;
+  pass `--show` explicitly to override.
+
 - **`dirplot watch` simplified** — animation output removed from `watch`; use `dirplot replay`
   on a `--event-log` file to produce APNG/MP4. New `--snapshot FILE` option writes the current
   treemap PNG on each filesystem change (for external tools or wallpaper updaters).
@@ -466,8 +469,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   bytes to stdout, enabling piping to other tools. Header and progress lines are
   automatically redirected to stderr to keep the binary stream clean.
   ```bash
-  dirplot map . --output - --no-show | convert - -resize 50% small.png
-  dirplot map . --output - --format svg --no-show > treemap.svg
+  dirplot map . --output - | convert - -resize 50% small.png
+  dirplot map . --output - --format svg > treemap.svg
   ```
 
 ## [0.3.3] - 2026-03-14
