@@ -33,6 +33,7 @@ def parse_github_path(s: str) -> tuple[str, str, str | None, str]:
         github://owner/repo/sub/path
         github://owner/repo@ref/sub/path
         https://github.com/owner/repo
+        https://github.com/owner/repo@ref
         https://github.com/owner/repo/tree/ref
         https://github.com/owner/repo/tree/ref/sub/path
     """
@@ -49,16 +50,21 @@ def parse_github_path(s: str) -> tuple[str, str, str | None, str]:
         subpath = "/".join(parts[2:])
         return owner, repo, ref, subpath
 
-    # URL form: https://github.com/owner/repo[/tree/ref[/subpath]]
+    # URL form: https://github.com/owner/repo[@ref][/tree/ref[/subpath]]
     parts = s.split("github.com/", 1)[1].strip("/").split("/")
     owner = parts[0]
-    repo = parts[1]
-    if len(parts) > 3 and parts[2] == "tree":
-        ref = parts[3]
-        subpath = "/".join(parts[4:])
-    else:
-        ref = None
+    repo_seg = parts[1] if len(parts) > 1 else ""
+    if "@" in repo_seg:
+        repo, ref = repo_seg.split("@", 1)
         subpath = ""
+    else:
+        repo = repo_seg
+        ref = None
+        if len(parts) > 3 and parts[2] == "tree":
+            ref = parts[3]
+            subpath = "/".join(parts[4:])
+        else:
+            subpath = ""
     return owner, repo, ref, subpath
 
 

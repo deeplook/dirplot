@@ -15,7 +15,7 @@ def parse_last_period(value: str) -> datetime:
     match = LAST_RE.match(value.strip().lower())
     if not match:
         raise ValueError(
-            f"Invalid --last value {value!r}. "
+            f"Invalid --period value {value!r}. "
             "Expected a number + unit: h, d, w, mo  (e.g. 24h, 10d, 2w, 1mo)."
         )
     amount = int(match.group(1))
