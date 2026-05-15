@@ -1,4 +1,4 @@
-.PHONY: install lint format test coverage clean install-tool check-all publish-test publish help
+.PHONY: install lint format test coverage clean install-tool check-all publish-test publish serve-docs help
 
 help:  ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*##' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "}; {printf "  %-14s %s\n", $$1, $$2}'
@@ -40,3 +40,6 @@ publish-test:  ## Build and publish to TestPyPI
 publish:  ## Build and publish to PyPI
 	uv build
 	uv publish --token $(PYPI_TOKEN)
+
+serve-docs:  ## Serve the MkDocs documentation locally (http://localhost:8000)
+	uv run --with mkdocs-material mkdocs serve
