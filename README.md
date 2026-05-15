@@ -53,6 +53,9 @@ dirplot map . --inline # display inline in terminal (iTerm2 / Kitty / Ghostty)
 ## Installation
 
 ```bash
+# Try without installing (always fetches the latest release)
+uvx dirplot@latest --version
+
 # Recommended: isolated tool install via uv (fastest)
 uv tool install dirplot
 

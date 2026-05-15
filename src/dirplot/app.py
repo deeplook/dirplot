@@ -7,7 +7,7 @@ from dirplot import __version__
 app = typer.Typer(
     context_settings={"help_option_names": ["-h", "--help"]},
     rich_markup_mode="rich",
-    epilog="Docs & issues: https://github.com/deeplook/dirplot",
+    epilog="Docs: https://deeplook.github.io/dirplot\n\nIssues: https://github.com/deeplook/dirplot/issues",
 )
 
 
