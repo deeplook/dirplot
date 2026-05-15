@@ -343,40 +343,75 @@ dirplot replay events.jsonl --output replay.png --total-duration 30 --fade-out -
 
 ---
 
-## `dirplot git` — git history animation
+## `dirplot git` — git history treemap
 
-Renders a git repository's commit history as an animated treemap. Each commit becomes one frame; changed tiles are highlighted.
+Renders a single commit or an animated history of a git repository as a treemap. Without `--range` or `--period`, a single PNG of the last commit (HEAD or the given ref) is produced. With `--range` or `--period`, an animated APNG or MP4 is produced — one frame per commit.
 
 > **Requires** `git` on `PATH`. `ffmpeg` is also required for MP4 output.
 
 The `repo` argument accepts:
-- Local path: `.`, `/path/to/repo`
-- Local path with ref: `.@my-branch`, `.@v1.0`, `.@abc1234`
-- GitHub URL: `github://owner/repo[@branch]` or `https://github.com/owner/repo[/tree/branch]`
 
-For GitHub URLs, dirplot clones into a temporary directory (shallow when `--max-commits` or `--last` is set) and removes it on exit.
+| Form | Example |
+|---|---|
+| Local path | `.`, `/path/to/repo` |
+| Local path with ref | `.@my-branch`, `.@v1.0`, `.@abc1234` |
+| `github://` URL | `github://owner/repo`, `github://owner/repo@branch` |
+| HTTPS GitHub URL | `https://github.com/owner/repo`, `https://github.com/owner/repo@v1.0` |
+| HTTPS GitHub tree URL | `https://github.com/owner/repo/tree/branch` |
+
+For GitHub URLs, dirplot clones into a temporary directory (shallow when possible) and removes it on exit.
+
+**Single frame** (no `--range` or `--period`):
 
 ```bash
-# Full git history as APNG or MP4
-dirplot git . --output history.apng --animate --exclude .git
-dirplot git . --output history.mp4 --animate
+# Snapshot of HEAD
+dirplot git . --output snapshot.png
 
-# Specific local branch
-dirplot git .@my-branch --output history.mp4 --animate
+# Specific local branch or tag
+dirplot git .@my-branch --output branch.png
+dirplot git .@v1.0 --output v1.png --inline
 
-# Revision range with time-proportional frame durations
-dirplot git . --output history.apng --animate \
-  --range main~50..main --total-duration 30
+# GitHub repo at a specific tag — display inline
+dirplot git https://github.com/owner/repo@v1.0 --inline
+dirplot git github://owner/repo@v1.0 --inline
+```
 
-# GitHub repo — no local clone needed
-dirplot git github://owner/repo --output history.apng --animate --max-commits 100
+**Animation** (`--range` or `--period` triggers multi-frame output):
 
-# Filter by time period
-dirplot git . --output history.mp4 --animate --last 30d
-dirplot git . --output history.mp4 --animate --last 24h
+A bare branch or tag name (`--range main`) animates **all** commits on that branch.
+The `A..B` syntax animates only commits reachable from B but not from A (standard git range).
+
+```bash
+# All commits on main → animated PNG
+dirplot git . --range main --output history.png
+
+# All commits on main, time-proportional frame durations
+dirplot git . --range main --total-duration 30 --output history.png
+
+# Only the last 50 commits on main
+dirplot git . --range main --last 50 --output history.png
+
+# Specific revision range → animated PNG
+dirplot git . --range main~50..main --output history.png
+
+# Tagged release range
+dirplot git . --range v1.0..v2.0 --output release.mp4
+
+# First 10 commits of a range
+dirplot git github://owner/repo --range v1.0..v2.0 --first 10 --output history.png
+
+# Last 10 commits of a range
+dirplot git github://owner/repo --range v1.0..v2.0 --last 10 --output history.png
+
+# All commits in the last 30 days
+dirplot git . --period 30d --output history.mp4
+
+# Commits in a branch that fall within the last 3 days of that branch's history
+dirplot git github://owner/repo --range main --period 3d --output history.png
 
 # Fade out to black at the end
-dirplot git . --output history.mp4 --animate --fade-out --fade-out-duration 2.0
+dirplot git . --period 7d --total-duration 20 \
+  --fade-out --fade-out-duration 2.0 --output history.mp4
 ```
 
 See [EXAMPLES.md — Git History Animation](EXAMPLES.md#git-history-animation) for more examples including video output.
@@ -385,14 +420,14 @@ See [EXAMPLES.md — Git History Animation](EXAMPLES.md#git-history-animation) f
 
 | Flag | Default | Description |
 |---|---|---|
-| `--output` / `-o` | required | Output PNG, APNG, or MP4 |
-| `--animate` / `--no-animate` | off | Build APNG or MP4; without this, each commit overwrites the output PNG |
-| `--range` | all commits | Git revision range (e.g. `main~50..main`, `v1.0..HEAD`) |
-| `--max-commits` | — | Cap the number of commits processed |
-| `--last` | — | Time-period filter: `30d`, `24h`, `2w`, `1mo`, `30m`. Uses `--shallow-since` for GitHub URLs |
+| `--output` / `-o` | — | Output file: `.png` (static or animated APNG) or `.mp4` / `.mov`. Required unless `--inline` is given |
+| `--inline` | off | Render and display the image directly in the terminal (single-frame mode only; not compatible with `--range` or `--period`) |
+| `--range` | — | Git revision range. A bare branch/tag name (e.g. `main`) animates all commits on it; `A..B` animates commits in B but not A. Triggers animation mode |
+| `--period` | — | Relative time filter: `30d`, `24h`, `2w`, `1mo`, `30m`. Triggers animation mode. Without `--range`, filters from now; with `--range`, filters relative to the range end |
+| `--first` / `--last` | — | After applying `--range` / `--period`, keep only the first or last N commits |
 | `--frame-duration` | `1000` | Frame display time in ms (when `--total-duration` is not set) |
 | `--total-duration` | — | Target total animation length in seconds; frames scale proportionally to real time gaps between commits |
-| `--fade-out` / `--no-fade-out` | off | Append a fade-out sequence at the end (animate only) |
+| `--fade-out` / `--no-fade-out` | off | Append a fade-out sequence at the end (animation mode only) |
 | `--fade-out-duration` | `1.0` | Duration of the fade-out in seconds |
 | `--fade-out-frames` | 4 × duration | Number of fade frames; defaults to 4 per second |
 | `--fade-out-color` | `auto` | Fade target: `auto` (black/white per mode), `transparent` (PNG/APNG only), CSS name, or hex |
@@ -407,6 +442,66 @@ See [EXAMPLES.md — Git History Animation](EXAMPLES.md#git-history-animation) f
 | `--font-size` | `12` | Directory label font size in pixels |
 | `--cushion/--no-cushion` | `--cushion` | Van Wijk cushion shading |
 | `--github-token-file` | `$GITHUB_TOKEN` | File containing GitHub personal access token |
+
+---
+
+## `dirplot hg` — Mercurial history treemap
+
+Renders a single changeset or an animated history of a Mercurial repository as a treemap. Without `--range` or `--period`, a single PNG of the tip (or the given rev) is produced. With `--range` or `--period`, an animated APNG or MP4 is produced — one frame per changeset.
+
+> **Requires** `hg` on `PATH`. `ffmpeg` is also required for MP4 output.
+
+The `repo` argument accepts a local path (`.`, `/path/to/repo`) optionally followed by `@rev` to pin to a specific revision or tag (e.g. `.@tip`, `.@1.0`, `.@abc1234`).
+
+**Single frame** (no `--range` or `--period`):
+
+```bash
+# Snapshot of tip
+dirplot hg . --output snapshot.png
+
+# Specific revision or tag
+dirplot hg .@tip --output tip.png
+dirplot hg .@1.0 --inline
+```
+
+**Animation** (`--range` triggers multi-frame output):
+
+```bash
+# Full history as animated PNG
+dirplot hg . --range 0:tip --output history.png
+
+# Revision range
+dirplot hg . --range 10:tip --output history.mp4
+
+# First 20 changesets of a range
+dirplot hg . --range 0:tip --first 20 --output history.png
+```
+
+### Options
+
+| Flag | Default | Description |
+|---|---|---|
+| `--output` / `-o` | — | Output file: `.png` (static or animated APNG) or `.mp4` / `.mov`. Required unless `--inline` is given |
+| `--inline` | off | Render and display the image directly in the terminal (single-frame mode only; not compatible with `--range`) |
+| `--range` | — | Mercurial revision range (e.g. `0:tip`, `10:tip`). Triggers animation mode |
+| `--period` | — | Relative time filter: `30d`, `24h`, `2w`, `1mo`, `30m`. Triggers animation mode |
+| `--first` / `--last` | — | After applying `--range` / `--period`, keep only the first or last N changesets |
+| `--frame-duration` | `1000` | Frame display time in ms (when `--total-duration` is not set) |
+| `--total-duration` | — | Target total animation length in seconds |
+| `--fade-out` / `--no-fade-out` | off | Append a fade-out sequence at the end (animation mode only) |
+| `--fade-out-duration` | `1.0` | Duration of the fade-out in seconds |
+| `--fade-out-frames` | 4 × duration | Number of fade frames; defaults to 4 per second |
+| `--fade-out-color` | `auto` | Fade target: `auto` (black/white per mode), `transparent` (PNG/APNG only), CSS name, or hex |
+| `--crf` | `23` | MP4 quality: 0 = lossless, 51 = worst. Ignored for APNG |
+| `--codec` | `libx264` | MP4 codec: `libx264` (H.264) or `libx265` (~40% smaller at same quality) |
+| `--workers` | all CPU cores | Parallel render workers |
+| `--log-scale` | `0` (off) | Log-scale compression ratio; any value > 1 enables it |
+| `--size` | terminal size | Output dimensions as `WIDTHxHEIGHT` |
+| `--depth` | — | Maximum directory depth |
+| `--exclude` / `-e` | — | Pattern to exclude (repeatable) |
+| `--colormap` | `tab20` | Matplotlib colormap |
+| `--font-size` | `12` | Directory label font size in pixels |
+| `--cushion/--no-cushion` | `--cushion` | Van Wijk cushion shading |
 
 ---
 
@@ -448,9 +543,9 @@ Examples produced:
 | `map-local.png` | `dirplot map .` (dark mode, PNG) |
 | `map-github.png` | `dirplot map github://owner/repo` (dark mode, PNG) |
 | `map-local.svg` | `dirplot map .` (light mode, SVG) |
-| `git-static.png` | `dirplot git github://owner/repo --max-commits 5` (static PNG) |
-| `git.mp4` | `dirplot git github://owner/repo --max-commits 10 --animate --total-duration 20` |
-| `git-animated.png` | `dirplot git github://owner/repo --max-commits 10 --animate --total-duration 20 --fade-out` |
+| `git-static.png` | `dirplot git github://owner/repo --first 1` (static PNG of latest commit) |
+| `git.mp4` | `dirplot git github://owner/repo --range main --first 10 --total-duration 20` |
+| `git-animated.png` | `dirplot git github://owner/repo --range main --first 10 --total-duration 20 --fade-out` |
 | *(stdout)* | `dirplot read-meta map-local.png` |
 
 `dirplot watch` and `dirplot replay` are listed but skipped with an explanatory note — both require interactive or pre-recorded input.

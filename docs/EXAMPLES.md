@@ -598,41 +598,68 @@ buf = create_treemap(root, width_px=1920, height_px=1080)
 
 ## Git History Animation
 
-Replay a repository's commit history as an animated treemap. Each commit becomes one frame; changed tiles receive colour-coded highlight borders (green = created, blue = modified, red = deleted). Works with local repositories and with `github://` URLs — the repo is cloned into a temporary directory and removed on exit.
+Render a single commit snapshot or replay a repository's commit history as an animated treemap. Each commit becomes one frame; changed tiles receive colour-coded highlight borders (green = created, blue = modified, red = deleted). Works with local repositories, `github://` URLs, and full HTTPS GitHub URLs — remote repos are cloned into a temporary directory and removed on exit.
 
 > **Requires** `git` on `PATH`. `ffmpeg` is required for MP4 output.
 
-### Creating a video or animation
+### Single frame (no `--range` or `--period`)
 
-The typical workflow is:
-
-1. Choose a source (local repo or `github://` URL)
-2. Pick a time range (`--last 30d`, `--max-commits N`, or `--range v1..v2`)
-3. Choose an output format (`.apng` for lossless animation, `.mp4` for small file size)
-4. Set `--total-duration` for a fixed-length video with time-proportional frame spacing
+Without `--range` or `--period`, a single PNG of the last commit (HEAD, or the ref specified with `@ref`) is produced.
 
 ```bash
-# Animate the full history of a local repo, write APNG
-dirplot git . --animate --output history.png
+# Snapshot of HEAD in current repo
+dirplot git . --output snapshot.png
 
-# Last 50 commits, 30-second animation with time-proportional frame durations
-dirplot git . --animate --max-commits 50 --total-duration 30 --output history.png
+# Specific branch or tag — display inline in terminal
+dirplot git .@my-branch --inline
+dirplot git .@v1.0 --output v1.png
 
-# Specific commit range from a GitHub repository, MP4 output, log scale
+# GitHub repo at a specific tag
+dirplot git github://owner/repo@v1.0 --inline
+dirplot git https://github.com/owner/repo@v1.0 --output snapshot.png
+```
+
+### Animation (with `--range` or `--period`)
+
+Adding `--range` or `--period` triggers animation mode — an APNG (`.png`) or MP4 (`.mp4`) with one frame per commit.
+
+A bare branch or tag name (`--range main`) animates **all** commits on that branch.
+The `A..B` syntax animates only commits reachable from B but not from A (standard git range).
+
+```bash
+# All commits on main → animated PNG
+dirplot git . --range main --output history.png
+
+# All commits on main — MP4 with time-proportional frame durations
+dirplot git . --range main --total-duration 30 --output history.mp4
+
+# Only the last 50 commits on main
+dirplot git . --range main --last 50 --total-duration 30 --output history.png
+
+# Tagged release range, MP4 output, log scale
 dirplot git github://openclaw/openclaw --range 871e8882..8445c9a5 \
-  --animate --log-scale 4 --size 1920x1080 --output openclaw.mp4
+  --log-scale 4 --size 1920x1080 --output openclaw.mp4
 
-# Last 30 days of activity
-dirplot git . --animate --last 30d --output history.mp4
+# First 10 commits of a tagged range
+dirplot git github://owner/repo --range v1.0..v2.0 --first 10 --output history.png
+
+# Last 10 commits of a tagged range
+dirplot git github://owner/repo --range v1.0..v2.0 --last 10 --output history.png
+
+# All commits in the last 30 days
+dirplot git . --period 30d --output history.mp4
+
+# Commits on main that fall within the last 3 days of main's history
+dirplot git github://owner/repo --range main --period 3d --output history.png
 
 # Fade out to black at the end
-dirplot git . --animate --last 7d --total-duration 20 \
+dirplot git . --period 7d --total-duration 20 \
   --fade-out --fade-out-duration 2.0 --output history.mp4
 ```
 
 <figure>
   <video src="https://media.githubusercontent.com/media/deeplook/dirplot/main/docs/steipete-birdclaw.mp4#t=12" controls loop muted playsinline width="100%"></video>
-  <figcaption><code>dirplot git https://github.com/steipete/birdclaw --size 1000x600 --animate -o steipete-birdclaw.mp4</code></figcaption>
+  <figcaption><code>dirplot git https://github.com/steipete/birdclaw --size 1000x600 --range main -o steipete-birdclaw.mp4</code></figcaption>
 </figure>
 
 ### From live filesystem events
@@ -647,32 +674,16 @@ dirplot watch . --event-log events.jsonl
 dirplot replay events.jsonl --output timelapse.mp4 --total-duration 30
 ```
 
-### Options
+### Key flags
 
-| Flag | Default | Description |
-|---|---|---|
-| `--range` | full history | Git revision range passed to `git log` (e.g. `main~50..main`, `v1.0..HEAD`) |
-| `--max-commits` | unlimited | Cap the number of commits processed |
-| `--last` | — | Relative time filter: `30d`, `24h`, `2w`, `3mo` |
-| `--total-duration` | — | Target total animation length in seconds (time-proportional frame durations) |
-| `--frame-duration` | 1000 ms | Fixed frame duration when `--total-duration` is not set |
-| `--workers` | all cores | Number of parallel render workers |
-| `--log-scale` | 0 (off) | Log-scale compression ratio; any value > 1 enables it |
-| `--dark` / `--light` | dark | Background and label colour scheme |
-| `--github-token-file` | `$GITHUB_TOKEN` | File containing token for private repos or to raise rate limits |
+| Flag | Description |
+|---|---|
+| `--range` | Git revision range (e.g. `HEAD`, `main~50..main`, `v1.0..HEAD`). Triggers animation |
+| `--period` | Relative time filter: `30d`, `24h`, `2w`, `1mo`, `30m`. Triggers animation |
+| `--first N` | Keep only the first N commits after applying range/period |
+| `--last N` | Keep only the last N commits after applying range/period |
+| `--total-duration` | Target total animation length in seconds (time-proportional frame durations) |
+| `--frame-duration` | Fixed frame duration in ms when `--total-duration` is not set (default: 1000) |
+| `--inline` | Display single-frame output directly in the terminal (not compatible with animation) |
 
-### Python API
-
-> **Note:** The programmatic Python API is still evolving and may change between releases without notice. Pin a specific version if you depend on it. The CLI interface is stable.
-
-```python
-from dirplot.github import build_tree_github
-from dirplot.render_png import create_treemap
-import os
-
-root, ref = build_tree_github(
-    "openclaw", "openclaw",
-    token=os.environ.get("GITHUB_TOKEN"),
-)
-buf = create_treemap(root, width_px=1920, height_px=1080, cushion=True)
-```
+See [CLI.md — `dirplot git`](CLI.md#dirplot-git--git-history-treemap) for the full options reference.

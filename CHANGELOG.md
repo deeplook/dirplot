@@ -7,23 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.4] - 2026-05-15
+
 ### Fixed
 
 - **`--inline` fills terminal width in iTerm2** — the iTerm2 inline image protocol now
   receives an explicit `width=<cols>` parameter so the image always fills the full column
-  count, regardless of pixel-to-cell rounding differences (scrollbar width, DPI).  Ghostty
+  count, regardless of pixel-to-cell rounding differences (scrollbar width, DPI). Ghostty
   and Kitty are unaffected.
 
-### Changed
-
-- **`--output -` implies `--no-show`** — piping to stdout no longer opens a viewer window;
-  pass `--show` explicitly to override.
-
-- **`dirplot watch` simplified** — animation output removed from `watch`; use `dirplot replay`
-  on a `--event-log` file to produce APNG/MP4. New `--snapshot FILE` option writes the current
-  treemap PNG on each filesystem change (for external tools or wallpaper updaters).
-
 ### Added
+
+- **`dirplot diff` command** — compares two directory trees A and B as a treemap. Files are
+  sized by B. Borders show diff status: green = added, red = removed, blue = changed (content
+  differs). Unchanged files show no border. Supports `--context/--no-context` (default: on,
+  i.e. unchanged files are shown). A and B accept any source supported by `dirplot map`:
+  local directories, `github://owner/repo[@ref]`, archives (`.zip`, `.tar.gz`, …), `s3://`,
+  `ssh://`, `docker://`, and `pod://`. All visual and remote-access options are available:
+  `--output`, `--format`, `--show/--no-show`, `--inline`, `--font-size`, `--colormap`,
+  `--exclude`, `--depth`, `--size`, `--cushion/--no-cushion`, `--dark/--light`,
+  `--log-scale`, `--header/--no-header`, `--quiet`, `--ssh-key`, `--ssh-password-file`,
+  `--aws-profile`, `--no-sign`, `--github-token-file`, `--k8s-namespace`,
+  `--k8s-container`, `--password-file`, and `--no-input`.
+
+- **`dirplot diff` enhancements** — single-argument shorthand: `dirplot diff .` diffs the
+  working tree against HEAD (git) or tip (hg). Supports `<path>@<ref>` syntax for local git
+  repos (e.g. `dirplot diff .@HEAD~5 .@HEAD`). When a source is a local git or hg repo,
+  only tracked files are scanned (untracked files ignored). Change detection uses blob hash
+  comparison — edits that don't change file size are caught, and Git LFS files are handled
+  transparently (pointer size vs disk size no longer causes false positives).
 
 - **`--include` flag** (replaces `--subtree`, which remains as a hidden alias) — available on
   `map`, `diff`, and `metrics`. Keeps only the named subtrees after scanning; supports nested
@@ -40,30 +52,55 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   as timezone-aware ISO 8601 strings (e.g. `2026-05-12T14:21:52.341+00:00`) instead of raw
   Unix epoch floats. `dirplot replay` still accepts both formats for backwards compatibility.
 
-- **`dirplot diff` enhancements** — single-argument shorthand: `dirplot diff .` diffs the
-  working tree against HEAD (git) or tip (hg). Supports `<path>@<ref>` syntax for local git
-  repos (e.g. `dirplot diff .@HEAD~5 .@HEAD`). When a source is a local git or hg repo,
-  only tracked files are scanned (untracked files ignored). Change detection uses blob hash
-  comparison — edits that don't change file size are caught, and Git LFS files are handled
-  transparently (pointer size vs disk size no longer causes false positives).
+- **`--inline` on `dirplot git` and `dirplot hg`** — displays the single-frame output
+  directly in the terminal (iTerm2, Kitty, Ghostty protocols). Only available in
+  single-frame mode (no `--range` or `--period`).
 
-## [0.4.4] - 2026-05-12
-
-### Added
-
-- **`dirplot diff` command** — compares two directory trees A and B as a treemap. Files are
-  sized by B. Borders show diff status: green = added, red = removed, blue = changed (content
-  differs). Unchanged files show no border. Supports `--context/--no-context` (default: on,
-  i.e. unchanged files are shown). A and B accept any source supported by `dirplot map`:
-  local directories, `github://owner/repo[@ref]`, archives (`.zip`, `.tar.gz`, …), `s3://`,
-  `ssh://`, `docker://`, and `pod://`. All visual and remote-access options are available:
-  `--output`, `--format`, `--show/--no-show`, `--inline`, `--font-size`, `--colormap`,
-  `--exclude`, `--depth`, `--size`, `--cushion/--no-cushion`, `--dark/--light`,
-  `--log-scale`, `--header/--no-header`, `--quiet`, `--ssh-key`, `--ssh-password-file`,
-  `--aws-profile`, `--no-sign`, `--github-token-file`, `--k8s-namespace`,
-  `--k8s-container`, `--password-file`, and `--no-input`.
+- **`@ref` on HTTPS GitHub URLs** — `https://github.com/owner/repo@v1.0` is now a valid
+  `repo` argument for `dirplot git`, equivalent to `github://owner/repo@v1.0`.
 
 ### Changed
+
+- **`dirplot git` and `dirplot hg` interface redesigned** — the animation model is now
+  explicit: `--range` or `--period` triggers animation mode (APNG / MP4, one frame per
+  commit); neither flag produces a single static PNG of the last commit (HEAD / tip).
+
+- **`--animate` removed** (`git`, `hg`) — use `--range` or `--period` to produce an
+  animation. Without either, a single static frame is rendered.
+
+- **`--max-commits` renamed to `--first`** (`git`, `hg`) — keeps the first N commits
+  after the range/period filter is applied. The old name is no longer accepted.
+
+- **`--last N` added** (`git`, `hg`) — keeps the *last* N commits after the range/period
+  filter is applied. Counterpart to `--first`.
+
+- **`--last PERIOD` renamed to `--period`** (`git`, `hg`) — the time-period filter is now
+  `--period 30d`, `--period 24h`, etc. The old `--last` name for this flag is removed.
+
+- **`--period` without `--range` triggers animation** — commits within the period relative
+  to now are fetched and animated. GitHub URLs use `--shallow-since` for an efficient
+  date-bounded shallow clone.
+
+- **`--period` with `--range` filters relative to range end** — when both are given, the
+  period cutoff is anchored to the timestamp of the last commit in the range rather than
+  to now (e.g. "last 3 days of activity on this branch").
+
+- **`--first` / `--last` slice post-fetch** — the count cap is applied in Python after all
+  commits are fetched, not via `git log -n`. This ensures `--first` always gives the oldest
+  N commits and `--last` always gives the newest N commits.
+
+- **`--first` no longer controls clone depth when `--range` is given** — previously
+  `--first N` would pass `--depth N` to `git clone`, making tags outside the shallow history
+  unreachable. `--depth` is now only used when `--range` is absent.
+
+- **Output extension `.png` for animations** — APNG output uses `.png` (not `.apng`).
+
+- **`--output -` implies `--no-show`** — piping to stdout no longer opens a viewer window;
+  pass `--show` explicitly to override.
+
+- **`dirplot watch` simplified** — animation output removed from `watch`; use `dirplot replay`
+  on a `--event-log` file to produce APNG/MP4. New `--snapshot FILE` option writes the current
+  treemap PNG on each filesystem change (for external tools or wallpaper updaters).
 
 - **matplotlib replaced by cmap** — matplotlib is no longer a dependency. Colormap lookups
   now use the `cmap` package instead, which is significantly smaller. All colormap names

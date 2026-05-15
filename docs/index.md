@@ -92,11 +92,13 @@ dirplot map docker://my-container:/app                           # Docker contai
 dirplot map project.zip                                          # archive file
 tree src/ | dirplot map                                          # pipe tree output
 
-dirplot git . -o history.mp4 --animate                           # full git history
-dirplot git . -o history.mp4 --animate --last 30d                # last 30 days
-dirplot git github://owner/repo -o h.mp4 --animate --last 7d     # GitHub, last week
+dirplot git . -o snapshot.png                                    # static snapshot of HEAD
+dirplot git .@v1.0 --inline                                      # inline snapshot at tag
+dirplot git . -o history.mp4 --range main                        # full git history
+dirplot git . -o history.mp4 --period 30d                        # last 30 days
+dirplot git github://owner/repo -o h.mp4 --period 7d             # GitHub, last week
 
-dirplot hg /path/to/repo -o history.png --animate                # full hg history
+dirplot hg /path/to/repo -o history.png --range 0:tip            # full hg history
 dirplot hg /path/to/repo@tip -o history.png                      # static, tip only
 
 dirplot watch . --snapshot treemap.png                           # live watch, snapshot on each change
