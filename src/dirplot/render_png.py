@@ -771,6 +771,10 @@ def write_apng(output: Path, frame_bytes: list[bytes], durations_ms: list[int]) 
         for chunk_type, chunk_data in pre_idat:
             f.write(_apng_make_chunk(chunk_type, chunk_data))
 
+        # tEXt – dirplot metadata (key\x00value)
+        for key, value in build_metadata().items():
+            f.write(_apng_make_chunk(b"tEXt", key.encode() + b"\x00" + value.encode()))
+
         # acTL – animation control (num_frames, num_plays=0 → loop forever)
         f.write(_apng_make_chunk(b"acTL", struct.pack(">II", n, 0)))
 
