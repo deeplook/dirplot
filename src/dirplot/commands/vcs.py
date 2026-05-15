@@ -9,6 +9,7 @@ import typer
 
 from dirplot.app import app
 from dirplot.defaults import DEFAULT_COLORMAP, DEFAULT_FONT_SIZE
+from dirplot.display import display_inline
 from dirplot.helpers.animation import (
     proportional_durations,
     resolve_fade_color,
@@ -16,40 +17,42 @@ from dirplot.helpers.animation import (
 )
 from dirplot.helpers.time import parse_last_period
 from dirplot.scanner import apply_log_sizes
-from dirplot.terminal import default_canvas_size
+from dirplot.terminal import default_canvas_size, get_terminal_size
 
 _GIT_EPILOG = (
     "[bold]Examples[/bold]\n\n"
-    "  dirplot git . -o history.apng --animate"
-    "  [dim]# full history, APNG[/dim]\n\n"
-    "  dirplot git . -o history.mp4 --animate"
-    "  [dim]# full history, MP4 (H.264, CRF 23)[/dim]\n\n"
-    "  dirplot git . -o history.mp4 --animate --crf 18 --codec libx265"
-    "  [dim]# high-quality H.265[/dim]\n\n"
-    "  dirplot git .@my-branch -o history.mp4 --animate"
-    "  [dim]# specific local branch[/dim]\n\n"
-    "  dirplot git . -o history.mp4 --animate --range v1.0..HEAD"
-    "  [dim]# explicit revision range[/dim]\n\n"
-    "  dirplot git . -o history.mp4 --animate --last 30d"
-    "  [dim]# last 30 days of commits[/dim]\n\n"
-    "  dirplot git github://owner/repo -o history.mp4 --animate --max-commits 50"
-    "  [dim]# GitHub repo[/dim]"
+    "  dirplot git . --inline"
+    "  [dim]# snapshot of HEAD, inline in terminal[/dim]\n\n"
+    "  dirplot git . -o snapshot.png"
+    "  [dim]# snapshot of HEAD, saved to file[/dim]\n\n"
+    "  dirplot git .@my-branch -o snapshot.png"
+    "  [dim]# snapshot of tip of a branch[/dim]\n\n"
+    "  dirplot git . -o history.png --range v1.0..HEAD"
+    "  [dim]# animate a revision range (APNG)[/dim]\n\n"
+    "  dirplot git . -o history.mp4 --range v1.0..HEAD"
+    "  [dim]# animate a revision range (MP4)[/dim]\n\n"
+    "  dirplot git . -o history.mp4 --period 30d"
+    "  [dim]# animate last 30 days of commits[/dim]\n\n"
+    "  dirplot git . -o history.mp4 --period 30d --last 20"
+    "  [dim]# last 20 commits within that period[/dim]\n\n"
+    "  dirplot git github://owner/repo -o history.mp4 --period 90d --first 50"
+    "  [dim]# GitHub repo, first 50 commits in period[/dim]"
 )
 
 _HG_EPILOG = (
     "[bold]Examples[/bold]\n\n"
-    "  dirplot hg . -o history.apng --animate"
-    "  [dim]# full history, APNG[/dim]\n\n"
-    "  dirplot hg . -o history.mp4 --animate"
-    "  [dim]# full history, MP4 (H.264, CRF 23)[/dim]\n\n"
-    "  dirplot hg . -o history.mp4 --animate --crf 18 --codec libx265"
-    "  [dim]# high-quality H.265[/dim]\n\n"
-    "  dirplot hg .@my-branch -o history.mp4 --animate"
-    "  [dim]# specific branch[/dim]\n\n"
-    "  dirplot hg . -o history.mp4 --animate --last 30d"
-    "  [dim]# last 30 days of changesets[/dim]\n\n"
-    "  dirplot hg . -o history.apng --animate --max-commits 50 --total-duration 30"
-    "  [dim]# cap commits, proportional timing[/dim]"
+    "  dirplot hg . --inline"
+    "  [dim]# snapshot of tip, inline in terminal[/dim]\n\n"
+    "  dirplot hg . -o snapshot.png"
+    "  [dim]# snapshot of tip, saved to file[/dim]\n\n"
+    "  dirplot hg .@my-branch -o snapshot.png"
+    "  [dim]# snapshot of tip of a branch[/dim]\n\n"
+    "  dirplot hg . -o history.png --range 0:tip"
+    "  [dim]# animate full history (APNG)[/dim]\n\n"
+    "  dirplot hg . -o history.mp4 --period 30d"
+    "  [dim]# animate last 30 days of changesets[/dim]\n\n"
+    "  dirplot hg . -o history.mp4 --period 30d --last 20 --total-duration 30"
+    "  [dim]# last 20 changesets, proportional timing[/dim]"
 )
 
 
@@ -202,28 +205,33 @@ def git_cmd(
         ".",
         help=(
             "Git repository path (optionally suffixed with @ref, e.g. .@my-branch),"
-            " github://owner/repo[@branch], or https://github.com/owner/repo"
+            " github://owner/repo[@branch], or https://github.com/owner/repo[@ref]"
         ),
     ),
-    output: Path = typer.Option(..., "--output", "-o", help="Output PNG file"),
+    output: Path | None = typer.Option(
+        None, "--output", "-o", help="Output file (.png or .mp4/.mov for animations)"
+    ),
     revision_range: str | None = typer.Option(
         None,
         "--range",
         help=(
-            "Git revision range (e.g. main~50..main). "
-            "When using a GitHub URL with --max-commits, "
+            "Git revision range to animate (e.g. v1.0..HEAD). "
+            "Triggers animation mode. "
+            "When using a GitHub URL with --first, "
             "ensure the clone depth covers the range's base commit."
         ),
     ),
-    max_commits: int | None = typer.Option(
-        None, "--max-commits", help="Maximum number of commits to process"
-    ),
-    last: str | None = typer.Option(
+    period: str | None = typer.Option(
         None,
-        "--last",
-        help="Show commits within a time period (e.g. 10d, 24h, 2w, 1mo). "
-        "May be combined with --max-commits.",
+        "--period",
+        help="Time window to animate (e.g. 30d, 24h, 2w, 1mo). Triggers animation mode.",
         metavar="PERIOD",
+    ),
+    first: int | None = typer.Option(
+        None, "--first", help="Take only the first N commits of the range (animation mode only)"
+    ),
+    last: int | None = typer.Option(
+        None, "--last", help="Take only the last N commits of the range (animation mode only)"
     ),
     exclude: list[str] = typer.Option(
         [], "--exclude", "-e", help="Top-level paths to exclude (repeatable)"
@@ -239,10 +247,10 @@ def git_cmd(
         True, "--cushion/--no-cushion", help="Apply van Wijk cushion shading"
     ),
     dark: bool = typer.Option(True, "--dark/--light", help="Dark background (default) or light"),
-    animate: bool = typer.Option(
+    inline: bool = typer.Option(
         False,
-        "--animate/--no-animate",
-        help="Build an animated APNG or MP4 from all commits",
+        "--inline",
+        help="Display snapshot inline in the terminal (iTerm2/Kitty/Ghostty). Single-frame mode only.",  # noqa: E501
     ),
     logscale: float = typer.Option(
         0.0,
@@ -267,22 +275,20 @@ def git_cmd(
     workers: int | None = typer.Option(
         None,
         "--workers",
-        help="Parallel render workers for animate mode (default: all CPU cores).  "
+        help="Parallel render workers (default: all CPU cores).  "
         "Rendering is memory-bandwidth bound, so the optimal value depends on your hardware; "
         "try --workers 4-8 if the default is slower than expected.",
     ),
     crf: int = typer.Option(
         23,
         "--crf",
-        help="MP4 quality: Constant Rate Factor (0=lossless, 51=worst; default 23). "
-        "Ignored for APNG output.",
+        help="MP4 quality: Constant Rate Factor (0=lossless, 51=worst; default 23).",
         show_default=True,
     ),
     codec: str = typer.Option(
         "libx264",
         "--codec",
-        help="MP4 video codec: libx264 (H.264, default) or libx265 (H.265, smaller files). "
-        "Ignored for APNG output.",
+        help="MP4 video codec: libx264 (H.264, default) or libx265 (H.265, smaller files).",
     ),
     github_token_file: Path | None = typer.Option(
         None,
@@ -293,7 +299,7 @@ def git_cmd(
     fade_out: bool = typer.Option(
         False,
         "--fade-out/--no-fade-out",
-        help="Append a fade-out sequence at the end of the animation (--animate only)",
+        help="Append a fade-out sequence at the end of the animation",
     ),
     fade_out_duration: float = typer.Option(
         1.0,
@@ -311,13 +317,21 @@ def git_cmd(
         "--fade-out-color",
         help=(
             "Target colour for the fade-out: 'auto' (black in dark mode, white in light mode), "
-            "'transparent' (APNG only), a CSS colour name, or a hex code"
+            "'transparent' (PNG/APNG only), a CSS colour name, or a hex code"
         ),
         metavar="COLOR",
     ),
     quiet: bool = typer.Option(False, "--quiet", "-q", help="Suppress non-error output."),
 ) -> None:
-    """Replay git history commit-by-commit as an animated treemap."""
+    """Render a git repo as a treemap snapshot or animate a commit range.
+
+    Without --range or --period: renders a single snapshot of the last commit
+    (HEAD, or the tip of the branch/tag given via @ref).  Use --inline to display
+    it directly in the terminal, or --output to save it as a PNG.
+
+    With --range or --period: produces an animation (PNG/APNG or MP4) of the
+    matching commits.  --first N and --last N slice the commit list.
+    """
     import shutil
     import subprocess
     import tempfile
@@ -341,10 +355,38 @@ def git_cmd(
         parse_github_path,
     )
 
-    last_dt: datetime | None = None
-    if last is not None:
+    is_animation = revision_range is not None or period is not None
+
+    if inline and is_animation:
+        typer.echo(
+            "Error: --inline is only available in single-frame mode (no --range or --period).",
+            err=True,
+        )
+        raise typer.Exit(1)
+    if not inline and output is None:
+        typer.echo("Error: --output is required unless --inline is given.", err=True)
+        raise typer.Exit(1)
+    if (first is not None or last is not None) and not is_animation:
+        typer.echo("Error: --first and --last require --range or --period.", err=True)
+        raise typer.Exit(1)
+    if first is not None and last is not None:
+        typer.echo("Error: --first and --last are mutually exclusive.", err=True)
+        raise typer.Exit(1)
+
+    if output is not None:
+        if is_animation and output.suffix.lower() not in {".png", ".mp4", ".mov"}:
+            typer.echo(
+                "Error: animation --output must be a .png (APNG), .mp4, or .mov file.", err=True
+            )
+            raise typer.Exit(1)
+        if not is_animation and output.suffix.lower() != ".png":
+            typer.echo("Error: snapshot --output must be a .png file.", err=True)
+            raise typer.Exit(1)
+
+    period_dt: datetime | None = None
+    if period is not None:
         try:
-            last_dt = parse_last_period(last)
+            period_dt = parse_last_period(period)
         except ValueError as exc:
             typer.echo(f"Error: {exc}", err=True)
             raise typer.Exit(1) from exc
@@ -355,6 +397,7 @@ def git_cmd(
     _gh_repo_name: str | None = None
     _gh_ref: str | None = None
     _gh_token: str | None = None
+    _at_ref: str | None = None
     repo: Path
     if github_token_file is not None:
         if not github_token_file.exists():
@@ -365,6 +408,7 @@ def git_cmd(
     if is_github_path(repo_arg):
         gh_owner, gh_repo_name, gh_ref, _ = parse_github_path(repo_arg)
         _gh_owner, _gh_repo_name, _gh_ref = gh_owner, gh_repo_name, gh_ref
+        _at_ref = gh_ref
         token = github_token or _gh_cli_token()
         _gh_token = token
         if token:
@@ -379,13 +423,14 @@ def git_cmd(
         # sizes locally (fast). Without blobs, git fetches each size lazily over
         # the network, which is slower than just cloning the objects upfront.
         clone_cmd = ["git", "-c", "credential.helper=", "clone", "--quiet"]
-        if last_dt is not None:
-            last_iso = last_dt.strftime("%Y-%m-%dT%H:%M:%SZ")
-            clone_cmd += [f"--shallow-since={last_iso}"]
-            if max_commits is not None:
-                clone_cmd += ["--depth", str(max_commits)]
-        elif max_commits is not None:
-            clone_cmd += ["--depth", str(max_commits)]
+        if period_dt is not None and revision_range is None:
+            # --period without --range: use as shallow-since cutoff.
+            # With --range the clone must fetch enough history to resolve both
+            # range endpoints, so we skip shallow cloning entirely.
+            period_iso = period_dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+            clone_cmd += [f"--shallow-since={period_iso}"]
+        elif first is not None and revision_range is None:
+            clone_cmd += ["--depth", str(first)]
         if gh_ref:
             clone_cmd += ["--branch", gh_ref]
         clone_cmd += [clone_url, str(_clone_dir)]
@@ -399,19 +444,13 @@ def git_cmd(
         repo = _clone_dir
     else:
         if "@" in repo_arg:
-            repo_path_str, _, inline_ref = repo_arg.partition("@")
-            if revision_range is None:
-                revision_range = inline_ref
+            repo_path_str, _, _at_ref = repo_arg.partition("@")
         else:
             repo_path_str = repo_arg
         repo = Path(repo_path_str).resolve()
         if not (repo / ".git").exists():
             typer.echo(f"Error: not a git repository: {repo}", err=True)
             raise typer.Exit(1)
-
-    if output.suffix.lower() not in {".png", ".apng", ".mp4", ".mov"}:
-        typer.echo("Error: --output must be a .png, .apng, .mp4, or .mov file.", err=True)
-        raise typer.Exit(1)
 
     if size is not None:
         try:
@@ -423,31 +462,29 @@ def git_cmd(
     else:
         width_px, height_px = default_canvas_size()
 
+    inline_cols: int | None = None
+    if inline and size is None:
+        inline_cols, *_ = get_terminal_size()
+
     if not quiet:
         typer.echo(f"Reading git log from {repo} ...", err=True)
+
     _shallow_hint = ""
-    if _tmpdir is not None and revision_range:
-        if last_dt is not None and max_commits is not None:
-            _shallow_hint = (
-                "\nHint: --last controls the shallow clone cutoff date "
-                "and --max-commits caps the commit count. "
-                "If --range references a commit beyond that window, "
-                "use a wider --last period or increase --max-commits."
-            )
-        elif last_dt is not None:
-            _shallow_hint = (
-                "\nHint: --last controls the shallow clone cutoff date. "
-                "If --range references a commit beyond that window, "
-                "use a wider --last period."
-            )
-        elif max_commits is not None:
-            _shallow_hint = (
-                "\nHint: --max-commits limits the shallow clone depth. "
-                "If --range references a commit beyond that depth, "
-                "increase --max-commits or drop it."
-            )
+    if _tmpdir is not None and revision_range and period_dt is not None:
+        _shallow_hint = (
+            "\nHint: --period controls the shallow clone cutoff date. "
+            "If --range references a commit beyond that window, "
+            "use a wider --period."
+        )
+
+    # In single-frame mode, fetch only the last commit at the ref (or HEAD).
+    _log_range = revision_range if is_animation else _at_ref
+    # When --range + --period: fetch all range commits first, then filter by
+    # period relative to the range end.  Without --range, pass period_dt to
+    # git_log so it uses --after (anchored to now).
+    _period_for_log = period_dt if revision_range is None else None
     try:
-        commits = git_log(repo, revision_range, max_commits, last_dt)
+        commits = git_log(repo, _log_range, None, _period_for_log)
     except subprocess.CalledProcessError as exc:
         typer.echo(f"Error reading git log: {exc.stderr.strip()}{_shallow_hint}", err=True)
         raise typer.Exit(1) from exc
@@ -455,6 +492,27 @@ def git_cmd(
     if not commits:
         typer.echo(f"No commits found.{_shallow_hint}", err=True)
         raise typer.Exit(1)
+
+    # When --range + --period: filter to commits within period of the range end.
+    if is_animation and revision_range is not None and period_dt is not None:
+        from datetime import datetime, timezone
+
+        period_seconds = (datetime.now(tz=timezone.utc) - period_dt).total_seconds()
+        cutoff_ts = commits[-1][1] - period_seconds
+        commits = [c for c in commits if c[1] >= cutoff_ts]
+        if not commits:
+            typer.echo("No commits found within --period of the range end.", err=True)
+            raise typer.Exit(1)
+
+    # Apply --first / --last slicing after fetching (git log --reverse -n N gives
+    # newest commits, not oldest, so we must slice in Python instead).
+    if is_animation:
+        if first is not None:
+            commits = commits[:first]
+        elif last is not None:
+            commits = commits[-last:]
+    else:
+        commits = commits[-1:]
 
     # Show total commits on HEAD so the user knows how much history is available.
     total_in_repo: int | None = None
@@ -473,48 +531,58 @@ def git_cmd(
             pass
 
     if not quiet:
-        if total_in_repo is not None and total_in_repo > len(commits):
-            _filters = []
-            if last_dt is not None:
-                _filters.append(f"--last {last}")
-            if max_commits is not None:
-                _filters.append(f"--max-commits {max_commits}")
-            _filter_str = " and ".join(_filters) if _filters else "--max-commits"
-            typer.echo(
-                f"Replaying {len(commits)} of {total_in_repo} commit(s) "
-                f"(filtered by {_filter_str}) ...",
-                err=True,
-            )
+        if is_animation:
+            if total_in_repo is not None and total_in_repo > len(commits):
+                _filters = []
+                if period_dt is not None:
+                    _filters.append(f"--period {period}")
+                if first is not None:
+                    _filters.append(f"--first {first}")
+                if last is not None:
+                    _filters.append(f"--last {last}")
+                _filter_str = " and ".join(_filters) if _filters else "filters"
+                typer.echo(
+                    f"Animating {len(commits)} of {total_in_repo} commit(s) "
+                    f"(filtered by {_filter_str}) ...",
+                    err=True,
+                )
+            else:
+                typer.echo(f"Animating {len(commits)} commit(s) ...", err=True)
         else:
-            typer.echo(f"Replaying {len(commits)} commit(s) ...", err=True)
-
-    # Pre-compute per-commit frame durations.
-    if total_duration is not None and animate:
-        if total_duration <= 0:
-            typer.echo("Error: --total-duration must be positive.", err=True)
-            raise typer.Exit(1)
-        timestamps = [ts for _, ts, _ in commits]
-        gaps: list[float] = [
-            max(1.0, float(timestamps[j + 1] - timestamps[j])) for j in range(len(timestamps) - 1)
-        ]
-        gaps.append(gaps[-1] if gaps else 1.0)
-        total_ms = total_duration * 1000
-        commit_durations = proportional_durations(gaps, total_ms)
-        min_d, max_d = min(commit_durations), max(commit_durations)
-        if not quiet:
+            sha, ts, subject = commits[-1]
             typer.echo(
-                f"  Proportional timing: {min_d}–{max_d} ms/frame"
-                f" (total ~{sum(commit_durations) / 1000:.1f}s)",
+                f"Rendering snapshot: {sha[:8]}  {subject[:72]}",
                 err=True,
             )
-    else:
-        commit_durations = [frame_duration] * len(commits)
 
     excluded = frozenset(exclude)
     files: dict[str, int] = {}
     prev_sha: str | None = None
 
-    if animate:
+    if is_animation:
+        # Pre-compute per-commit frame durations.
+        if total_duration is not None:
+            if total_duration <= 0:
+                typer.echo("Error: --total-duration must be positive.", err=True)
+                raise typer.Exit(1)
+            timestamps = [ts for _, ts, _ in commits]
+            gaps: list[float] = [
+                max(1.0, float(timestamps[j + 1] - timestamps[j]))
+                for j in range(len(timestamps) - 1)
+            ]
+            gaps.append(gaps[-1] if gaps else 1.0)
+            total_ms = total_duration * 1000
+            commit_durations = proportional_durations(gaps, total_ms)
+            min_d, max_d = min(commit_durations), max(commit_durations)
+            if not quiet:
+                typer.echo(
+                    f"  Proportional timing: {min_d}–{max_d} ms/frame"
+                    f" (total ~{sum(commit_durations) / 1000:.1f}s)",
+                    err=True,
+                )
+        else:
+            commit_durations = [frame_duration] * len(commits)
+
         # ── Phase 1: fast sequential git pass ────────────────────────────────
         Snapshot = tuple[int, str, int, dict[str, int], dict[str, str], dict[str, str]]
         snapshots: list[Snapshot] = []
@@ -541,6 +609,7 @@ def git_cmd(
             typer.echo("No frames captured.", err=True)
             raise typer.Exit(1)
 
+        assert output is not None
         run_vcs_animation(
             repo=repo,
             snapshots=snapshots,
@@ -565,54 +634,39 @@ def git_cmd(
         )
 
     else:
-        # ── Non-animate: render and overwrite output file per commit ──────────
-        total_anim_ms = sum(commit_durations)
-        cumulative_ms = 0.0
+        # ── Single frame: render the last commit ──────────────────────────────
+        sha, ts, subject = commits[-1]
+        try:
+            files = git_initial_files(repo, sha, excluded)
+        except subprocess.CalledProcessError as exc:
+            typer.echo(f"Error reading commit {sha[:8]}: {exc.stderr.strip()}", err=True)
+            raise typer.Exit(1) from exc
 
-        for i, (sha, ts, subject) in enumerate(commits):
-            if not quiet:
-                typer.echo(f"  [{i + 1}/{len(commits)}] {sha[:8]}  {subject[:72]}", err=True)
-            try:
-                if prev_sha is None:
-                    files = git_initial_files(repo, sha, excluded)
-                    all_hl = {}
-                else:
-                    all_hl = git_apply_diff(repo, files, prev_sha, sha, excluded)
-            except subprocess.CalledProcessError as exc:
-                typer.echo(f"  Warning: skipping {sha[:8]}: {exc.stderr.strip()}", err=True)
-                prev_sha = sha
-                continue
-            prev_sha = sha
-            cumulative_ms += commit_durations[i]
+        node = build_node_tree(repo, files, depth)
+        if logscale > 1:
+            apply_log_sizes(node, logscale)
 
-            node = build_node_tree(repo, files, depth)
-            if logscale > 1:
-                apply_log_sizes(node, logscale)
+        from dirplot.render_png import create_treemap
 
-            from dirplot.render_png import create_treemap
-
-            deletions = {p: v for p, v in all_hl.items() if v == "deleted"}
-            rect_map: dict[str, tuple[int, int, int, int]] = {}
-            png_buf = create_treemap(
-                node,
-                width_px,
-                height_px,
-                font_size,
-                colormap,
-                None,
-                cushion,
-                highlights={p: v for p, v in all_hl.items() if v != "deleted"} or None,
-                rect_map_out=rect_map,
-                title_suffix=(
-                    f"sha:{sha[:8]}  {datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M')}"
-                ),
-                progress=cumulative_ms / total_anim_ms,
-                dark=dark,
-                logscale=logscale,
-            )
+        png_buf = create_treemap(
+            node,
+            width_px,
+            height_px,
+            font_size,
+            colormap,
+            None,
+            cushion,
+            title_suffix=f"sha:{sha[:8]}  {datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M')}",
+            dark=dark,
+            logscale=logscale,
+        )
+        if inline:
+            display_inline(png_buf, cols=inline_cols)
+        else:
+            assert output is not None
             output.write_bytes(png_buf.read())
             if not quiet:
-                typer.echo(f"  Updated {output}", err=True)
+                typer.echo(f"Wrote {output}", err=True)
 
 
 @app.command(name="hg", epilog=_HG_EPILOG)
@@ -621,21 +675,25 @@ def hg_cmd(
         ".",
         help="Mercurial repository path (optionally suffixed with @rev, e.g. .@tip)",
     ),
-    output: Path = typer.Option(..., "--output", "-o", help="Output PNG file"),
+    output: Path | None = typer.Option(
+        None, "--output", "-o", help="Output file (.png or .mp4/.mov for animations)"
+    ),
     revision_range: str | None = typer.Option(
         None,
         "--range",
-        help="Mercurial revision range (e.g. 0:tip).  Overrides @rev in the path.",
+        help="Mercurial revision range to animate (e.g. 0:tip). Triggers animation mode.",
     ),
-    max_commits: int | None = typer.Option(
-        None, "--max-commits", help="Maximum number of changesets to process"
-    ),
-    last: str | None = typer.Option(
+    period: str | None = typer.Option(
         None,
-        "--last",
-        help="Show changesets within a time period (e.g. 10d, 24h, 2w, 1mo). "
-        "May be combined with --max-commits.",
+        "--period",
+        help="Time window to animate (e.g. 30d, 24h, 2w, 1mo). Triggers animation mode.",
         metavar="PERIOD",
+    ),
+    first: int | None = typer.Option(
+        None, "--first", help="Take only the first N changesets of the range (animation mode only)"
+    ),
+    last: int | None = typer.Option(
+        None, "--last", help="Take only the last N changesets of the range (animation mode only)"
     ),
     exclude: list[str] = typer.Option(
         [], "--exclude", "-e", help="Top-level paths to exclude (repeatable)"
@@ -651,10 +709,10 @@ def hg_cmd(
         True, "--cushion/--no-cushion", help="Apply van Wijk cushion shading"
     ),
     dark: bool = typer.Option(True, "--dark/--light", help="Dark background (default) or light"),
-    animate: bool = typer.Option(
+    inline: bool = typer.Option(
         False,
-        "--animate/--no-animate",
-        help="Build an animated APNG or MP4 from all changesets",
+        "--inline",
+        help="Display snapshot inline in the terminal (iTerm2/Kitty/Ghostty). Single-frame mode only.",  # noqa: E501
     ),
     logscale: float = typer.Option(
         0.0,
@@ -679,25 +737,23 @@ def hg_cmd(
     workers: int | None = typer.Option(
         None,
         "--workers",
-        help="Parallel render workers for animate mode (default: all CPU cores).",
+        help="Parallel render workers (default: all CPU cores).",
     ),
     crf: int = typer.Option(
         23,
         "--crf",
-        help="MP4 quality: Constant Rate Factor (0=lossless, 51=worst; default 23). "
-        "Ignored for APNG output.",
+        help="MP4 quality: Constant Rate Factor (0=lossless, 51=worst; default 23).",
         show_default=True,
     ),
     codec: str = typer.Option(
         "libx264",
         "--codec",
-        help="MP4 video codec: libx264 (H.264, default) or libx265 (H.265, smaller files). "
-        "Ignored for APNG output.",
+        help="MP4 video codec: libx264 (H.264, default) or libx265 (H.265, smaller files).",
     ),
     fade_out: bool = typer.Option(
         False,
         "--fade-out/--no-fade-out",
-        help="Append a fade-out sequence at the end of the animation (--animate only)",
+        help="Append a fade-out sequence at the end of the animation",
     ),
     fade_out_duration: float = typer.Option(
         1.0,
@@ -715,13 +771,21 @@ def hg_cmd(
         "--fade-out-color",
         help=(
             "Target colour for the fade-out: 'auto' (black in dark mode, white in light mode), "
-            "'transparent' (APNG only), a CSS colour name, or a hex code"
+            "'transparent' (PNG/APNG only), a CSS colour name, or a hex code"
         ),
         metavar="COLOR",
     ),
     quiet: bool = typer.Option(False, "--quiet", "-q", help="Suppress non-error output."),
 ) -> None:
-    """Replay Mercurial history changeset-by-changeset as an animated treemap."""
+    """Render a Mercurial repo as a treemap snapshot or animate a changeset range.
+
+    Without --range or --period: renders a single snapshot of the tip (or the
+    tip of the branch/rev given via @ref).  Use --inline to display it directly
+    in the terminal, or --output to save it as a PNG.
+
+    With --range or --period: produces an animation (PNG/APNG or MP4) of the
+    matching changesets.  --first N and --last N slice the changeset list.
+    """
     import shutil
     import subprocess
     from datetime import datetime
@@ -739,28 +803,51 @@ def hg_cmd(
     from dirplot.git_scanner import build_node_tree
     from dirplot.hg_scanner import hg_apply_diff, hg_initial_files, hg_log
 
-    last_dt: datetime | None = None
-    if last is not None:
+    is_animation = revision_range is not None or period is not None
+
+    if inline and is_animation:
+        typer.echo(
+            "Error: --inline is only available in single-frame mode (no --range or --period).",
+            err=True,
+        )
+        raise typer.Exit(1)
+    if not inline and output is None:
+        typer.echo("Error: --output is required unless --inline is given.", err=True)
+        raise typer.Exit(1)
+    if (first is not None or last is not None) and not is_animation:
+        typer.echo("Error: --first and --last require --range or --period.", err=True)
+        raise typer.Exit(1)
+    if first is not None and last is not None:
+        typer.echo("Error: --first and --last are mutually exclusive.", err=True)
+        raise typer.Exit(1)
+
+    if output is not None:
+        if is_animation and output.suffix.lower() not in {".png", ".mp4", ".mov"}:
+            typer.echo(
+                "Error: animation --output must be a .png (APNG), .mp4, or .mov file.", err=True
+            )
+            raise typer.Exit(1)
+        if not is_animation and output.suffix.lower() != ".png":
+            typer.echo("Error: snapshot --output must be a .png file.", err=True)
+            raise typer.Exit(1)
+
+    period_dt: datetime | None = None
+    if period is not None:
         try:
-            last_dt = parse_last_period(last)
+            period_dt = parse_last_period(period)
         except ValueError as exc:
             typer.echo(f"Error: {exc}", err=True)
             raise typer.Exit(1) from exc
 
+    _at_ref: str | None = None
     if "@" in repo_arg:
-        repo_path_str, _, inline_ref = repo_arg.partition("@")
-        if revision_range is None:
-            revision_range = inline_ref
+        repo_path_str, _, _at_ref = repo_arg.partition("@")
     else:
         repo_path_str = repo_arg
     repo = Path(repo_path_str).resolve()
 
     if not (repo / ".hg").exists():
         typer.echo(f"Error: not a Mercurial repository: {repo}", err=True)
-        raise typer.Exit(1)
-
-    if output.suffix.lower() not in {".png", ".apng", ".mp4", ".mov"}:
-        typer.echo("Error: --output must be a .png, .apng, .mp4, or .mov file.", err=True)
         raise typer.Exit(1)
 
     if size is not None:
@@ -773,10 +860,17 @@ def hg_cmd(
     else:
         width_px, height_px = default_canvas_size()
 
+    inline_cols: int | None = None
+    if inline and size is None:
+        inline_cols, *_ = get_terminal_size()
+
     if not quiet:
         typer.echo(f"Reading hg log from {repo} ...", err=True)
+
+    _log_range = revision_range if is_animation else _at_ref
+    _period_for_log = period_dt if revision_range is None else None
     try:
-        commits = hg_log(repo, revision_range, max_commits, last_dt)
+        commits = hg_log(repo, _log_range, None, _period_for_log)
     except subprocess.CalledProcessError as exc:
         typer.echo(f"Error reading hg log: {exc.stderr.strip()}", err=True)
         raise typer.Exit(1) from exc
@@ -784,6 +878,27 @@ def hg_cmd(
     if not commits:
         typer.echo("No changesets found.", err=True)
         raise typer.Exit(1)
+
+    # When --range + --period: filter to changesets within period of the range end.
+    if is_animation and revision_range is not None and period_dt is not None:
+        from datetime import datetime, timezone
+
+        period_seconds = (datetime.now(tz=timezone.utc) - period_dt).total_seconds()
+        cutoff_ts = commits[-1][1] - period_seconds
+        commits = [c for c in commits if c[1] >= cutoff_ts]
+        if not commits:
+            typer.echo("No changesets found within --period of the range end.", err=True)
+            raise typer.Exit(1)
+
+    # Apply --first / --last slicing after fetching (hg log --limit N gives
+    # newest changesets, not oldest, so we must slice in Python instead).
+    if is_animation:
+        if first is not None:
+            commits = commits[:first]
+        elif last is not None:
+            commits = commits[-last:]
+    else:
+        commits = commits[-1:]
 
     try:
         _r = subprocess.run(
@@ -797,74 +912,85 @@ def hg_cmd(
         total_in_repo = None
 
     if not quiet:
-        if total_in_repo is not None and total_in_repo > len(commits):
-            _filters = []
-            if last_dt is not None:
-                _filters.append(f"--last {last}")
-            if max_commits is not None:
-                _filters.append(f"--max-commits {max_commits}")
-            _filter_str = " and ".join(_filters) if _filters else "--max-commits"
-            typer.echo(
-                f"Replaying {len(commits)} of {total_in_repo} changeset(s) "
-                f"(filtered by {_filter_str}) ...",
-                err=True,
-            )
+        if is_animation:
+            if total_in_repo is not None and total_in_repo > len(commits):
+                _filters = []
+                if period_dt is not None:
+                    _filters.append(f"--period {period}")
+                if first is not None:
+                    _filters.append(f"--first {first}")
+                if last is not None:
+                    _filters.append(f"--last {last}")
+                _filter_str = " and ".join(_filters) if _filters else "filters"
+                typer.echo(
+                    f"Animating {len(commits)} of {total_in_repo} changeset(s) "
+                    f"(filtered by {_filter_str}) ...",
+                    err=True,
+                )
+            else:
+                typer.echo(f"Animating {len(commits)} changeset(s) ...", err=True)
         else:
-            typer.echo(f"Replaying {len(commits)} changeset(s) ...", err=True)
-
-    # Pre-compute per-changeset frame durations.
-    if total_duration is not None and animate:
-        if total_duration <= 0:
-            typer.echo("Error: --total-duration must be positive.", err=True)
-            raise typer.Exit(1)
-        timestamps = [ts for _, ts, _ in commits]
-        gaps: list[float] = [
-            max(1.0, float(timestamps[j + 1] - timestamps[j])) for j in range(len(timestamps) - 1)
-        ]
-        gaps.append(gaps[-1] if gaps else 1.0)
-        total_ms = total_duration * 1000
-        commit_durations = proportional_durations(gaps, total_ms)
-        min_d, max_d = min(commit_durations), max(commit_durations)
-        if not quiet:
+            node_id, ts, subject = commits[-1]
             typer.echo(
-                f"  Proportional timing: {min_d}–{max_d} ms/frame"
-                f" (total ~{sum(commit_durations) / 1000:.1f}s)",
+                f"Rendering snapshot: {node_id[:8]}  {subject[:72]}",
                 err=True,
             )
-    else:
-        commit_durations = [frame_duration] * len(commits)
 
     excluded = frozenset(exclude)
     files: dict[str, int] = {}
     prev_node: str | None = None
 
-    if animate:
+    if is_animation:
+        # Pre-compute per-changeset frame durations.
+        if total_duration is not None:
+            if total_duration <= 0:
+                typer.echo("Error: --total-duration must be positive.", err=True)
+                raise typer.Exit(1)
+            timestamps = [ts for _, ts, _ in commits]
+            gaps: list[float] = [
+                max(1.0, float(timestamps[j + 1] - timestamps[j]))
+                for j in range(len(timestamps) - 1)
+            ]
+            gaps.append(gaps[-1] if gaps else 1.0)
+            total_ms = total_duration * 1000
+            commit_durations = proportional_durations(gaps, total_ms)
+            min_d, max_d = min(commit_durations), max(commit_durations)
+            if not quiet:
+                typer.echo(
+                    f"  Proportional timing: {min_d}–{max_d} ms/frame"
+                    f" (total ~{sum(commit_durations) / 1000:.1f}s)",
+                    err=True,
+                )
+        else:
+            commit_durations = [frame_duration] * len(commits)
+
         # ── Phase 1: fast sequential hg pass ─────────────────────────────────
         Snapshot = tuple[int, str, int, dict[str, int], dict[str, str], dict[str, str]]
         snapshots: list[Snapshot] = []
 
-        for i, (node, ts, subject) in enumerate(commits):
+        for i, (node_id, ts, subject) in enumerate(commits):
             if not quiet:
-                typer.echo(f"  [{i + 1}/{len(commits)}] {node[:8]}  {subject[:72]}", err=True)
+                typer.echo(f"  [{i + 1}/{len(commits)}] {node_id[:8]}  {subject[:72]}", err=True)
             try:
                 if prev_node is None:
-                    files = hg_initial_files(repo, node, excluded)
+                    files = hg_initial_files(repo, node_id, excluded)
                     all_hl: dict[str, str] = {}
                 else:
-                    all_hl = hg_apply_diff(repo, files, prev_node, node, excluded)
+                    all_hl = hg_apply_diff(repo, files, prev_node, node_id, excluded)
             except subprocess.CalledProcessError as exc:
-                typer.echo(f"  Warning: skipping {node[:8]}: {exc.stderr.strip()}", err=True)
-                prev_node = node
+                typer.echo(f"  Warning: skipping {node_id[:8]}: {exc.stderr.strip()}", err=True)
+                prev_node = node_id
                 continue
-            prev_node = node
+            prev_node = node_id
             deletions = {p: v for p, v in all_hl.items() if v == "deleted"}
             cur_hl = {p: v for p, v in all_hl.items() if v != "deleted"}
-            snapshots.append((i, node, ts, dict(files), cur_hl, deletions))
+            snapshots.append((i, node_id, ts, dict(files), cur_hl, deletions))
 
         if not snapshots:
             typer.echo("No frames captured.", err=True)
             raise typer.Exit(1)
 
+        assert output is not None
         run_vcs_animation(
             repo=repo,
             snapshots=snapshots,
@@ -889,50 +1015,36 @@ def hg_cmd(
         )
 
     else:
-        # ── Non-animate: render and overwrite output file per changeset ───────
-        total_anim_ms = sum(commit_durations)
-        cumulative_ms = 0.0
+        # ── Single frame: render the last changeset ───────────────────────────
+        node_id, ts, subject = commits[-1]
+        try:
+            files = hg_initial_files(repo, node_id, excluded)
+        except subprocess.CalledProcessError as exc:
+            typer.echo(f"Error reading changeset {node_id[:8]}: {exc.stderr.strip()}", err=True)
+            raise typer.Exit(1) from exc
 
-        for i, (node, ts, subject) in enumerate(commits):
-            if not quiet:
-                typer.echo(f"  [{i + 1}/{len(commits)}] {node[:8]}  {subject[:72]}", err=True)
-            try:
-                if prev_node is None:
-                    files = hg_initial_files(repo, node, excluded)
-                    all_hl = {}
-                else:
-                    all_hl = hg_apply_diff(repo, files, prev_node, node, excluded)
-            except subprocess.CalledProcessError as exc:
-                typer.echo(f"  Warning: skipping {node[:8]}: {exc.stderr.strip()}", err=True)
-                prev_node = node
-                continue
-            prev_node = node
-            cumulative_ms += commit_durations[i]
+        node_tree = build_node_tree(repo, files, depth)
+        if logscale > 1:
+            apply_log_sizes(node_tree, logscale)
 
-            node_tree = build_node_tree(repo, files, depth)
-            if logscale > 1:
-                apply_log_sizes(node_tree, logscale)
+        from dirplot.render_png import create_treemap
 
-            from dirplot.render_png import create_treemap
-
-            rect_map: dict[str, tuple[int, int, int, int]] = {}
-            png_buf = create_treemap(
-                node_tree,
-                width_px,
-                height_px,
-                font_size,
-                colormap,
-                None,
-                cushion,
-                highlights={p: v for p, v in all_hl.items() if v != "deleted"} or None,
-                rect_map_out=rect_map,
-                title_suffix=(
-                    f"rev:{node[:8]}  {datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M')}"
-                ),
-                progress=cumulative_ms / total_anim_ms,
-                dark=dark,
-                logscale=logscale,
-            )
+        png_buf = create_treemap(
+            node_tree,
+            width_px,
+            height_px,
+            font_size,
+            colormap,
+            None,
+            cushion,
+            title_suffix=f"rev:{node_id[:8]}  {datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M')}",  # noqa: E501
+            dark=dark,
+            logscale=logscale,
+        )
+        if inline:
+            display_inline(png_buf, cols=inline_cols)
+        else:
+            assert output is not None
             output.write_bytes(png_buf.read())
             if not quiet:
-                typer.echo(f"  Updated {output}", err=True)
+                typer.echo(f"Wrote {output}", err=True)
