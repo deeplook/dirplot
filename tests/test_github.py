@@ -91,6 +91,15 @@ def test_parse_github_url_with_branch() -> None:
     )
 
 
+def test_parse_github_url_with_at_ref() -> None:
+    assert parse_github_path("https://github.com/owner/repo@v0.4.0") == (
+        "owner",
+        "repo",
+        "v0.4.0",
+        "",
+    )
+
+
 def test_parse_github_url_scheme_with_subpath() -> None:
     assert parse_github_path("github://owner/repo/sub/path") == ("owner", "repo", None, "sub/path")
 

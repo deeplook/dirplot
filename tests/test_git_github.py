@@ -27,7 +27,7 @@ pytestmark = pytest.mark.skipif(
 
 
 def test_git_github_animate(tmp_path: Path) -> None:
-    """Blobless-clone dirplot/dirplot and render the last 10 commits as an APNG."""
+    """Blobless-clone dirplot/dirplot and animate the last 10 commits as an APNG."""
     out = tmp_path / "history.png"
     result = runner.invoke(
         app,
@@ -36,8 +36,9 @@ def test_git_github_animate(tmp_path: Path) -> None:
             "github://deeplook/dirplot",
             "--output",
             str(out),
-            "--animate",
-            "--max-commits",
+            "--range",
+            "HEAD~9..HEAD",
+            "--first",
             "10",
             "--size",
             "400x300",
