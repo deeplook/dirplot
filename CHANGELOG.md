@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.5] - 2026-05-15
+
+### Changed
+
+- **`-o name.svg` no longer auto-opens a browser** — defaults to `--no-show`; pass `--show` to override. PNG unchanged.
+
+### Internal
+
+- **New architecture** — `VirtualPath` protocol unifies filesystem/archive path handling;
+  `TreeSource` registry replaces per-backend dispatch; `RenderingPipeline` centralises
+  scan → render → display orchestration; `ConsoleSession` replaces scattered terminal globals.
+
 ## [0.4.4] - 2026-05-15
 
 ### Fixed
