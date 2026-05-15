@@ -80,8 +80,8 @@ def test_git_local_at_branch(local_repo: Path, tmp_path: Path) -> None:
 
 
 def test_git_local_at_branch_animate(local_repo: Path, tmp_path: Path) -> None:
-    """dirplot git path@branch --animate produces a multi-frame APNG."""
-    out = tmp_path / "out.apng"
+    """dirplot git path@branch --range produces a multi-frame APNG."""
+    out = tmp_path / "out.png"
     result = runner.invoke(
         app,
         [
@@ -89,7 +89,8 @@ def test_git_local_at_branch_animate(local_repo: Path, tmp_path: Path) -> None:
             f"{local_repo}@feature",
             "--output",
             str(out),
-            "--animate",
+            "--range",
+            "feature",
             "--size",
             "200x150",
         ],
@@ -135,11 +136,11 @@ def test_git_local_no_at_syntax(local_repo: Path, tmp_path: Path) -> None:
 
 @pytest.mark.skipif(not _ffmpeg_available, reason="ffmpeg not found")
 def test_git_local_animate_mp4(local_repo: Path, tmp_path: Path) -> None:
-    """dirplot git --animate produces a valid .mp4 file."""
+    """dirplot git --range produces a valid .mp4 file."""
     out = tmp_path / "out.mp4"
     result = runner.invoke(
         app,
-        ["git", str(local_repo), "--output", str(out), "--animate", "--size", "200x150"],
+        ["git", str(local_repo), "--output", str(out), "--range", "HEAD", "--size", "200x150"],
     )
     assert result.exit_code == 0, result.output
     assert out.exists()
@@ -151,7 +152,7 @@ def test_git_local_animate_mp4_crf(local_repo: Path, tmp_path: Path) -> None:
     """--crf controls MP4 quality: lower CRF produces a larger file."""
     out_hq = tmp_path / "hq.mp4"
     out_lq = tmp_path / "lq.mp4"
-    common = ["git", str(local_repo), "--animate", "--size", "200x150"]
+    common = ["git", str(local_repo), "--range", "HEAD", "--size", "200x150"]
     runner.invoke(app, common + ["--output", str(out_hq), "--crf", "0"])
     runner.invoke(app, common + ["--output", str(out_lq), "--crf", "51"])
     assert out_hq.stat().st_size > out_lq.stat().st_size
@@ -201,49 +202,49 @@ def test_parse_last_period_returns_utc() -> None:
 
 
 def test_parse_last_period_invalid_unit() -> None:
-    with pytest.raises(ValueError, match="Invalid --last"):
+    with pytest.raises(ValueError, match="Invalid --period"):
         parse_last_period("3y")
 
 
 def test_parse_last_period_no_number() -> None:
-    with pytest.raises(ValueError, match="Invalid --last"):
+    with pytest.raises(ValueError, match="Invalid --period"):
         parse_last_period("d")
 
 
 def test_parse_last_period_empty() -> None:
-    with pytest.raises(ValueError, match="Invalid --last"):
+    with pytest.raises(ValueError, match="Invalid --period"):
         parse_last_period("")
 
 
 # ---------------------------------------------------------------------------
-# --last integration tests
+# --period integration tests
 # ---------------------------------------------------------------------------
 
 
-def test_git_last_includes_recent_commits(local_repo: Path, tmp_path: Path) -> None:
-    """--last 1h includes commits made moments ago."""
+def test_git_period_includes_recent_commits(local_repo: Path, tmp_path: Path) -> None:
+    """--period 1h includes commits made moments ago and triggers animation."""
     out = tmp_path / "out.png"
     result = runner.invoke(
         app,
-        ["git", str(local_repo), "--output", str(out), "--size", "200x150", "--last", "1h"],
+        ["git", str(local_repo), "--output", str(out), "--size", "200x150", "--period", "1h"],
     )
     assert result.exit_code == 0, result.output
     assert out.exists() and out.stat().st_size > 0
 
 
-def test_git_last_invalid_value(local_repo: Path, tmp_path: Path) -> None:
-    """--last with an unrecognised unit exits 1 with a clear error."""
+def test_git_period_invalid_value(local_repo: Path, tmp_path: Path) -> None:
+    """--period with an unrecognised unit exits 1 with a clear error."""
     out = tmp_path / "out.png"
     result = runner.invoke(
         app,
-        ["git", str(local_repo), "--output", str(out), "--size", "200x150", "--last", "3y"],
+        ["git", str(local_repo), "--output", str(out), "--size", "200x150", "--period", "3y"],
     )
     assert result.exit_code == 1
-    assert "Invalid --last" in result.output
+    assert "Invalid --period" in result.output
 
 
-def test_git_last_combined_with_max_commits(local_repo: Path, tmp_path: Path) -> None:
-    """--last and --max-commits can be combined (date filter + count cap)."""
+def test_git_period_combined_with_first(local_repo: Path, tmp_path: Path) -> None:
+    """--period and --first can be combined (date filter + count cap)."""
     out = tmp_path / "out.png"
     result = runner.invoke(
         app,
@@ -254,9 +255,9 @@ def test_git_last_combined_with_max_commits(local_repo: Path, tmp_path: Path) ->
             str(out),
             "--size",
             "200x150",
-            "--last",
+            "--period",
             "1h",
-            "--max-commits",
+            "--first",
             "1",
         ],
     )
@@ -310,14 +311,170 @@ def repo_with_old_base(tmp_path: Path) -> Path:
     return repo
 
 
-def test_git_last_excludes_old_commits(repo_with_old_base: Path, tmp_path: Path) -> None:
-    """--last 1h returns only the 2 recent commits, excluding the year-2000 base."""
+def test_git_period_excludes_old_commits(repo_with_old_base: Path, tmp_path: Path) -> None:
+    """--period 1h returns only the 2 recent commits, excluding the year-2000 base."""
     out = tmp_path / "out.png"
     result = runner.invoke(
         app,
-        ["git", str(repo_with_old_base), "--output", str(out), "--size", "200x150", "--last", "1h"],
+        [
+            "git",
+            str(repo_with_old_base),
+            "--output",
+            str(out),
+            "--size",
+            "200x150",
+            "--period",
+            "1h",
+        ],
     )
     assert result.exit_code == 0, result.output
-    # 3 commits total on HEAD, only 2 pass the --last 1h filter
-    assert "Replaying 2 of 3" in result.output
-    assert "filtered by --last 1h" in result.output
+    # 3 commits total on HEAD, only 2 pass the --period 1h filter
+    assert "Animating 2 of 3" in result.output
+    assert "filtered by --period 1h" in result.output
+
+
+# ---------------------------------------------------------------------------
+# Validation error tests
+# ---------------------------------------------------------------------------
+
+
+def test_git_inline_with_range_rejected(local_repo: Path) -> None:
+    """--inline is rejected when --range is given (animation mode)."""
+    result = runner.invoke(
+        app,
+        ["git", str(local_repo), "--inline", "--range", "main", "--size", "200x150"],
+    )
+    assert result.exit_code == 1
+    assert "single-frame" in result.output or "--inline" in result.output
+
+
+def test_git_inline_with_period_rejected(local_repo: Path) -> None:
+    """--inline is rejected when --period is given (animation mode)."""
+    result = runner.invoke(
+        app,
+        ["git", str(local_repo), "--inline", "--period", "1h", "--size", "200x150"],
+    )
+    assert result.exit_code == 1
+    assert "single-frame" in result.output or "--inline" in result.output
+
+
+def test_git_output_required_without_inline(local_repo: Path) -> None:
+    """--output is required when --inline is not given."""
+    result = runner.invoke(app, ["git", str(local_repo), "--size", "200x150"])
+    assert result.exit_code == 1
+    assert "--output" in result.output or "required" in result.output
+
+
+def test_git_first_last_mutually_exclusive(local_repo: Path, tmp_path: Path) -> None:
+    """--first and --last together exit 1."""
+    out = tmp_path / "out.png"
+    result = runner.invoke(
+        app,
+        [
+            "git",
+            str(local_repo),
+            "--output",
+            str(out),
+            "--range",
+            "main",
+            "--first",
+            "1",
+            "--last",
+            "1",
+            "--size",
+            "200x150",
+        ],
+    )
+    assert result.exit_code == 1
+    assert "mutually exclusive" in result.output
+
+
+def test_git_first_without_animation_mode_rejected(local_repo: Path, tmp_path: Path) -> None:
+    """--first without --range or --period exits 1."""
+    out = tmp_path / "out.png"
+    result = runner.invoke(
+        app,
+        ["git", str(local_repo), "--output", str(out), "--first", "1", "--size", "200x150"],
+    )
+    assert result.exit_code == 1
+    assert "--range" in result.output or "--period" in result.output
+
+
+def test_git_last_without_animation_mode_rejected(local_repo: Path, tmp_path: Path) -> None:
+    """--last without --range or --period exits 1."""
+    out = tmp_path / "out.png"
+    result = runner.invoke(
+        app,
+        ["git", str(local_repo), "--output", str(out), "--last", "1", "--size", "200x150"],
+    )
+    assert result.exit_code == 1
+    assert "--range" in result.output or "--period" in result.output
+
+
+# ---------------------------------------------------------------------------
+# --last N functional tests
+# ---------------------------------------------------------------------------
+
+
+def test_git_last_n_animate(local_repo: Path, tmp_path: Path) -> None:
+    """--range main --last 1 produces a 1-frame animation."""
+    out = tmp_path / "out.png"
+    result = runner.invoke(
+        app,
+        [
+            "git",
+            str(local_repo),
+            "--output",
+            str(out),
+            "--range",
+            "main",
+            "--last",
+            "1",
+            "--size",
+            "200x150",
+        ],
+    )
+    assert result.exit_code == 0, result.output
+    assert out.exists()
+    assert out.stat().st_size > 0
+
+
+def test_git_first_vs_last_select_different_commits(local_repo: Path, tmp_path: Path) -> None:
+    """--first 1 picks the oldest commit; --last 1 picks the newest."""
+    out_first = tmp_path / "first.png"
+    out_last = tmp_path / "last.png"
+    result_first = runner.invoke(
+        app,
+        [
+            "git",
+            str(local_repo),
+            "--output",
+            str(out_first),
+            "--range",
+            "main",
+            "--first",
+            "1",
+            "--size",
+            "200x150",
+        ],
+    )
+    result_last = runner.invoke(
+        app,
+        [
+            "git",
+            str(local_repo),
+            "--output",
+            str(out_last),
+            "--range",
+            "main",
+            "--last",
+            "1",
+            "--size",
+            "200x150",
+        ],
+    )
+    assert result_first.exit_code == 0, result_first.output
+    assert result_last.exit_code == 0, result_last.output
+    # The subjects reported in output differ: "add hello.py" vs "add world.py"
+    assert "add hello.py" in result_first.output
+    assert "add world.py" in result_last.output
