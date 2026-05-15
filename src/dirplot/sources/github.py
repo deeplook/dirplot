@@ -2,12 +2,17 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from dirplot.github import (
     build_tree_github,
     is_github_path,
     parse_github_path,
 )
 from dirplot.sources import register_source
+
+if TYPE_CHECKING:
+    from dirplot.scanner import Node
 
 
 class GitHubSource:

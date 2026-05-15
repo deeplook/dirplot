@@ -29,7 +29,7 @@ class SSHSource:
         *,
         exclude: frozenset[str] = frozenset(),
         depth: int | None = None,
-        **kwargs,
+        **kwargs: object,
     ) -> Node:
         """Scan a remote directory via SSH.
 
@@ -45,12 +45,15 @@ class SSHSource:
         user, host, remote_path = parse_ssh_path(path)
 
         # Connect and scan
+        ssh_key = kwargs.get("ssh_key")
+        ssh_password = kwargs.get("ssh_password")
+        port = kwargs.get("port")
         client = connect(
             host,
             user,
-            ssh_key=kwargs.get("ssh_key"),
-            ssh_password=kwargs.get("ssh_password"),
-            port=kwargs.get("port"),
+            ssh_key=ssh_key if isinstance(ssh_key, str) else None,
+            ssh_password=ssh_password if isinstance(ssh_password, str) else None,
+            port=port if isinstance(port, int) else None,
         )
 
         try:

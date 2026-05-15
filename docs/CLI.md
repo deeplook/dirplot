@@ -59,7 +59,7 @@ dirplot map . --colormap Set2 --font-size 18
 dirplot map . --log-scale 4
 
 # Interactive SVG output (hover highlight + floating tooltip)
-dirplot map . --output treemap.svg --no-show
+dirplot map . --output treemap.svg
 
 # Pipe PNG bytes to stdout
 dirplot map . --output - | convert - -resize 50% small.png
@@ -89,7 +89,7 @@ See [EXAMPLES.md](EXAMPLES.md) for detailed examples of each remote backend and 
 | `--paths-from` | | — | File with path list (`tree`/`find` output); `-` for stdin |
 | `--output` | `-o` | — | Save to this path (PNG or SVG); `-` for stdout |
 | `--format` | `-f` | auto | Output format: `png` or `svg` |
-| `--show/--no-show` | | `--show` | Display the image after rendering (`--output -` implies `--no-show`) |
+| `--show/--no-show` | | `--show` | Display the image after rendering; SVG saved with `-o` defaults to `--no-show` (`--output -` also implies `--no-show`) |
 | `--inline` | | off | Display in terminal (auto-detected protocol; PNG only) — see [Inline terminal display](#inline-terminal-display) |
 | `--legend [N]` | | off | File-count legend; `N` = max entries (default: 20) |
 | `--font-size` | | `12` | Directory label font size in pixels |
@@ -220,7 +220,7 @@ dirplot diff s3://my-bucket/v1 ./v2
 dirplot diff old/ new/ --output diff.png --no-show
 
 # Light mode, SVG output
-dirplot diff old/ new/ --light --output diff.svg --no-show
+dirplot diff old/ new/ --light --output diff.svg
 ```
 
 ### Options
@@ -229,7 +229,7 @@ dirplot diff old/ new/ --light --output diff.svg --no-show
 |---|---|---|---|
 | `--output` | `-o` | — | Save to this path (PNG or SVG); `-` for stdout |
 | `--format` | `-f` | auto | Output format: `png` or `svg` |
-| `--show/--no-show` | | `--show` | Display the image after rendering (`--output -` implies `--no-show`) |
+| `--show/--no-show` | | `--show` | Display the image after rendering; SVG saved with `-o` defaults to `--no-show` (`--output -` also implies `--no-show`) |
 | `--inline` | | off | Display in terminal (auto-detected protocol; PNG only) |
 | `--context/--no-context` | | `--context` | Include unchanged files in the treemap |
 | `--font-size` | | `12` | Directory label font size in pixels |

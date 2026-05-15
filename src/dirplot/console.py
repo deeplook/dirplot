@@ -17,7 +17,7 @@ from typing import Protocol
 class DisplayOutput(Protocol):
     """Protocol for display output handlers."""
 
-    def show(self, buf: io.BytesIO, title: str | None = None, **kwargs) -> None:
+    def show(self, buf: io.BytesIO, title: str | None = None, **kwargs: object) -> None:
         """Display the buffer."""
         ...
 
@@ -83,7 +83,7 @@ class ConsoleSession:
 
         # Detect terminal size
         try:
-            cols, rows = get_terminal_size()
+            cols, rows, _, _ = get_terminal_size()
         except Exception:
             cols, rows = 80, 24  # Sensible defaults
 
@@ -118,9 +118,7 @@ class ConsoleSession:
         """Terminal rows."""
         return self.size[1]
 
-    def get_canvas_size(
-        self, requested: tuple[int, int] | None = None
-    ) -> tuple[int, int]:
+    def get_canvas_size(self, requested: tuple[int, int] | None = None) -> tuple[int, int]:
         """Get the canvas size for rendering.
 
         Args:
@@ -208,24 +206,28 @@ class MockConsoleSession(ConsoleSession):
             term_program="MockTerminal",
         )
         super().__init__(capabilities, size)
-        self.display_calls: list[dict] = []
+        self.display_calls: list[dict[str, object]] = []
         self.logs: list[tuple[str, bool]] = []
 
     def display_inline(self, buf: io.BytesIO, cols: int | None = None) -> None:
         """Record inline display call."""
-        self.display_calls.append({
-            "method": "inline",
-            "cols": cols,
-            "size": len(buf.getvalue()),
-        })
+        self.display_calls.append(
+            {
+                "method": "inline",
+                "cols": cols,
+                "size": len(buf.getvalue()),
+            }
+        )
 
     def display_window(self, buf: io.BytesIO, title: str | None = None) -> None:
         """Record window display call."""
-        self.display_calls.append({
-            "method": "window",
-            "title": title,
-            "size": len(buf.getvalue()),
-        })
+        self.display_calls.append(
+            {
+                "method": "window",
+                "title": title,
+                "size": len(buf.getvalue()),
+            }
+        )
 
     def log(self, msg: str, err: bool = False) -> None:
         """Record log call."""

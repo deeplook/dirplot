@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import sys
 from pathlib import Path
 
 import typer
@@ -20,7 +19,9 @@ def _parse_size(size_str: str | None) -> tuple[int, int] | None:
         w_str, h_str = size_str.lower().split("x", 1)
         return int(w_str), int(h_str)
     except ValueError:
-        raise typer.BadParameter(f"Invalid size format: {size_str}. Expected WIDTHxHEIGHT")
+        raise typer.BadParameter(
+            f"Invalid size format: {size_str}. Expected WIDTHxHEIGHT"
+        ) from None
 
 
 @app.command(name="map-pipeline", hidden=True)
@@ -32,11 +33,9 @@ def map_pipeline(
     output: Path | None = typer.Option(
         None, "--output", "-o", help="Output file (use .svg for SVG output)"
     ),
-    show: bool = typer.Option(True, "--show/--no-show", help="Display after rendering"),
+    show: bool | None = typer.Option(None, "--show/--no-show", help="Display after rendering"),
     inline: bool = typer.Option(False, "--inline", help="Show inline in terminal"),
-    size: str | None = typer.Option(
-        None, "--size", help="Output size as WIDTHxHEIGHT"
-    ),
+    size: str | None = typer.Option(None, "--size", help="Output size as WIDTHxHEIGHT"),
     font_size: int = typer.Option(DEFAULT_FONT_SIZE, "--font-size"),
     colormap: str = typer.Option(DEFAULT_COLORMAP, "--colormap"),
     exclude: list[str] = typer.Option([], "--exclude", "-e"),
@@ -74,7 +73,7 @@ def map_pipeline(
         dark=not light,
         format="svg" if (output and output.suffix == ".svg") else "png",
         output=output,
-        show=show,
+        show=show if show is not None else (output is None or output.suffix != ".svg"),
         inline=inline,
         log_callback=log,
     )
@@ -85,7 +84,7 @@ def map_pipeline(
         pipeline.run()
     except FileNotFoundError as e:
         typer.echo(f"Error: {e}", err=True)
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
     except ValueError as e:
         typer.echo(f"Error: {e}", err=True)
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e

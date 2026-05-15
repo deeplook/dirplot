@@ -6,7 +6,7 @@ including filesystem, git, mercurial, archives, SSH, S3, and more.
 
 from __future__ import annotations
 
-from pathlib import Path
+from contextlib import suppress
 from typing import Protocol, runtime_checkable
 
 from dirplot.scanner import Node
@@ -79,7 +79,7 @@ class SourceRegistry:
     (github://, s3://) before generic ones (filesystem).
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._sources: list[TreeSource] = []
 
     def register(self, source: TreeSource) -> None:
@@ -171,23 +171,17 @@ def scan_any(
 
 # Import and register built-in sources
 # These imports register the sources automatically
-from dirplot.sources import filesystem
+from dirplot.sources import filesystem as filesystem  # noqa: E402
 
 # Import optional sources (these may fail if dependencies are missing)
-try:
-    from dirplot.sources import archive
-except ImportError:
-    pass
+with suppress(ImportError):
+    from dirplot.sources import archive as archive  # noqa: F401
 
-try:
-    from dirplot.sources import github
-except ImportError:
-    pass
+with suppress(ImportError):
+    from dirplot.sources import github as github  # noqa: F401
 
-try:
-    from dirplot.sources import ssh
-except ImportError:
-    pass
+with suppress(ImportError):
+    from dirplot.sources import ssh as ssh  # noqa: F401
 
 __all__ = [
     "TreeSource",

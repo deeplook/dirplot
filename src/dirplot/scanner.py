@@ -9,14 +9,13 @@ from __future__ import annotations
 
 import math
 import os
+from collections.abc import Iterator, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, TypedDict
 
-from dirplot.filters import matches_exclude
-
 if TYPE_CHECKING:
-    from dirplot.vpath import VirtualPath
+    from dirplot.vpath import StatResult, VirtualPath
 
 NO_EXT = "(no ext)"
 BREADCRUMB_SEP = " / "
@@ -55,7 +54,7 @@ class Node:
     size: int  # bytes; sum of all descendants for directories
     is_dir: bool
     extension: str = ""
-    children: list["Node"] = field(default_factory=list)
+    children: list[Node] = field(default_factory=list)
     original_size: int = 0  # set by apply_log_sizes; 0 means size was never transformed
 
 
@@ -69,9 +68,8 @@ def _matches_exclude(name: str, path: str, patterns: frozenset[str]) -> bool:
         if fnmatch.fnmatch(path, pattern):
             return True
         # Also check without leading **/
-        if pattern.startswith("**/"):
-            if fnmatch.fnmatch(name, pattern[3:]):
-                return True
+        if pattern.startswith("**/") and fnmatch.fnmatch(name, pattern[3:]):
+            return True
     return False
 
 
@@ -99,11 +97,11 @@ def build_tree_v2(
         # Apply exclude patterns
         if _matches_exclude(entry.name, entry.path, exclude):
             continue
-        
+
         # Skip symlinks (already filtered by FileSystemPath.iterdir, but check for safety)
-        if hasattr(entry, 'is_symlink') and entry.is_symlink():
+        if hasattr(entry, "is_symlink") and entry.is_symlink():
             continue
-        
+
         # Skip special files that are neither files nor directories
         if not entry.is_dir() and not entry.is_file():
             continue
@@ -207,7 +205,7 @@ def prune_to_subtrees(node: Node, paths: set[str]) -> Node:
 
 
 def build_tree_multi_v2(
-    roots: list[VirtualPath],
+    roots: Sequence[VirtualPath],
     exclude: frozenset[str] = frozenset(),
     depth: int | None = None,
 ) -> Node:
@@ -217,34 +215,37 @@ def build_tree_multi_v2(
 
     # Find common parent
     resolved = [r.path for r in roots]
-    common_str = os.path.commonpath(resolved) if len(resolved) > 1 else str(Path(resolved[0]).parent)
+    common_str = (
+        os.path.commonpath(resolved) if len(resolved) > 1 else str(Path(resolved[0]).parent)
+    )
     common = Path(common_str)
 
     # Build synthetic root
     class SyntheticPath:
-        def __init__(self, name: str, path: str, children: list[VirtualPath]):
+        def __init__(self, name: str, path: str, children: Sequence[VirtualPath]):
             self.name = name
             self.path = path
             self._children = children
 
-        def iterdir(self):
+        def iterdir(self) -> Iterator[VirtualPath]:
             return iter(self._children)
 
-        def is_dir(self):
+        def is_dir(self) -> bool:
             return True
 
-        def is_file(self):
+        def is_file(self) -> bool:
             return False
 
-        def stat(self):
+        def stat(self) -> StatResult:
             from dirplot.vpath import StatResult
+
             return StatResult(st_size=0)
 
-        def exists(self):
+        def exists(self) -> bool:
             return True
 
     synthetic = SyntheticPath(
-        name=common.name or '/',
+        name=common.name or "/",
         path=str(common),
         children=roots,
     )

@@ -8,10 +8,11 @@ code found in individual commands.
 from __future__ import annotations
 
 import io
+from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import TYPE_CHECKING, Callable, Literal, Protocol
+from typing import TYPE_CHECKING, Literal, Protocol
 
 from dirplot.scanner import Node
 from dirplot.sources import scan_any
@@ -146,6 +147,7 @@ class RenderingPipeline:
                 self._console = self.config.console
             else:
                 from dirplot.console import ConsoleSession
+
                 self._console = ConsoleSession.detect()
         return self._console
 
@@ -226,8 +228,8 @@ class RenderingPipeline:
 
         # Render based on format
         if self.config.format == "svg":
-            from dirplot.svg_render import create_treemap_svg
             from dirplot.scanner import max_depth
+            from dirplot.svg_render import create_treemap_svg
 
             buf = create_treemap_svg(
                 tree,
@@ -299,7 +301,7 @@ class RenderingPipeline:
 
 
 @contextmanager
-def pipeline_context(config: PipelineConfig):
+def pipeline_context(config: PipelineConfig) -> Iterator[RenderingPipeline]:
     """Context manager for running a pipeline with automatic cleanup."""
     pipeline = RenderingPipeline(config)
     try:
