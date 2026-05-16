@@ -15,6 +15,7 @@ from dirplot.helpers.animation import (
     resolve_fade_color,
     worker_ignore_sigint,
 )
+from dirplot.helpers.highlights import resolve_highlight_specs
 from dirplot.helpers.time import parse_last_period
 from dirplot.scanner import apply_log_sizes
 from dirplot.terminal import default_canvas_size, get_terminal_size
@@ -322,6 +323,17 @@ def git_cmd(
         metavar="COLOR",
     ),
     quiet: bool = typer.Option(False, "--quiet", "-q", help="Suppress non-error output."),
+    highlight: list[str] = typer.Option(
+        [],
+        "--highlight",
+        "-H",
+        help=(
+            "Highlight matching paths with a coloured border (repeatable). "
+            "Accepts exact paths or glob patterns including ** (e.g. src/**/*.py). "
+            "Append @color to set the border colour (e.g. '**/*.py@orange'); "
+            "defaults to red."
+        ),
+    ),
 ) -> None:
     """Render a git repo as a treemap snapshot or animate a commit range.
 
@@ -609,6 +621,11 @@ def git_cmd(
             typer.echo("No frames captured.", err=True)
             raise typer.Exit(1)
 
+        if highlight:
+            for _idx, _sha, _ts, files_copy, cur_hl, _deletions in snapshots:
+                abs_paths = [(repo / rel).as_posix() for rel in files_copy]
+                cur_hl.update(resolve_highlight_specs(highlight, abs_paths))
+
         assert output is not None
         run_vcs_animation(
             repo=repo,
@@ -648,6 +665,11 @@ def git_cmd(
 
         from dirplot.render_png import create_treemap
 
+        hl: dict[str, str] | None = None
+        if highlight:
+            abs_paths = [(repo / rel).as_posix() for rel in files]
+            hl = resolve_highlight_specs(highlight, abs_paths)
+
         png_buf = create_treemap(
             node,
             width_px,
@@ -659,6 +681,7 @@ def git_cmd(
             title_suffix=f"sha:{sha[:8]}  {datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M')}",
             dark=dark,
             logscale=logscale,
+            highlights=hl,
         )
         if inline:
             display_inline(png_buf, cols=inline_cols)
@@ -776,6 +799,17 @@ def hg_cmd(
         metavar="COLOR",
     ),
     quiet: bool = typer.Option(False, "--quiet", "-q", help="Suppress non-error output."),
+    highlight: list[str] = typer.Option(
+        [],
+        "--highlight",
+        "-H",
+        help=(
+            "Highlight matching paths with a coloured border (repeatable). "
+            "Accepts exact paths or glob patterns including ** (e.g. src/**/*.py). "
+            "Append @color to set the border colour (e.g. '**/*.py@orange'); "
+            "defaults to red."
+        ),
+    ),
 ) -> None:
     """Render a Mercurial repo as a treemap snapshot or animate a changeset range.
 
@@ -990,6 +1024,11 @@ def hg_cmd(
             typer.echo("No frames captured.", err=True)
             raise typer.Exit(1)
 
+        if highlight:
+            for _idx, _nid, _ts, files_copy, cur_hl, _deletions in snapshots:
+                abs_paths = [(repo / rel).as_posix() for rel in files_copy]
+                cur_hl.update(resolve_highlight_specs(highlight, abs_paths))
+
         assert output is not None
         run_vcs_animation(
             repo=repo,
@@ -1029,6 +1068,11 @@ def hg_cmd(
 
         from dirplot.render_png import create_treemap
 
+        hl_hg: dict[str, str] | None = None
+        if highlight:
+            abs_paths = [(repo / rel).as_posix() for rel in files]
+            hl_hg = resolve_highlight_specs(highlight, abs_paths)
+
         png_buf = create_treemap(
             node_tree,
             width_px,
@@ -1040,6 +1084,7 @@ def hg_cmd(
             title_suffix=f"rev:{node_id[:8]}  {datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M')}",  # noqa: E501
             dark=dark,
             logscale=logscale,
+            highlights=hl_hg,
         )
         if inline:
             display_inline(png_buf, cols=inline_cols)

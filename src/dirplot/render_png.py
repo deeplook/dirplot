@@ -519,6 +519,7 @@ HIGHLIGHT_COLORS: dict[str, tuple[int, int, int]] = {
     "modified": (0, 128, 255),
     "deleted": (255, 0, 0),
     "moved": (255, 165, 0),
+    "highlight": (255, 0, 0),
 }
 
 HIGHLIGHT_BORDER = 3  # pixels
@@ -541,7 +542,7 @@ def _draw_highlights(
         if path not in rect_map:
             continue
         x, y, w, h = rect_map[path]
-        color = HIGHLIGHT_COLORS.get(event_type, (255, 255, 0))
+        color: tuple[int, int, int] | str = HIGHLIGHT_COLORS.get(event_type, event_type)
         border = min(HIGHLIGHT_BORDER, w // 3, h // 3)
         if border < 1:
             continue

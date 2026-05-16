@@ -298,6 +298,7 @@ def _draw_node_svg(
     cushion_dir_grad: drawsvg.LinearGradient | None = None,
     root_label: str | None = None,
     dark: bool = True,
+    rect_map: dict[str, tuple[float, float, float, float]] | None = None,
 ) -> None:
     """Recursively draw *node* and its children into *d*."""
     if w < 2 or h < 2:
@@ -325,6 +326,8 @@ def _draw_node_svg(
             data_is_dir="0",
         )
         d.append(rect)
+        if rect_map is not None and hasattr(node, "path"):
+            rect_map[node.path.as_posix()] = (x, y, w, h)
 
         if cushion_grad is not None and w >= 4 and h >= 4:
             d.append(drawsvg.Rectangle(x, y, w, h, fill=cushion_grad, pointer_events="none"))
@@ -405,6 +408,8 @@ def _draw_node_svg(
             data_ext="",
         )
         d.append(hdr)
+        if rect_map is not None and hasattr(node, "path"):
+            rect_map[node.path.as_posix()] = (x, y, w, h)
 
         label = _truncate_breadcrumb_svg(
             root_label if root_label is not None else node.name, font_size, w - 8
@@ -465,6 +470,7 @@ def _draw_node_svg(
             cushion_grad,
             cushion_dir_grad,
             dark=dark,
+            rect_map=rect_map,
         )
 
     # Directory-level cushion overlay (half strength) drawn after children so it
@@ -604,6 +610,7 @@ def create_treemap_svg(
     cushion: bool = True,
     tree_depth: int | None = None,
     dark: bool = True,
+    highlights: dict[str, str] | None = None,
 ) -> io.BytesIO:
     """Render a nested squarified treemap and return it as SVG in a BytesIO buffer.
 
@@ -676,6 +683,7 @@ def create_treemap_svg(
         f"{root_node.name} \u2014 {n_files:,} files, {n_dirs:,} dirs,"
         f" {_human_bytes(total_bytes)} ({total_bytes:,} bytes), depth: {depth}"
     )
+    rect_map: dict[str, tuple[float, float, float, float]] = {} if highlights else {}
     _draw_node_svg(
         d,
         root_node,
@@ -689,7 +697,39 @@ def create_treemap_svg(
         cushion_dir_grad,
         root_label=root_label,
         dark=dark,
+        rect_map=rect_map if highlights else None,
     )
+
+    # 4b. Highlight borders
+    if highlights:
+        _svg_highlight_colors = {
+            "created": "#00dc00",
+            "modified": "#0080ff",
+            "deleted": "#ff0000",
+            "moved": "#ffa500",
+            "highlight": "#ff0000",
+        }
+        for path, event_type in highlights.items():
+            if path not in rect_map:
+                continue
+            hx, hy, hw, hh = rect_map[path]
+            border = min(3, hw // 3, hh // 3)
+            if border < 1:
+                continue
+            stroke_color = _svg_highlight_colors.get(event_type, event_type)
+            for i in range(int(border)):
+                d.append(
+                    drawsvg.Rectangle(
+                        hx + i,
+                        hy + i,
+                        hw - 2 * i,
+                        hh - 2 * i,
+                        fill="none",
+                        stroke=stroke_color,
+                        stroke_width="1",
+                        pointer_events="none",
+                    )
+                )
 
     # 5. Optional legend
     if legend is not None:

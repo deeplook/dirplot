@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`--highlight`/`-H` flag** — available on `map`, `diff`, `git`, `hg`, and `replay`. Draws a
+  coloured border around tiles whose paths match a pattern. Accepts exact paths or glob patterns
+  including `**` (e.g. `src/**/*.py`). Append `@color` to set the border colour
+  (e.g. `--highlight "**/*.py@orange"`); defaults to red. Repeatable — each `--highlight`
+  can target a different set of paths with its own colour. Works for both files and directories.
+  Renders in both PNG and SVG output. In `diff`, user highlights are layered on top of the
+  diff colour-coding. In `git` and `hg`, highlights appear in every animation frame.
+  Colour names and hex codes accepted (any value supported by Pillow / CSS).
+
+- **Highlight step in `dirplot demo`** — the demo now includes a `map tests/` example that
+  highlights a single file (`conftest.py@red`), a glob (`**/test_git*.py@cyan`), and a folder
+  (`tests/fixtures@lime`) to demonstrate the feature.
+
 ## [0.4.5] - 2026-05-15
 
 ### Changed

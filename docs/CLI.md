@@ -58,6 +58,11 @@ dirplot map . --colormap Set2 --font-size 18
 # Log scale — use when one large file dominates and squashes everything else
 dirplot map . --log-scale 4
 
+# Highlight specific files or folders with coloured borders
+dirplot map . --highlight "src/main.py"                   # single file, red (default)
+dirplot map . --highlight "**/*.py@orange"                # all Python files in orange
+dirplot map . --highlight "src@orange" --highlight "**/*.md@cyan"  # folder + glob
+
 # Interactive SVG output (hover highlight + floating tooltip)
 dirplot map . --output treemap.svg
 
@@ -96,6 +101,7 @@ See [EXAMPLES.md](EXAMPLES.md) for detailed examples of each remote backend and 
 | `--colormap` | | `tab20` | Matplotlib colormap for unknown extensions |
 | `--exclude` | `-e` | — | Pattern to exclude (repeatable): plain name, glob (`*.egg-info`), `**` glob, or relative path |
 | `--include` | | — | Keep only these subtrees (repeatable, supports nested paths); the inverse of `--exclude` |
+| `--highlight` | `-H` | — | Draw a coloured border around matching paths (repeatable). Accepts exact paths or globs including `**`. Append `@color` to set the colour (e.g. `**/*.py@orange`); defaults to red. Works for files and directories |
 | `--depth` | | unlimited | Maximum recursion depth |
 | `--size` | | terminal size | Output dimensions as `WIDTHxHEIGHT` (e.g. `1920x1080`) |
 | `--header/--no-header` | | `--header` | Print info lines before rendering |
@@ -236,6 +242,7 @@ dirplot diff old/ new/ --light --output diff.svg
 | `--colormap` | | `tab20` | Colormap for unknown extensions |
 | `--exclude` | `-e` | — | Pattern to exclude (repeatable): plain name, glob (`*.egg-info`), `**` glob, or relative path |
 | `--include` | | — | Keep only these subtrees (repeatable); the inverse of `--exclude` |
+| `--highlight` | `-H` | — | Draw a coloured border on top of diff borders (repeatable). Same `pattern[@color]` syntax as `dirplot map --highlight` |
 | `--depth` | | unlimited | Maximum recursion depth |
 | `--size` | | terminal size | Output dimensions as `WIDTHxHEIGHT` (e.g. `1920x1080`) |
 | `--cushion/--no-cushion` | | `--cushion` | Van Wijk cushion shading for a raised 3-D look |
@@ -337,6 +344,7 @@ dirplot replay events.jsonl --output replay.png --total-duration 30 --fade-out -
 | `--size` | terminal size | Output dimensions as `WIDTHxHEIGHT` |
 | `--depth` | — | Maximum directory depth |
 | `--exclude` / `-e` | — | Pattern to exclude (repeatable): plain name, glob (`*.egg-info`), `**` glob, or relative path |
+| `--highlight` / `-H` | — | Draw a coloured border on matching paths in every frame (repeatable). Same `pattern[@color]` syntax as `dirplot map --highlight` |
 | `--colormap` | `tab20` | Matplotlib colormap |
 | `--font-size` | `12` | Directory label font size in pixels |
 | `--cushion/--no-cushion` | `--cushion` | Van Wijk cushion shading |
@@ -438,6 +446,7 @@ See [EXAMPLES.md — Git History Animation](EXAMPLES.md#git-history-animation) f
 | `--size` | terminal size | Output dimensions as `WIDTHxHEIGHT` |
 | `--depth` | — | Maximum directory depth |
 | `--exclude` / `-e` | — | Pattern to exclude (repeatable): plain name, glob (`*.egg-info`), `**` glob, or relative path |
+| `--highlight` / `-H` | — | Draw a coloured border on matching paths in every frame (repeatable). Same `pattern[@color]` syntax as `dirplot map --highlight` |
 | `--colormap` | `tab20` | Matplotlib colormap |
 | `--font-size` | `12` | Directory label font size in pixels |
 | `--cushion/--no-cushion` | `--cushion` | Van Wijk cushion shading |
@@ -499,6 +508,7 @@ dirplot hg . --range 0:tip --first 20 --output history.png
 | `--size` | terminal size | Output dimensions as `WIDTHxHEIGHT` |
 | `--depth` | — | Maximum directory depth |
 | `--exclude` / `-e` | — | Pattern to exclude (repeatable) |
+| `--highlight` / `-H` | — | Draw a coloured border on matching paths in every frame (repeatable). Same `pattern[@color]` syntax as `dirplot map --highlight` |
 | `--colormap` | `tab20` | Matplotlib colormap |
 | `--font-size` | `12` | Directory label font size in pixels |
 | `--cushion/--no-cushion` | `--cushion` | Van Wijk cushion shading |
@@ -541,6 +551,7 @@ Examples produced:
 |---|---|
 | *(stdout)* | `dirplot termsize` |
 | `map-local.png` | `dirplot map .` (dark mode, PNG) |
+| `map-highlight.png` | `dirplot map tests --highlight "tests/conftest.py@red" --highlight "**/test_git*.py@cyan" --highlight "tests/fixtures@lime"` |
 | `map-github.png` | `dirplot map github://owner/repo` (dark mode, PNG) |
 | `map-local.svg` | `dirplot map .` (light mode, SVG) |
 | `git-static.png` | `dirplot git github://owner/repo --first 1` (static PNG of latest commit) |

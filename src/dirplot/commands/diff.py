@@ -13,7 +13,8 @@ import typer
 from dirplot.app import app
 from dirplot.defaults import DEFAULT_COLORMAP, DEFAULT_FONT_SIZE
 from dirplot.display import display_inline, display_window
-from dirplot.scanner import prune_to_subtrees
+from dirplot.helpers.highlights import resolve_highlight_specs
+from dirplot.scanner import Node, prune_to_subtrees
 from dirplot.terminal import default_canvas_size, get_terminal_size
 
 # Border colours for diff status — applied to file tile borders only.
@@ -134,6 +135,17 @@ def diff_cmd(
         False,
         "--no-input",
         help="Disable all interactive prompts; fail instead of prompting for passwords.",
+    ),
+    highlight: list[str] = typer.Option(
+        [],
+        "--highlight",
+        "-H",
+        help=(
+            "Highlight matching paths with a coloured border (repeatable). "
+            "Accepts exact paths or glob patterns including ** (e.g. src/**/*.py). "
+            "Append @color to set the border colour (e.g. '**/*.py@orange'); "
+            "defaults to red."
+        ),
     ),
 ) -> None:
     """Compare two directory trees A and B as a treemap with diff highlights.
@@ -372,6 +384,18 @@ def diff_cmd(
     if include:
         root_node = prune_to_subtrees(root_node, set(include))
 
+    if highlight:
+
+        def _collect_paths(node: Node) -> list[str]:
+            paths = []
+            if hasattr(node, "path"):
+                paths.append(node.path.as_posix())
+            for child in node.children:
+                paths.extend(_collect_paths(child))
+            return paths
+
+        highlights.update(resolve_highlight_specs(highlight, _collect_paths(root_node)))
+
     if log_scale > 1:
         apply_log_sizes(root_node, log_scale)
 
@@ -412,7 +436,16 @@ def diff_cmd(
     t_render_start = time.monotonic()
     if use_svg:
         buf = create_treemap_svg(
-            root_node, width_px, height_px, font_size, colormap, None, cushion, depth, dark
+            root_node,
+            width_px,
+            height_px,
+            font_size,
+            colormap,
+            None,
+            cushion,
+            depth,
+            dark,
+            highlights=highlights or None,
         )
     else:
         buf = create_treemap(

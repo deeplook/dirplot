@@ -1,6 +1,7 @@
 # Examples
 
 - [Metrics](#metrics)
+- [Highlighting](#highlighting)
 - [Diff](#diff)
 - [Remote Access](#remote-access)
   - [SSH](#remote-servers-via-ssh)
@@ -47,6 +48,37 @@ dirplot metrics . -e .venv -e .git
 # Get treemap and metrics in a single pass
 dirplot map . --metrics --no-show
 ```
+
+---
+
+## Highlighting
+
+The `--highlight`/`-H` flag draws coloured borders around specific files, file groups, or entire directories — on any command that renders a treemap. Patterns support `*` and `**` globs; append `@color` to choose the border colour (defaults to red).
+
+```bash
+# Single file — red border (default)
+dirplot map . --highlight "src/dirplot/main.py"
+
+# Group of files — orange border
+dirplot map . --highlight "**/*.py@orange"
+
+# Entire directory — lime border
+dirplot map . --highlight "tests/fixtures@lime"
+
+# All three at once with different colours
+dirplot map tests \
+  --highlight "tests/conftest.py@red" \
+  --highlight "**/test_git*.py@cyan" \
+  --highlight "tests/fixtures@lime"
+
+# Also works on diff (layered on top of diff colour-coding)
+dirplot diff old/ new/ --highlight "src/critical.py@yellow"
+
+# And on git/hg — highlights appear in every animation frame
+dirplot git . --range HEAD~10..HEAD --highlight "**/*.py@orange" --output history.png
+```
+
+Colours accept any CSS name (`red`, `orange`, `lime`, `cyan`, `#ff8800`, …). Both PNG and SVG output are supported.
 
 ---
 

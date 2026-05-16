@@ -14,9 +14,11 @@ from rich.console import Console as _Console
 from dirplot.app import app
 from dirplot.defaults import DEFAULT_COLORMAP, DEFAULT_FONT_SIZE
 from dirplot.display import display_inline, display_window
+from dirplot.helpers.highlights import resolve_highlight_specs
 from dirplot.helpers.scan import scan_tree
 from dirplot.render_png import create_treemap
 from dirplot.scanner import (
+    Node,
     apply_breadcrumbs,
     apply_log_sizes,
     collect_extensions,
@@ -199,6 +201,17 @@ def main(
         "--no-input",
         help="Disable all interactive prompts; fail instead of prompting for passwords.",
     ),
+    highlight: list[str] = typer.Option(
+        [],
+        "--highlight",
+        "-H",
+        help=(
+            "Highlight matching paths with a coloured border (repeatable). "
+            "Accepts exact paths or glob patterns including ** (e.g. src/**/*.py). "
+            "Append @color to set the border colour (e.g. '**/*.py@orange'); "
+            "defaults to red."
+        ),
+    ),
 ) -> None:
     """Create a nested treemap bitmap for a directory tree.
 
@@ -284,6 +297,20 @@ def main(
     if show_metrics:
         typer.echo(tree_metrics(root_node, t_scan), err=to_stdout)
 
+    # Build highlight map from --highlight patterns
+    highlights_dict: dict[str, str] = {}
+    if highlight:
+
+        def _collect_paths(node: Node) -> list[str]:
+            paths = []
+            if hasattr(node, "path"):
+                paths.append(node.path.as_posix())
+            for child in node.children:
+                paths.extend(_collect_paths(child))
+            return paths
+
+        highlights_dict = resolve_highlight_specs(highlight, _collect_paths(root_node))
+
     inline_cols: int | None = None
     if size is not None:
         try:
@@ -329,6 +356,7 @@ def main(
                 cushion,
                 tree_depth,
                 dark,
+                highlights=highlights_dict or None,
             )
         else:
             buf = create_treemap(
@@ -342,6 +370,7 @@ def main(
                 tree_depth,
                 dark=dark,
                 logscale=logscale,
+                highlights=highlights_dict or None,
             )
     t_render = time.monotonic() - t_render_start
 

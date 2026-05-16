@@ -15,6 +15,7 @@ from dirplot.helpers.animation import (
     resolve_fade_color,
     worker_ignore_sigint,
 )
+from dirplot.helpers.highlights import resolve_highlight_specs
 from dirplot.terminal import default_canvas_size
 
 _REPLAY_EPILOG = (
@@ -118,6 +119,17 @@ def replay_cmd(
         metavar="COLOR",
     ),
     quiet: bool = typer.Option(False, "--quiet", "-q", help="Suppress non-error output."),
+    highlight: list[str] = typer.Option(
+        [],
+        "--highlight",
+        "-H",
+        help=(
+            "Highlight matching paths with a coloured border in every frame (repeatable). "
+            "Accepts exact paths or glob patterns including ** (e.g. src/**/*.py). "
+            "Append @color to set the border colour (e.g. '**/*.py@orange'); "
+            "defaults to red."
+        ),
+    ),
 ) -> None:
     """Replay a JSONL filesystem event log as an animated treemap."""
     from dirplot.replay_scanner import (
@@ -219,6 +231,9 @@ def replay_cmd(
         highlights = apply_events(files, common_root, bucket_evs, excluded)
         deletions = {p: v for p, v in highlights.items() if v == "deleted"}
         cur_hl = {p: v for p, v in highlights.items() if v != "deleted"}
+        if highlight:
+            abs_paths = [(common_root / rel).as_posix() for rel in files]
+            cur_hl.update(resolve_highlight_specs(highlight, abs_paths))
         snapshots.append((i, ts, dict(files), cur_hl, deletions))
 
     # Phase 2: parallel render

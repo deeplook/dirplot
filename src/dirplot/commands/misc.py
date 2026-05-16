@@ -182,6 +182,26 @@ def demo_cmd(
             ],
         ),
         (
+            "map local directory — highlight one file, a glob, and a folder",
+            [
+                "map",
+                "tests",
+                "--no-show",
+                "--output",
+                str(output / "map-highlight.png"),
+                "--size",
+                "800x600",
+                "--log-scale",
+                "4",
+                "--highlight",
+                "tests/conftest.py@red",
+                "--highlight",
+                "**/test_git*.py@cyan",
+                "--highlight",
+                "tests/fixtures@lime",
+            ],
+        ),
+        (
             "map github repo (dark mode, PNG)",
             [
                 "map",
