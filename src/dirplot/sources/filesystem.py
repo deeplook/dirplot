@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from dirplot.scanner import Node, build_tree_v2, build_tree_multi_v2
+from dirplot.scanner import Node, build_tree_multi_v2, build_tree_v2
 from dirplot.sources import register_source
 from dirplot.vpath import FileSystemPath
 
@@ -34,11 +34,8 @@ class FileSystemSource:
 
         # Reject special prefixes
         special_prefixes = ("github://", "hg://", "ssh://", "s3://", "docker://", "pod://")
-        if any(path.startswith(p) for p in special_prefixes):
-            return False
-
         # Accept any path-like string (we'll validate existence during scan)
-        return True
+        return not any(path.startswith(p) for p in special_prefixes)
 
     def scan(
         self,

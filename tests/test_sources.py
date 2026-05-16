@@ -9,7 +9,6 @@ import pytest
 from dirplot.scanner import Node
 from dirplot.sources import (
     SourceRegistry,
-    TreeSource,
     register_source,
     registry,
     scan_any,
@@ -226,6 +225,7 @@ class TestRegisterSourceDecorator:
 
     def test_decorator_registers_instance(self):
         """The decorator should work with instances (not classes)."""
+
         # Note: The decorator expects an instance, not a class
         # This is the correct usage pattern:
         class TestSourceClass:

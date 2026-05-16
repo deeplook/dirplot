@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import io
-from pathlib import Path
 
 import pytest
 
@@ -219,10 +218,10 @@ class TestConsoleIntegration:
         pipeline = RenderingPipeline(config)
 
         # Run pipeline (should call display)
-        try:
+        import contextlib
+
+        with contextlib.suppress(Exception):  # Display might fail in test environment
             pipeline.run()
-        except Exception:
-            pass  # Display might fail in test environment
 
         # Should have recorded a display call
         # (Actual assertion depends on pipeline implementation)

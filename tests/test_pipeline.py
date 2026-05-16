@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import io
-from pathlib import Path
 
 import pytest
 
@@ -14,7 +13,6 @@ from dirplot.pipeline import (
     PruneTransform,
     RenderingPipeline,
 )
-from dirplot.scanner import Node
 
 
 class TestPipelineConfig:

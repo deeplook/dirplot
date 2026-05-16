@@ -3,12 +3,12 @@
 from __future__ import annotations
 
 import io
-import zipfile
 import tarfile
-from pathlib import Path
+import zipfile
 
 import pytest
 
+from dirplot.scanner import build_tree_v2
 from dirplot.vpath import (
     ArchiveRoot,
     FileSystemPath,
@@ -17,8 +17,6 @@ from dirplot.vpath import (
     ZipMember,
     open_path,
 )
-from dirplot.scanner import build_tree_v2, build_tree_multi_v2
-from dirplot.vpath import open_path
 
 
 class TestStatResult:
@@ -313,14 +311,12 @@ class TestVirtualPathProtocol:
 
     def test_filesystem_path_is_virtual_path(self, tmp_path):
         """FileSystemPath satisfies VirtualPath."""
-        from dirplot.vpath import VirtualPath
 
         fsp = FileSystemPath(tmp_path)
         assert isinstance(fsp, VirtualPath)
 
     def test_archive_root_is_virtual_path(self, tmp_path):
         """ArchiveRoot satisfies VirtualPath."""
-        from dirplot.vpath import VirtualPath
 
         zip_path = tmp_path / "test.zip"
         with zipfile.ZipFile(zip_path, "w") as zf:
@@ -329,10 +325,10 @@ class TestVirtualPathProtocol:
         # Note: ArchiveRoot needs to be opened to satisfy protocol
         with ArchiveRoot(zip_path) as root:
             # Check it has required attributes
-            assert hasattr(root, 'name')
-            assert hasattr(root, 'path')
-            assert hasattr(root, 'iterdir')
-            assert hasattr(root, 'is_dir')
-            assert hasattr(root, 'is_file')
-            assert hasattr(root, 'stat')
-            assert hasattr(root, 'exists')
+            assert hasattr(root, "name")
+            assert hasattr(root, "path")
+            assert hasattr(root, "iterdir")
+            assert hasattr(root, "is_dir")
+            assert hasattr(root, "is_file")
+            assert hasattr(root, "stat")
+            assert hasattr(root, "exists")

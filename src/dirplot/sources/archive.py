@@ -12,7 +12,7 @@ from dirplot.vpath import ArchiveRoot
 
 class ArchiveSource:
     """Tree source for archive files (zip, tar, etc.) using VirtualPath.
-    
+
     This implementation uses the VirtualPath abstraction, making archive
     handling transparent - archives are just another VirtualPath.
     """
