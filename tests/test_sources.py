@@ -204,6 +204,15 @@ class TestGlobalRegistry:
         names = [s.name for s in sources]
         assert "filesystem" in names
 
+    def test_global_registry_prioritizes_specific_sources(self):
+        """Specialized sources should be registered before filesystem."""
+        names = [s.name for s in registry.sources]
+        filesystem_idx = names.index("filesystem")
+
+        assert names.index("archive") < filesystem_idx
+        assert names.index("github") < filesystem_idx
+        assert names.index("ssh") < filesystem_idx
+
     def test_global_registry_can_scan_local_path(self, tmp_path):
         """Can scan a local path through the global registry."""
         (tmp_path / "test.txt").write_text("test content")

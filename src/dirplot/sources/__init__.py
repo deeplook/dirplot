@@ -170,10 +170,7 @@ def scan_any(
 
 
 # Import and register built-in sources
-# These imports register the sources automatically
-from dirplot.sources import filesystem as filesystem  # noqa: E402
-
-# Import optional sources (these may fail if dependencies are missing)
+# Import specific sources before filesystem so they win dispatch for their syntax.
 with suppress(ImportError):
     from dirplot.sources import archive as archive  # noqa: F401
 
@@ -182,6 +179,8 @@ with suppress(ImportError):
 
 with suppress(ImportError):
     from dirplot.sources import ssh as ssh  # noqa: F401
+
+from dirplot.sources import filesystem as filesystem  # noqa: E402
 
 __all__ = [
     "TreeSource",
