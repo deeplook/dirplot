@@ -1,6 +1,8 @@
 """Tests for the Typer CLI entry point."""
 
 import re
+import subprocess
+import sys
 from pathlib import Path
 from unittest.mock import ANY, MagicMock, patch
 
@@ -84,9 +86,6 @@ def test_cli_stdout_png(sample_tree: Path, tmp_path: Path) -> None:
 
 
 def test_cli_stdout_svg(sample_tree: Path) -> None:
-    import subprocess
-    import sys
-
     result = subprocess.run(
         [
             sys.executable,
@@ -108,6 +107,27 @@ def test_cli_stdout_svg(sample_tree: Path) -> None:
     assert result.returncode == 0
     assert result.stdout.startswith("<?xml")
     assert "<?xml" not in result.stderr
+
+
+def test_cli_literal_dash_paths_after_separator(tmp_path: Path) -> None:
+    for name in ("--no-color", "--legend"):
+        target = tmp_path / name
+        target.mkdir()
+        result = subprocess.run(
+            [
+                sys.executable,
+                "-m",
+                "dirplot",
+                "map",
+                "--no-show",
+                "--",
+                name,
+            ],
+            cwd=tmp_path,
+            capture_output=True,
+            text=True,
+        )
+        assert result.returncode == 0, result.stderr
 
 
 def test_cli_saves_output(sample_tree: Path, tmp_path: Path) -> None:
