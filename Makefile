@@ -1,3 +1,5 @@
+.DEFAULT_GOAL := help
+
 .PHONY: install lint format test coverage clean install-tool check-all publish-test publish serve-docs help
 
 help:  ## Show this help
