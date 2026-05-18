@@ -93,6 +93,11 @@ def watch_cmd(
         except ValueError:
             typer.echo(f"Invalid --size '{size}'. Expected WIDTHxHEIGHT.", err=True)
             raise typer.Exit(1) from None
+        if width_px == 0 or height_px == 0:
+            typer.echo(
+                f"Invalid --size '{size}': width and height must both be positive.", err=True
+            )
+            raise typer.Exit(1)
     else:
         width_px, height_px = default_canvas_size()
 

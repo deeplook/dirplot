@@ -389,6 +389,17 @@ def git_cmd(
         typer.echo("Error: --first and --last are mutually exclusive.", err=True)
         raise typer.Exit(1)
 
+    if size is not None:
+        try:
+            _w, _h = (int(p) for p in size.lower().split("x", 1))
+        except ValueError:
+            _w, _h = 0, 0
+        if _w == 0 or _h == 0:
+            typer.echo(
+                f"Invalid --size '{size}': width and height must both be positive.", err=True
+            )
+            raise typer.Exit(1)
+
     if output is not None:
         if is_animation and output.suffix.lower() not in {".png", ".mp4", ".mov"}:
             typer.echo(
@@ -494,6 +505,11 @@ def git_cmd(
         except ValueError:
             typer.echo(f"Invalid --size '{size}'. Expected WIDTHxHEIGHT.", err=True)
             raise typer.Exit(1) from None
+        if width_px == 0 or height_px == 0:
+            typer.echo(
+                f"Invalid --size '{size}': width and height must both be positive.", err=True
+            )
+            raise typer.Exit(1)
     else:
         width_px, height_px = default_canvas_size()
 
@@ -878,6 +894,17 @@ def hg_cmd(
         typer.echo("Error: --first and --last are mutually exclusive.", err=True)
         raise typer.Exit(1)
 
+    if size is not None:
+        try:
+            _w, _h = (int(p) for p in size.lower().split("x", 1))
+        except ValueError:
+            _w, _h = 0, 0
+        if _w == 0 or _h == 0:
+            typer.echo(
+                f"Invalid --size '{size}': width and height must both be positive.", err=True
+            )
+            raise typer.Exit(1)
+
     if output is not None:
         if is_animation and output.suffix.lower() not in {".png", ".mp4", ".mov"}:
             typer.echo(
@@ -914,6 +941,11 @@ def hg_cmd(
         except ValueError:
             typer.echo(f"Invalid --size '{size}'. Expected WIDTHxHEIGHT.", err=True)
             raise typer.Exit(1) from None
+        if width_px == 0 or height_px == 0:
+            typer.echo(
+                f"Invalid --size '{size}': width and height must both be positive.", err=True
+            )
+            raise typer.Exit(1)
     else:
         width_px, height_px = default_canvas_size()
 

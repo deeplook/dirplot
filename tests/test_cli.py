@@ -182,6 +182,49 @@ def test_cli_invalid_size(sample_tree: Path) -> None:
     assert "Invalid --size" in result.output
 
 
+@pytest.mark.parametrize("bad_size", ["0x100", "100x0", "0x0"])
+def test_cli_zero_size_rejected_map(bad_size: str, sample_tree: Path) -> None:
+    result = runner.invoke(app, ["map", str(sample_tree), "--no-show", "--size", bad_size])
+    assert result.exit_code == 1
+    assert "must both be positive" in result.output or "Invalid --size" in result.output
+
+
+@pytest.mark.parametrize("bad_size", ["0x100", "100x0", "0x0"])
+def test_cli_zero_size_rejected_diff(bad_size: str, sample_tree: Path) -> None:
+    result = runner.invoke(
+        app, ["diff", str(sample_tree), str(sample_tree), "--no-show", "--size", bad_size]
+    )
+    assert result.exit_code == 1
+    assert "must both be positive" in result.output or "Invalid --size" in result.output
+
+
+@pytest.mark.parametrize("bad_size", ["0x100", "100x0", "0x0"])
+def test_cli_zero_size_rejected_watch(bad_size: str, sample_tree: Path) -> None:
+    result = runner.invoke(app, ["watch", str(sample_tree), "--size", bad_size])
+    assert result.exit_code == 1
+    assert "must both be positive" in result.output or "Invalid --size" in result.output
+
+
+@pytest.mark.parametrize("bad_size", ["0x100", "100x0", "0x0"])
+def test_cli_zero_size_rejected_git(bad_size: str, sample_tree: Path, tmp_path: Path) -> None:
+    result = runner.invoke(
+        app, ["git", str(sample_tree), "--output", str(tmp_path / "out.png"), "--size", bad_size]
+    )
+    assert result.exit_code == 1
+    assert "must both be positive" in result.output or "Invalid --size" in result.output
+
+
+@pytest.mark.parametrize("bad_size", ["0x100", "100x0", "0x0"])
+def test_cli_zero_size_rejected_replay(bad_size: str, tmp_path: Path) -> None:
+    log = tmp_path / "events.jsonl"
+    log.write_text('{"type": "created", "src_path": "x", "time": 1}\n')
+    result = runner.invoke(
+        app, ["replay", str(log), "--output", str(tmp_path / "out.apng"), "--size", bad_size]
+    )
+    assert result.exit_code == 1
+    assert "must both be positive" in result.output or "Invalid --size" in result.output
+
+
 def test_cli_termsize() -> None:
     result = runner.invoke(app, ["termsize"])
     assert result.exit_code == 0

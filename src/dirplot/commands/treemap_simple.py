@@ -17,11 +17,16 @@ def _parse_size(size_str: str | None) -> tuple[int, int] | None:
         return None
     try:
         w_str, h_str = size_str.lower().split("x", 1)
-        return int(w_str), int(h_str)
+        w, h = int(w_str), int(h_str)
     except ValueError:
         raise typer.BadParameter(
             f"Invalid size format: {size_str}. Expected WIDTHxHEIGHT"
         ) from None
+    if w == 0 or h == 0:
+        raise typer.BadParameter(
+            f"Invalid size '{size_str}': width and height must both be positive integers."
+        )
+    return w, h
 
 
 @app.command(name="map-pipeline", hidden=True)
