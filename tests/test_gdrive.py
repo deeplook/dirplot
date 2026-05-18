@@ -140,6 +140,17 @@ def test_build_tree_gdrive_flat() -> None:
     assert {c.name for c in node.children} == {"report.pdf", "notes.txt"}
 
 
+def test_build_tree_gdrive_parses_string_size() -> None:
+    items = [
+        {"path": "report.pdf", "mimeType": "application/pdf", "size": "2000", "depth": 1},
+    ]
+    with patch("subprocess.run", return_value=_gog_response(items)):
+        node = build_tree_gdrive()
+    report = next(c for c in node.children if c.name == "report.pdf")
+    assert report.size == 2000
+    assert node.size == 2000
+
+
 def test_build_tree_gdrive_nested() -> None:
     items = [
         {"path": "Projects", "mimeType": _FOLDER_MIME, "size": 0, "depth": 1},

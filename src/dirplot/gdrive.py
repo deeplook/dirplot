@@ -109,7 +109,10 @@ def build_tree_gdrive(
         is_dir = mime == _GDRIVE_FOLDER_MIME
 
         raw_size = item.get("size")
-        size = int(raw_size) if isinstance(raw_size, int | float) else 0
+        try:
+            size = int(raw_size) if isinstance(raw_size, int | float | str) else 0
+        except ValueError:
+            size = 0
         if not is_dir and size == 0:
             # Google-native formats (Docs, Sheets, Slides, …) report no byte
             # size.  Use 1 so they remain visible in the treemap.
