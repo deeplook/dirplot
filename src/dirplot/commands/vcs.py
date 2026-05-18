@@ -423,14 +423,30 @@ def git_cmd(
         _at_ref = gh_ref
         token = github_token or _gh_cli_token()
         _gh_token = token
-        if token:
-            clone_url = f"https://x-access-token:{token}@github.com/{gh_owner}/{gh_repo_name}.git"
-        else:
-            clone_url = f"https://github.com/{gh_owner}/{gh_repo_name}.git"
+        clone_url = f"https://github.com/{gh_owner}/{gh_repo_name}.git"
         _tmpdir = tempfile.TemporaryDirectory(prefix="dirplot-git-")
         # Clone into a subdirectory named after the repo so that repo.name
         # reflects the actual repository name (not the temp dir basename).
         _clone_dir = Path(_tmpdir.name) / gh_repo_name
+        clone_env = None
+        if token:
+            askpass = Path(_tmpdir.name) / "git-askpass.py"
+            askpass.write_text(
+                "import os, sys\n"
+                "prompt = sys.argv[1] if len(sys.argv) > 1 else ''\n"
+                "if 'username' in prompt.lower():\n"
+                "    print('x-access-token')\n"
+                "else:\n"
+                "    print(os.environ['DIRPLOT_GITHUB_TOKEN'])\n",
+                encoding="utf-8",
+            )
+            askpass.chmod(0o700)
+            clone_env = {
+                **os.environ,
+                "GIT_ASKPASS": str(askpass),
+                "GIT_TERMINAL_PROMPT": "0",
+                "DIRPLOT_GITHUB_TOKEN": token,
+            }
         # Always clone with blobs so git ls-tree --long and git cat-file resolve
         # sizes locally (fast). Without blobs, git fetches each size lazily over
         # the network, which is slower than just cloning the objects upfront.
@@ -449,9 +465,12 @@ def git_cmd(
         if not quiet:
             typer.echo(f"Cloning github:{gh_owner}/{gh_repo_name} ...", err=True)
         try:
-            subprocess.run(clone_cmd, check=True, capture_output=True, text=True)
+            subprocess.run(clone_cmd, check=True, capture_output=True, text=True, env=clone_env)
         except subprocess.CalledProcessError as exc:
-            typer.echo(f"Error cloning repository: {exc.stderr.strip()}", err=True)
+            stderr = exc.stderr.strip()
+            if token:
+                stderr = stderr.replace(token, "<redacted>")
+            typer.echo(f"Error cloning repository: {stderr}", err=True)
             raise typer.Exit(1) from exc
         repo = _clone_dir
     else:

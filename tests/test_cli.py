@@ -3,6 +3,7 @@
 import re
 import subprocess
 import sys
+from io import BytesIO
 from pathlib import Path
 from unittest.mock import ANY, MagicMock, patch
 
@@ -768,6 +769,45 @@ def test_demo_runs(tmp_path: Path) -> None:
     assert (tmp_path / "demo-out").is_dir()
     assert mock_run.call_count == 10  # one call per non-skipped example
     assert "Done" in result.output
+
+
+def test_git_github_token_not_embedded_in_clone_argv(tmp_path: Path) -> None:
+    token = "ghp_secret-token"
+    token_file = tmp_path / "token.txt"
+    token_file.write_text(token)
+    out = tmp_path / "snapshot.png"
+    mock_run_result = MagicMock(returncode=0, stdout="", stderr="")
+
+    with (
+        patch("shutil.which", return_value="/usr/bin/git"),
+        patch("subprocess.run", return_value=mock_run_result) as mock_run,
+        patch("dirplot.git_scanner.git_log", return_value=[("abc123456789", 1_700_000_000, "msg")]),
+        patch("dirplot.git_scanner.git_initial_files", return_value={"file.py": 10}),
+        patch("dirplot.github.count_commits_github", return_value=1),
+        patch("dirplot.render_png.create_treemap", return_value=BytesIO(b"png")),
+    ):
+        result = runner.invoke(
+            app,
+            [
+                "git",
+                "github://owner/private",
+                "--github-token-file",
+                str(token_file),
+                "--output",
+                str(out),
+                "--quiet",
+            ],
+        )
+
+    assert result.exit_code == 0, result.output
+    clone_call = mock_run.call_args_list[0]
+    clone_cmd = clone_call.args[0]
+    assert token not in " ".join(clone_cmd)
+    assert "https://github.com/owner/private.git" in clone_cmd
+    clone_env = clone_call.kwargs["env"]
+    assert clone_env["DIRPLOT_GITHUB_TOKEN"] == token
+    assert clone_env["GIT_ASKPASS"]
+    assert clone_env["GIT_TERMINAL_PROMPT"] == "0"
 
 
 # ---------------------------------------------------------------------------
