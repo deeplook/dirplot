@@ -1011,3 +1011,112 @@ def test_map_metrics_flag(sample_tree: Path) -> None:
     assert result.exit_code == 0
     assert "Largest files:" in result.output
     assert "%" in result.output
+
+
+# ---------------------------------------------------------------------------
+# worker_ignore_sigint
+# ---------------------------------------------------------------------------
+
+
+def test_worker_sigint_sets_sig_ign() -> None:
+    import signal
+    from unittest.mock import patch
+
+    from dirplot.helpers.animation import worker_ignore_sigint
+
+    with patch("signal.signal") as mock_signal:
+        worker_ignore_sigint()
+        mock_signal.assert_called_once_with(signal.SIGINT, signal.SIG_IGN)
+
+
+# ---------------------------------------------------------------------------
+# resolve_fade_color
+# ---------------------------------------------------------------------------
+
+
+def test_fade_color_auto_dark() -> None:
+    from dirplot.helpers.animation import resolve_fade_color
+
+    assert resolve_fade_color("auto", dark=True) == (0, 0, 0)
+
+
+def test_fade_color_auto_light() -> None:
+    from dirplot.helpers.animation import resolve_fade_color
+
+    assert resolve_fade_color("auto", dark=False) == (255, 255, 255)
+
+
+def test_fade_color_transparent() -> None:
+    from dirplot.helpers.animation import resolve_fade_color
+
+    assert resolve_fade_color("transparent", dark=True) == (0, 0, 0, 0)
+
+
+def test_fade_color_valid_css() -> None:
+    from dirplot.helpers.animation import resolve_fade_color
+
+    result = resolve_fade_color("red", dark=True)
+    assert result == (255, 0, 0)
+
+
+def test_fade_color_invalid_raises_exit() -> None:
+    import typer
+
+    from dirplot.helpers.animation import resolve_fade_color
+
+    with pytest.raises(typer.Exit):
+        resolve_fade_color("not_a_real_color_xyz", dark=True)
+
+
+# ---------------------------------------------------------------------------
+# map-pipeline command
+# ---------------------------------------------------------------------------
+
+
+def test_map_pipeline_valid_dir(sample_tree: Path, tmp_path: Path) -> None:
+    import dirplot.commands.treemap_simple  # noqa: F401 — registers map-pipeline command
+
+    output = tmp_path / "out.png"
+    result = runner.invoke(
+        app,
+        ["map-pipeline", str(sample_tree), "--no-show", "--output", str(output), "--quiet"],
+    )
+    assert result.exit_code == 0, result.output
+    assert output.exists()
+
+
+def test_map_pipeline_no_roots() -> None:
+    import dirplot.commands.treemap_simple  # noqa: F401 — registers map-pipeline command
+
+    result = runner.invoke(app, ["map-pipeline"])
+    assert result.exit_code == 1
+
+
+def test_parse_size_none() -> None:
+    from dirplot.commands.treemap_simple import _parse_size
+
+    assert _parse_size(None) is None
+
+
+def test_parse_size_valid() -> None:
+    from dirplot.commands.treemap_simple import _parse_size
+
+    assert _parse_size("800x600") == (800, 600)
+
+
+def test_parse_size_invalid_format() -> None:
+    import typer
+
+    from dirplot.commands.treemap_simple import _parse_size
+
+    with pytest.raises(typer.BadParameter, match="Invalid size format"):
+        _parse_size("notasize")
+
+
+def test_parse_size_zero_dimension() -> None:
+    import typer
+
+    from dirplot.commands.treemap_simple import _parse_size
+
+    with pytest.raises(typer.BadParameter, match="must both be positive"):
+        _parse_size("0x600")

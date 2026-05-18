@@ -237,6 +237,158 @@ class TestGlobalRegistry:
             scan_any("unknown://invalid/path")
 
 
+class TestArchiveSource:
+    """Test the ArchiveSource implementation."""
+
+    def test_get_display_name(self, tmp_path: Path) -> None:
+        from dirplot.sources.archive import ArchiveSource
+
+        source = ArchiveSource()
+        fake_path = str(tmp_path / "myarchive.zip")
+        assert source.get_display_name(fake_path) == "myarchive.zip (archive)"
+
+    def test_scan_nonexistent_raises(self, tmp_path: Path) -> None:
+        from dirplot.sources.archive import ArchiveSource
+
+        source = ArchiveSource()
+        with pytest.raises(FileNotFoundError):
+            source.scan(str(tmp_path / "nonexistent.zip"))
+
+    def test_scan_real_zip(self, tmp_path: Path) -> None:
+        import zipfile
+
+        from dirplot.sources.archive import ArchiveSource
+
+        zip_path = tmp_path / "test.zip"
+        with zipfile.ZipFile(zip_path, "w") as zf:
+            zf.writestr("hello.txt", "hello world")
+            zf.writestr("subdir/nested.txt", "nested content")
+
+        source = ArchiveSource()
+        node = source.scan(str(zip_path))
+        assert node is not None
+        assert node.is_dir is True
+
+
+class TestGitHubSource:
+    """Test the GitHubSource implementation."""
+
+    def test_get_display_name_no_ref_no_subpath(self) -> None:
+        from unittest.mock import patch
+
+        from dirplot.sources.github import GitHubSource
+
+        source = GitHubSource()
+        with patch(
+            "dirplot.sources.github.parse_github_path",
+            return_value=("owner", "repo", None, None),
+        ):
+            assert source.get_display_name("github://owner/repo") == "owner/repo"
+
+    def test_get_display_name_with_ref(self) -> None:
+        from unittest.mock import patch
+
+        from dirplot.sources.github import GitHubSource
+
+        source = GitHubSource()
+        with patch(
+            "dirplot.sources.github.parse_github_path",
+            return_value=("owner", "repo", "main", None),
+        ):
+            assert source.get_display_name("github://owner/repo@main") == "owner/repo@main"
+
+    def test_get_display_name_with_subpath(self) -> None:
+        from unittest.mock import patch
+
+        from dirplot.sources.github import GitHubSource
+
+        source = GitHubSource()
+        with patch(
+            "dirplot.sources.github.parse_github_path",
+            return_value=("owner", "repo", "main", "src"),
+        ):
+            result = source.get_display_name("github://owner/repo@main/src")
+            assert result == "owner/repo@main/src"
+
+    def test_scan_delegates_to_build_tree_github(self) -> None:
+        from unittest.mock import patch
+
+        from dirplot.sources.github import GitHubSource
+
+        source = GitHubSource()
+        fake_node = Node(name="repo", path=Path("/repo"), size=0, is_dir=True)
+        with (
+            patch(
+                "dirplot.sources.github.parse_github_path",
+                return_value=("owner", "repo", "main", None),
+            ),
+            patch(
+                "dirplot.sources.github.build_tree_github",
+                return_value=(fake_node, "main"),
+            ) as mock_build,
+        ):
+            result = source.scan("github://owner/repo@main")
+            mock_build.assert_called_once_with(
+                "owner",
+                "repo",
+                "main",
+                exclude=frozenset(),
+                depth=None,
+                subpath=None,
+            )
+            assert result is fake_node
+
+
+class TestSSHSource:
+    """Test the SSHSource implementation."""
+
+    def test_get_display_name(self) -> None:
+        from unittest.mock import patch
+
+        from dirplot.sources.ssh import SSHSource
+
+        source = SSHSource()
+        with patch(
+            "dirplot.sources.ssh.parse_ssh_path",
+            return_value=("user", "host.example.com", "/remote/path"),
+        ):
+            result = source.get_display_name("user@host.example.com:/remote/path")
+            assert result == "user@host.example.com:/remote/path"
+
+    def test_scan_delegates_correctly(self) -> None:
+        from unittest.mock import MagicMock, patch
+
+        from dirplot.sources.ssh import SSHSource
+
+        source = SSHSource()
+        fake_node = Node(name="root", path=Path("/remote/path"), size=0, is_dir=True)
+        mock_sftp = MagicMock()
+        mock_client = MagicMock()
+        mock_client.open_sftp.return_value = mock_sftp
+
+        with (
+            patch(
+                "dirplot.sources.ssh.parse_ssh_path",
+                return_value=("user", "myhost", "/data"),
+            ),
+            patch("dirplot.sources.ssh.connect", return_value=mock_client),
+            patch(
+                "dirplot.sources.ssh.build_tree_ssh",
+                return_value=fake_node,
+            ) as mock_build,
+        ):
+            result = source.scan("user@myhost:/data")
+            mock_build.assert_called_once_with(
+                mock_sftp,
+                "/data",
+                exclude=frozenset(),
+                depth=None,
+            )
+            assert result.name == "user@myhost:/data"
+            mock_sftp.close.assert_called_once()
+            mock_client.close.assert_called_once()
+
+
 class TestRegisterSourceDecorator:
     """Test the @register_source decorator."""
 
