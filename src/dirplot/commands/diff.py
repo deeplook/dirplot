@@ -334,24 +334,35 @@ def diff_cmd(
         hashes_b = hg_worktree_hashes(Path(resolved_b).resolve())
 
     # Compute diff highlights keyed to match rect_map keys produced by build_node_tree.
+    diff_status: dict[str, str] = {}
     highlights: dict[str, str] = {}
     all_keys = set(files_a) | set(files_b)
     for rel in all_keys:
         key = (virtual_root_b / rel).as_posix()
         if rel in files_a and rel not in files_b:
+            diff_status[rel] = DIFF_COLORS["removed"]
             highlights[key] = DIFF_COLORS["removed"]
         elif rel not in files_a and rel in files_b:
+            diff_status[rel] = DIFF_COLORS["added"]
             highlights[key] = DIFF_COLORS["added"]
         elif rel in files_a and rel in files_b:
             if hashes_a and hashes_b:
                 if hashes_a.get(rel) != hashes_b.get(rel):
+                    diff_status[rel] = DIFF_COLORS["changed"]
                     highlights[key] = DIFF_COLORS["changed"]
             elif files_a[rel] != files_b[rel]:
+                diff_status[rel] = DIFF_COLORS["changed"]
                 highlights[key] = DIFF_COLORS["changed"]
 
-    n_removed = sum(1 for v in highlights.values() if v == DIFF_COLORS["removed"])
-    n_added = sum(1 for v in highlights.values() if v == DIFF_COLORS["added"])
-    n_changed = sum(1 for v in highlights.values() if v == DIFF_COLORS["changed"])
+    def _included(rel: str) -> bool:
+        if not include:
+            return True
+        return any(rel == path or rel.startswith(f"{path}/") for path in include)
+
+    counted_statuses = [status for rel, status in diff_status.items() if _included(rel)]
+    n_removed = sum(1 for v in counted_statuses if v == DIFF_COLORS["removed"])
+    n_added = sum(1 for v in counted_statuses if v == DIFF_COLORS["added"])
+    n_changed = sum(1 for v in counted_statuses if v == DIFF_COLORS["changed"])
     _info(f"Diff: {n_added} added, {n_removed} removed, {n_changed} changed")
 
     # Build combined node tree sized by B.

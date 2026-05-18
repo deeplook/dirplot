@@ -111,6 +111,29 @@ def test_diff_reports_counts(tree_a: Path, tree_b: Path, tmp_path: Path) -> None
     assert "1 changed" in result.output
 
 
+def test_diff_include_reports_counts_for_included_subtree(
+    tree_a: Path, tree_b: Path, tmp_path: Path
+) -> None:
+    out = tmp_path / "diff.png"
+    result = runner.invoke(
+        app,
+        [
+            "diff",
+            str(tree_a),
+            str(tree_b),
+            "--include",
+            "sub",
+            "--output",
+            str(out),
+            "--size",
+            "300x200",
+            "--no-show",
+        ],
+    )
+    assert result.exit_code == 0, result.output
+    assert "Diff: 1 added, 1 removed, 0 changed" in result.output
+
+
 def test_diff_invalid_tree_a(tmp_path: Path) -> None:
     result = runner.invoke(
         app,
