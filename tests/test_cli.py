@@ -570,6 +570,13 @@ def test_proportional_durations_all_equal() -> None:
     assert sum(durations) == 4000
 
 
+def test_proportional_durations_zero_gaps_are_even() -> None:
+    from dirplot.helpers.animation import proportional_durations
+
+    durations = proportional_durations([0.0, 0.0], total_ms=1000)
+    assert durations == [500, 500]
+
+
 # ---------------------------------------------------------------------------
 # replay command
 # ---------------------------------------------------------------------------

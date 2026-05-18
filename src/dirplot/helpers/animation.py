@@ -21,7 +21,10 @@ def proportional_durations(gaps: list[float], total_ms: float, floor_ms: int = 2
     sum matches exactly.
     """
     total_gap = sum(gaps)
-    proportional = [g / total_gap * total_ms for g in gaps]
+    if total_gap > 0:
+        proportional = [g / total_gap * total_ms for g in gaps]
+    else:
+        proportional = [total_ms / len(gaps) for _ in gaps] if gaps else []
 
     # Apply floor
     raw = [max(float(floor_ms), p) for p in proportional]
