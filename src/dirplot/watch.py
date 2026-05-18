@@ -170,12 +170,13 @@ class TreemapEventHandler(FileSystemEventHandler):
 
     def _track_highlight(self, verb: str, event: FileSystemEvent) -> None:
         src = event.src_path
-        src_s = src.decode() if isinstance(src, bytes) else src
+        src_s = Path(src.decode() if isinstance(src, bytes) else src).as_posix()
         with self._lock:
             if verb == "moved":
                 self._pending_highlights[src_s] = "deleted"
                 dest = getattr(event, "dest_path", None)
-                dest_s = dest.decode() if isinstance(dest, bytes) else dest
+                dest_raw = dest.decode() if isinstance(dest, bytes) else dest
+                dest_s = Path(dest_raw).as_posix() if dest_raw else None
                 if dest_s:
                     self._pending_highlights[dest_s] = "created"
             elif verb == "modified" and src_s in self._pending_highlights:

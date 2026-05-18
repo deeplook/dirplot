@@ -319,7 +319,7 @@ def draw_node(
         return
 
     if dir_rect_map is not None:
-        dir_rect_map[str(node.path)] = (x, y, w, h)
+        dir_rect_map[node.path.as_posix()] = (x, y, w, h)
 
     # Directory: 1-px outer border + 1-px inner border (colours swap in light mode)
     outer_col = (255, 255, 255) if dark else (0, 0, 0)

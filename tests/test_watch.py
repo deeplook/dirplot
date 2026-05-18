@@ -91,7 +91,7 @@ def test_watch_svg_output_includes_change_highlight(tmp_path: Path) -> None:
     handler = TreemapEventHandler(
         [tmp_path], out, width_px=200, height_px=150, font_size=12, colormap="tab20", cushion=False
     )
-    handler._pending_highlights[str(changed)] = "created"
+    handler._pending_highlights[changed.as_posix()] = "created"
     handler._regenerate()
 
     assert 'stroke="#00dc00"' in out.read_text()
