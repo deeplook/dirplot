@@ -13,6 +13,7 @@ from dirplot.vpath import (
     ArchiveRoot,
     FileSystemPath,
     StatResult,
+    TarMember,
     VirtualPath,
     ZipMember,
     open_path,
@@ -151,6 +152,49 @@ class TestZipMember:
             member = ZipMember(zf, "file1.txt", root_name="test.zip")
             st = member.stat()
             assert st.st_size == len("content1")
+
+    def test_stat_identifies_file_and_directory(self, sample_zip):
+        """stat mode includes file type bits for ZIP members."""
+        with zipfile.ZipFile(sample_zip, "r") as zf:
+            file_stat = ZipMember(zf, "file1.txt", root_name="test.zip").stat()
+            dir_stat = ZipMember(zf, "dir/", root_name="test.zip").stat()
+
+        assert file_stat.is_file is True
+        assert file_stat.is_dir is False
+        assert dir_stat.is_dir is True
+        assert dir_stat.is_file is False
+
+
+class TestTarMember:
+    """Test TarMember implementation."""
+
+    @pytest.fixture
+    def sample_tar(self, tmp_path):
+        """Create a sample TAR file."""
+        tar_path = tmp_path / "test.tar"
+        with tarfile.open(tar_path, "w") as tf:
+            dir_info = tarfile.TarInfo(name="dir")
+            dir_info.type = tarfile.DIRTYPE
+            dir_info.mode = 0o755
+            tf.addfile(dir_info)
+
+            data = b"content1"
+            file_info = tarfile.TarInfo(name="file1.txt")
+            file_info.size = len(data)
+            file_info.mode = 0o644
+            tf.addfile(file_info, io.BytesIO(data))
+        return tar_path
+
+    def test_stat_identifies_file_and_directory(self, sample_tar):
+        """stat mode includes file type bits for TAR members."""
+        with tarfile.open(sample_tar, "r") as tf:
+            file_stat = TarMember(tf, "file1.txt", root_name="test.tar").stat()
+            dir_stat = TarMember(tf, "dir", root_name="test.tar").stat()
+
+        assert file_stat.is_file is True
+        assert file_stat.is_dir is False
+        assert dir_stat.is_dir is True
+        assert dir_stat.is_file is False
 
 
 class TestArchiveRoot:

@@ -202,11 +202,11 @@ class ZipMember:
             return StatResult(
                 st_size=info.file_size,
                 st_mtime=mtime,
-                st_mode=0o644 if self.is_file() else 0o755,
+                st_mode=(stat.S_IFREG | 0o644) if self.is_file() else (stat.S_IFDIR | 0o755),
             )
         except KeyError:
             # Directory that doesn't have its own entry
-            return StatResult(st_size=0, st_mode=0o755)
+            return StatResult(st_size=0, st_mode=stat.S_IFDIR | 0o755)
 
     def exists(self) -> bool:
         """Check if this member exists in the archive."""
@@ -278,10 +278,10 @@ class TarMember:
             return StatResult(
                 st_size=member.size,
                 st_mtime=member.mtime,
-                st_mode=member.mode,
+                st_mode=(stat.S_IFDIR if member.isdir() else stat.S_IFREG) | member.mode,
             )
         except KeyError:
-            return StatResult(st_size=0, st_mode=0o755)
+            return StatResult(st_size=0, st_mode=stat.S_IFDIR | 0o755)
 
     def exists(self) -> bool:
         """Check if this member exists."""
