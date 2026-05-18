@@ -217,11 +217,8 @@ class TestConsoleIntegration:
         )
         pipeline = RenderingPipeline(config)
 
-        # Run pipeline (should call display)
-        import contextlib
+        pipeline.run()
 
-        with contextlib.suppress(Exception):  # Display might fail in test environment
-            pipeline.run()
-
-        # Should have recorded a display call
-        # (Actual assertion depends on pipeline implementation)
+        assert len(mock_console.display_calls) == 1
+        assert mock_console.display_calls[0]["method"] == "inline"
+        assert mock_console.display_calls[0]["size"] > 0
