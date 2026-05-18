@@ -16,6 +16,14 @@ from dirplot.sources import (
 from dirplot.sources.filesystem import FileSystemSource
 
 
+@pytest.fixture(autouse=True)
+def restore_global_registry():
+    """Keep tests from leaking sources into the shared registry."""
+    sources = registry.sources
+    yield
+    registry._sources = sources
+
+
 class MockSource:
     """Mock source for testing."""
 
