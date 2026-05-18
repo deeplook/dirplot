@@ -3,7 +3,9 @@
 import getpass
 import os
 import stat as stat_module
+import sys
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import MagicMock
 
 import pytest
@@ -17,7 +19,7 @@ from dirplot.ssh import build_tree_ssh, is_ssh_path, parse_ssh_path
 
 
 def _localhost_sftp():
-    """Return an open SFTPClient connected to localhost, or None if unavailable.
+    """Return an open SFTPClient and SSHClient to localhost, or None if unavailable.
 
     Tries the user's default key files. Returns None (causes test to skip)
     if the SSH server is unreachable or auth fails for any reason.
@@ -45,15 +47,16 @@ def _localhost_sftp():
                 key_filename=key_file,
                 timeout=5,
             )
-            return client.open_sftp()
+            return client.open_sftp(), client
         except Exception:
             continue
 
     # Last resort: agent or any cached creds
     try:
         client.connect("localhost", username=getpass.getuser(), timeout=5)
-        return client.open_sftp()
+        return client.open_sftp(), client
     except Exception:
+        client.close()
         return None
 
 
@@ -71,6 +74,27 @@ def make_attr(
     else:
         attr.st_mode = stat_module.S_IFREG | 0o644
     return attr
+
+
+def test_localhost_sftp_returns_client_for_cleanup(monkeypatch: pytest.MonkeyPatch) -> None:
+    sftp = MagicMock()
+    client = MagicMock()
+    client.open_sftp.return_value = sftp
+    paramiko = SimpleNamespace(
+        AutoAddPolicy=MagicMock(return_value=MagicMock()),
+        SSHClient=MagicMock(return_value=client),
+    )
+
+    monkeypatch.setitem(sys.modules, "paramiko", paramiko)
+    monkeypatch.setattr(os.path, "exists", lambda _: False)
+
+    connection = _localhost_sftp()
+
+    assert connection == (sftp, client)
+    sftp.close()
+    client.close()
+    sftp.close.assert_called_once_with()
+    client.close.assert_called_once_with()
 
 
 # ---------------------------------------------------------------------------
@@ -261,9 +285,10 @@ def test_build_tree_ssh_ioerror_raises() -> None:
 
 def test_ssh_localhost_matches_local_scan(tmp_path: Path) -> None:
     """SSH scan of a local directory must produce the same tree as build_tree()."""
-    sftp = _localhost_sftp()
-    if sftp is None:
+    connection = _localhost_sftp()
+    if connection is None:
         pytest.skip("SSH to localhost not available")
+    sftp, client = connection
 
     (tmp_path / "src").mkdir()
     (tmp_path / "src" / "app.py").write_bytes(b"x" * 100)
@@ -274,6 +299,7 @@ def test_ssh_localhost_matches_local_scan(tmp_path: Path) -> None:
         ssh_node = build_tree_ssh(sftp, str(tmp_path))
     finally:
         sftp.close()
+        client.close()
 
     local_node = build_tree(tmp_path)
 
@@ -284,9 +310,10 @@ def test_ssh_localhost_matches_local_scan(tmp_path: Path) -> None:
 
 def test_ssh_localhost_file_attributes(tmp_path: Path) -> None:
     """SSH scan returns correct sizes and extensions for each file."""
-    sftp = _localhost_sftp()
-    if sftp is None:
+    connection = _localhost_sftp()
+    if connection is None:
         pytest.skip("SSH to localhost not available")
+    sftp, client = connection
 
     (tmp_path / "hello.py").write_bytes(b"x" * 123)
     (tmp_path / "Makefile").write_bytes(b"x" * 45)
@@ -295,6 +322,7 @@ def test_ssh_localhost_file_attributes(tmp_path: Path) -> None:
         node = build_tree_ssh(sftp, str(tmp_path))
     finally:
         sftp.close()
+        client.close()
 
     py = next(c for c in node.children if c.name == "hello.py")
     mk = next(c for c in node.children if c.name == "Makefile")
@@ -307,9 +335,10 @@ def test_ssh_localhost_file_attributes(tmp_path: Path) -> None:
 
 def test_ssh_localhost_exclude(tmp_path: Path) -> None:
     """Excluded paths are omitted from the SSH scan."""
-    sftp = _localhost_sftp()
-    if sftp is None:
+    connection = _localhost_sftp()
+    if connection is None:
         pytest.skip("SSH to localhost not available")
+    sftp, client = connection
 
     (tmp_path / "keep.py").write_bytes(b"x" * 10)
     (tmp_path / "skip.py").write_bytes(b"x" * 20)
@@ -322,6 +351,7 @@ def test_ssh_localhost_exclude(tmp_path: Path) -> None:
         )
     finally:
         sftp.close()
+        client.close()
 
     names = {c.name for c in node.children}
     assert "keep.py" in names
