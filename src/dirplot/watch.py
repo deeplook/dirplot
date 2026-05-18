@@ -83,6 +83,7 @@ class TreemapEventHandler(FileSystemEventHandler):
                     None,
                     self.cushion,
                     dark=self.dark,
+                    highlights=current_highlights,
                 )
                 self.output.write_bytes(buf.read())
             else:
