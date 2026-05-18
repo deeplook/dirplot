@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Several correctness and robustness fixes: archive stat modes now include file type bits; watch mode SVG snapshots now render change highlights; `diff` summary counts respect `--include`; `--workers` rejects non-positive values; the `watch_events.py` script ignores its own output file when placed inside a watched directory; GitHub tokens are no longer embedded in clone URLs; and various edge-case fixes across the k8s, S3, and animation subsystems.
+
 ### Added
 
 - **`--highlight`/`-H` flag** — available on `map`, `diff`, `git`, `hg`, and `replay`. Draws a

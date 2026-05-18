@@ -241,7 +241,7 @@ dirplot diff old/ new/ --light --output diff.svg
 | `--font-size` | | `12` | Directory label font size in pixels |
 | `--colormap` | | `tab20` | Colormap for unknown extensions |
 | `--exclude` | `-e` | — | Pattern to exclude (repeatable): plain name, glob (`*.egg-info`), `**` glob, or relative path |
-| `--include` | | — | Keep only these subtrees (repeatable); the inverse of `--exclude` |
+| `--include` | | — | Keep only these subtrees (repeatable); the inverse of `--exclude`. The added/removed/changed summary counts in the header are scoped to the included paths |
 | `--highlight` | `-H` | — | Draw a coloured border on top of diff borders (repeatable). Same `pattern[@color]` syntax as `dirplot map --highlight` |
 | `--depth` | | unlimited | Maximum recursion depth |
 | `--size` | | terminal size | Output dimensions as `WIDTHxHEIGHT` (e.g. `1920x1080`) |
@@ -289,7 +289,7 @@ dirplot watch src --snapshot treemap.png --event-log events.jsonl
 
 | Flag | Default | Description |
 |---|---|---|
-| `--snapshot` | — | Write the current treemap as a PNG to this file on each change |
+| `--snapshot` | — | Write the current treemap as a PNG to this file on each change. If the output path falls inside a watched directory, events for that file are automatically ignored to prevent self-logging loops |
 | `--debounce` | `0.5` | Seconds of quiet before regenerating; `0` disables |
 | `--event-log` | — | Write raw events as JSONL on Ctrl-C exit |
 | `--log-scale` | `0` (off) | Log-scale compression ratio; any value > 1 enables it |
@@ -339,7 +339,7 @@ dirplot replay events.jsonl --output replay.png --total-duration 30 --fade-out -
 | `--fade-out-color` | `auto` | Fade target: `auto` (black/white per mode), `transparent` (PNG/APNG only), CSS name, or hex |
 | `--crf` | `23` | MP4 quality: 0 = lossless, 51 = worst. Ignored for APNG |
 | `--codec` | `libx264` | MP4 codec: `libx264` (H.264) or `libx265` (H.265) |
-| `--workers` | all CPU cores | Parallel render workers |
+| `--workers` | all CPU cores | Parallel render workers; must be a positive integer |
 | `--log-scale` | `0` (off) | Log-scale compression ratio; any value > 1 enables it |
 | `--size` | terminal size | Output dimensions as `WIDTHxHEIGHT` |
 | `--depth` | — | Maximum directory depth |
@@ -441,7 +441,7 @@ See [EXAMPLES.md — Git History Animation](EXAMPLES.md#git-history-animation) f
 | `--fade-out-color` | `auto` | Fade target: `auto` (black/white per mode), `transparent` (PNG/APNG only), CSS name, or hex |
 | `--crf` | `23` | MP4 quality: 0 = lossless, 51 = worst. Ignored for APNG |
 | `--codec` | `libx264` | MP4 codec: `libx264` (H.264) or `libx265` (~40% smaller at same quality) |
-| `--workers` | all CPU cores | Parallel render workers; 4–8 is typically optimal |
+| `--workers` | all CPU cores | Parallel render workers; must be a positive integer. 4–8 is typically optimal |
 | `--log-scale` | `0` (off) | Log-scale compression ratio; any value > 1 enables it |
 | `--size` | terminal size | Output dimensions as `WIDTHxHEIGHT` |
 | `--depth` | — | Maximum directory depth |
@@ -503,7 +503,7 @@ dirplot hg . --range 0:tip --first 20 --output history.png
 | `--fade-out-color` | `auto` | Fade target: `auto` (black/white per mode), `transparent` (PNG/APNG only), CSS name, or hex |
 | `--crf` | `23` | MP4 quality: 0 = lossless, 51 = worst. Ignored for APNG |
 | `--codec` | `libx264` | MP4 codec: `libx264` (H.264) or `libx265` (~40% smaller at same quality) |
-| `--workers` | all CPU cores | Parallel render workers |
+| `--workers` | all CPU cores | Parallel render workers; must be a positive integer |
 | `--log-scale` | `0` (off) | Log-scale compression ratio; any value > 1 enables it |
 | `--size` | terminal size | Output dimensions as `WIDTHxHEIGHT` |
 | `--depth` | — | Maximum directory depth |
