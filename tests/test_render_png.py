@@ -143,16 +143,13 @@ def test_treemap_tile_colors(tmp_path: Path) -> None:
             )
 
 
-def test_treemap_visual() -> None:
-    """Render tests/example/ and save the result for manual inspection.
-
-    Output: tests/visual_sample.png
-    """
+def test_treemap_visual(tmp_path: Path) -> None:
+    """Render tests/example/ and save the result for inspection."""
     example = Path(__file__).parent / "example"
     root = build_tree(example)
     buf = create_treemap(root, width_px=800, height_px=500, legend=True)
 
-    out = Path(__file__).parent / "example_dirplot.png"
+    out = tmp_path / "example_dirplot.png"
     out.write_bytes(buf.read())
 
     assert out.exists()
