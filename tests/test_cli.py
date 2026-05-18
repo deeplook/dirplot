@@ -577,6 +577,13 @@ def test_proportional_durations_zero_gaps_are_even() -> None:
     assert durations == [500, 500]
 
 
+def test_proportional_durations_floor_budget_too_large_raises() -> None:
+    from dirplot.helpers.animation import proportional_durations
+
+    with pytest.raises(ValueError, match="requires at least 400ms"):
+        proportional_durations([1.0, 1.0], total_ms=300, floor_ms=200)
+
+
 # ---------------------------------------------------------------------------
 # replay command
 # ---------------------------------------------------------------------------

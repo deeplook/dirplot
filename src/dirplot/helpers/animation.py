@@ -20,6 +20,14 @@ def proportional_durations(gaps: list[float], total_ms: float, floor_ms: int = 2
     A final rounding correction is applied to the longest frame so the integer
     sum matches exactly.
     """
+    target_ms = round(total_ms)
+    min_total_ms = floor_ms * len(gaps)
+    if min_total_ms > target_ms:
+        raise ValueError(
+            f"floor_ms={floor_ms} requires at least {min_total_ms}ms for "
+            f"{len(gaps)} frames, got total_ms={total_ms}"
+        )
+
     total_gap = sum(gaps)
     if total_gap > 0:
         proportional = [g / total_gap * total_ms for g in gaps]
@@ -45,7 +53,7 @@ def proportional_durations(gaps: list[float], total_ms: float, floor_ms: int = 2
     durations = [max(floor_ms, min(65535, round(d))) for d in raw]
 
     # Absorb integer-rounding residual into the longest frame.
-    residual = round(total_ms) - sum(durations)
+    residual = target_ms - sum(durations)
     if residual and durations:
         idx = max(range(len(durations)), key=lambda i: durations[i])
         durations[idx] = max(floor_ms, durations[idx] + residual)
