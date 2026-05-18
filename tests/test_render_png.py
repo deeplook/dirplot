@@ -85,6 +85,23 @@ def test_treemap_legend(sample_tree: Path) -> None:
     assert img.size == (320, 240)
 
 
+def test_deleted_highlight_falls_back_to_parent_directory(tmp_path: Path) -> None:
+    (tmp_path / "kept.py").write_bytes(b"x" * 100)
+    root = build_tree(tmp_path)
+
+    deleted_path = (tmp_path / "gone.py").as_posix()
+    buf = create_treemap(
+        root,
+        width_px=320,
+        height_px=240,
+        cushion=False,
+        highlights={deleted_path: "deleted"},
+    )
+
+    img = Image.open(buf)
+    assert img.getpixel((0, 0))[:3] == (255, 0, 0)
+
+
 def test_treemap_tile_colors(tmp_path: Path) -> None:
     """With cushion disabled, each file tile's pixels must match the expected fill color.
 

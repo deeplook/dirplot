@@ -540,7 +540,17 @@ def _draw_highlights(
     """
     for path, event_type in highlights.items():
         if path not in rect_map:
-            continue
+            if event_type != "deleted":
+                continue
+            parent = Path(path).parent
+            while parent != parent.parent:
+                parent_key = parent.as_posix()
+                if parent_key in rect_map:
+                    path = parent_key
+                    break
+                parent = parent.parent
+            else:
+                continue
         x, y, w, h = rect_map[path]
         color: tuple[int, int, int] | str = HIGHLIGHT_COLORS.get(event_type, event_type)
         border = min(HIGHLIGHT_BORDER, w // 3, h // 3)
