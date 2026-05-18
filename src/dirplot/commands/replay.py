@@ -139,6 +139,10 @@ def replay_cmd(
         parse_events,
     )
 
+    if workers is not None and workers <= 0:
+        typer.echo("Error: --workers must be a positive integer.", err=True)
+        raise typer.Exit(1)
+
     if not event_log.exists():
         typer.echo(f"Error: event log not found: {event_log}", err=True)
         raise typer.Exit(1)

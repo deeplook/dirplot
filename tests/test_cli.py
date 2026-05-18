@@ -662,6 +662,54 @@ def test_replay_bad_output_extension(tmp_path: Path) -> None:
     assert result.exit_code == 1
 
 
+def test_replay_rejects_non_positive_workers(tmp_path: Path) -> None:
+    log = tmp_path / "events.jsonl"
+    log.write_text("{}\n")
+    result = runner.invoke(
+        app,
+        [
+            "replay",
+            str(log),
+            "--output",
+            str(tmp_path / "out.apng"),
+            "--workers",
+            "0",
+        ],
+    )
+    assert result.exit_code == 1
+    assert "--workers must be a positive integer" in result.output
+
+
+def test_vcs_animation_rejects_non_positive_workers(tmp_path: Path) -> None:
+    from click.exceptions import Exit as ClickExit
+
+    from dirplot.commands.vcs import run_vcs_animation
+
+    with pytest.raises(ClickExit):
+        run_vcs_animation(
+            repo=tmp_path,
+            snapshots=[],
+            commit_durations=[],
+            output=tmp_path / "out.png",
+            width_px=200,
+            height_px=150,
+            font_size=12,
+            colormap="tab20",
+            depth=None,
+            logscale=0,
+            cushion=True,
+            dark=True,
+            workers=0,
+            crf=23,
+            codec="libx264",
+            fade_out=False,
+            fade_out_duration=1.0,
+            fade_out_frames=None,
+            fade_out_color="auto",
+            quiet=True,
+        )
+
+
 def test_replay_total_duration(tmp_path: Path) -> None:
     """replay with --total-duration exercises _proportional_durations."""
     root = tmp_path / "root"

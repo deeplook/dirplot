@@ -91,6 +91,10 @@ def run_vcs_animation(
     from dirplot.render_png import _draw_highlights
 
     # ── Phase 2: parallel render ──────────────────────────────────────────
+    if workers is not None and workers <= 0:
+        typer.echo("Error: --workers must be a positive integer.", err=True)
+        raise typer.Exit(1)
+
     total = len(snapshots)
     n_workers = min(workers if workers is not None else (os.cpu_count() or 1), total)
     if not quiet:
