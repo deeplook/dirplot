@@ -235,7 +235,7 @@ def test_on_created_file(tmp_path: Path) -> None:
     event = FileCreatedEvent(str(tmp_path / "new.py"))
     handler.on_created(event)
     handler._timer.cancel()
-    assert handler._pending_highlights.get(str(tmp_path / "new.py")) == "created"
+    assert handler._pending_highlights.get((tmp_path / "new.py").as_posix()) == "created"
 
 
 @pytest.mark.skipif(not _watchdog_available, reason="watchdog not installed")
@@ -257,7 +257,7 @@ def test_on_deleted_file(tmp_path: Path) -> None:
     event = FileDeletedEvent(str(tmp_path / "gone.py"))
     handler.on_deleted(event)
     handler._timer.cancel()
-    assert handler._pending_highlights.get(str(tmp_path / "gone.py")) == "deleted"
+    assert handler._pending_highlights.get((tmp_path / "gone.py").as_posix()) == "deleted"
 
 
 @pytest.mark.skipif(not _watchdog_available, reason="watchdog not installed")
@@ -269,7 +269,7 @@ def test_on_modified_file(tmp_path: Path) -> None:
     event = FileModifiedEvent(str(f))
     handler.on_modified(event)
     handler._timer.cancel()
-    assert handler._pending_highlights.get(str(f)) == "modified"
+    assert handler._pending_highlights.get(f.as_posix()) == "modified"
 
 
 @pytest.mark.skipif(not _watchdog_available, reason="watchdog not installed")
@@ -281,8 +281,8 @@ def test_on_moved_file(tmp_path: Path) -> None:
     event = FileMovedEvent(str(src), str(dst))
     handler.on_moved(event)
     handler._timer.cancel()
-    assert handler._pending_highlights.get(str(src)) == "deleted"
-    assert handler._pending_highlights.get(str(dst)) == "created"
+    assert handler._pending_highlights.get(src.as_posix()) == "deleted"
+    assert handler._pending_highlights.get(dst.as_posix()) == "created"
 
 
 # ---------------------------------------------------------------------------
