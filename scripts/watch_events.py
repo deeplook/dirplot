@@ -19,15 +19,25 @@ FIELDNAMES = ["timestamp", "event_type", "src_path", "dest_path"]
 
 
 class CSVEventHandler(FileSystemEventHandler):
-    def __init__(self, writer: csv.DictWriter, stream) -> None:
+    def __init__(self, writer: csv.DictWriter, stream, output_path: Path | None = None) -> None:
         super().__init__()
         self._writer = writer
         self._stream = stream
+        self._output_path = output_path.resolve() if output_path else None
+
+    def _is_output_path(self, path: str | bytes | None) -> bool:
+        if self._output_path is None or path is None:
+            return False
+        path_s = path.decode() if isinstance(path, bytes) else path
+        return Path(path_s).resolve() == self._output_path
 
     def _write(self, verb: str, event: FileSystemEvent) -> None:
+        dest = getattr(event, "dest_path", None)
+        if self._is_output_path(event.src_path) or self._is_output_path(dest):
+            return
+
         src = event.src_path
         src_s = src.decode() if isinstance(src, bytes) else src
-        dest = getattr(event, "dest_path", None)
         dest_s = (dest.decode() if isinstance(dest, bytes) else dest) or ""
         self._writer.writerow(
             {
@@ -67,8 +77,9 @@ def main() -> None:
             print(f"Error: {d} is not a directory", file=sys.stderr)
             sys.exit(1)
 
+    output_path = args.output.resolve() if args.output else None
     stream = (
-        open(args.output, "w", newline="", encoding="utf-8")  # noqa: SIM115
+        open(output_path, "w", newline="", encoding="utf-8")  # noqa: SIM115
         if args.output
         else sys.stdout
     )
@@ -77,7 +88,7 @@ def main() -> None:
     writer.writeheader()
     stream.flush()
 
-    handler = CSVEventHandler(writer, stream)
+    handler = CSVEventHandler(writer, stream, output_path)
     observer = Observer()
     for d in args.dirs:
         observer.schedule(handler, str(d), recursive=True)
