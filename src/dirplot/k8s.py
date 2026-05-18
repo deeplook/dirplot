@@ -189,7 +189,8 @@ def build_tree_pod(
         name = PurePosixPath(rel_path).name
         if name.startswith("."):
             continue
-        if matches_exclude(rel_path, exclude):
+        abs_path = remote_path.rstrip("/") + "/" + rel_path
+        if matches_exclude(rel_path, exclude) or matches_exclude(abs_path, exclude):
             continue
         try:
             size = int(size_str)

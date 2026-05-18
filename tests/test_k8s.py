@@ -278,6 +278,15 @@ def test_build_tree_pod_exclude() -> None:
     assert "skip.py" not in names
 
 
+def test_build_tree_pod_exclude_absolute_path() -> None:
+    output = "README.md\t50\tf\nsrc\t0\td\nsrc/app.py\t100\tf\n"
+    with patch("subprocess.run", side_effect=_mock_run(output)):
+        node = build_tree_pod("mypod", "/testdata", exclude=frozenset({"/testdata/README.md"}))
+    names = {c.name for c in node.children}
+    assert "README.md" not in names
+    assert "src" in names
+
+
 def test_build_tree_pod_nested() -> None:
     output = "src\t0\td\nsrc/app.py\t300\tf\ntop.txt\t100\tf\n"
     with patch("subprocess.run", side_effect=_mock_run(output)):
