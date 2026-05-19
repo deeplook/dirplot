@@ -317,7 +317,7 @@ dirplot watch . --snapshot treemap.png --debounce 1.0
 
 ## `dirplot replay` — event log replay
 
-Replays a JSONL event log produced by `dirplot watch --output` as an animated treemap. Events are grouped into time buckets (one frame per bucket).
+Replays a JSONL event log produced by `dirplot watch --output` as an animated treemap. Events are grouped into time buckets (one frame per bucket). By default the full directory tree is scanned at replay time so unchanged files appear as context; pass `--no-context` to show only files that appear in the event log.
 
 > **Requires** `ffmpeg` on `PATH` for MP4 output.
 
@@ -362,6 +362,7 @@ dirplot replay events.jsonl --output replay.png --total-duration 30 --fade-out -
 | `--colormap` | `tab20` | Matplotlib colormap |
 | `--font-size` | `12` | Directory label font size in pixels |
 | `--cushion/--no-cushion` | `--cushion` | Van Wijk cushion shading |
+| `--no-context` | off | Show only files from the event log; skip the initial directory scan |
 
 ---
 
