@@ -362,3 +362,43 @@ def test_diff_matching_hashes_not_changed(git_repo: Path, tmp_path: Path) -> Non
     assert "gamma.py" in hashes_head
     assert "gamma.py" in hashes_wt
     assert hashes_head["gamma.py"] == hashes_wt["gamma.py"]
+
+
+def test_diff_size_filter_keeps_matching_files(tree_a: Path, tree_b: Path, tmp_path: Path) -> None:
+    out = tmp_path / "diff.png"
+    # Only files >= 400 bytes: same.py (500), changed.py (999 in B), added.py (400)
+    result = runner.invoke(
+        app,
+        [
+            "diff",
+            str(tree_a),
+            str(tree_b),
+            "--output",
+            str(out),
+            "--canvas",
+            "300x200",
+            "--no-show",
+            "--size",
+            "400..",
+        ],
+    )
+    assert result.exit_code == 0, result.output
+    assert out.exists()
+
+
+def test_diff_size_filter_no_match_exits_nonzero(tree_a: Path, tree_b: Path) -> None:
+    result = runner.invoke(
+        app,
+        ["diff", str(tree_a), str(tree_b), "--no-show", "--size", "999G.."],
+    )
+    assert result.exit_code == 1
+    assert "No files match" in result.output
+
+
+def test_diff_size_filter_invalid_range(tree_a: Path, tree_b: Path) -> None:
+    result = runner.invoke(
+        app,
+        ["diff", str(tree_a), str(tree_b), "--no-show", "--size", "badrange"],
+    )
+    assert result.exit_code == 1
+    assert "Invalid --size" in result.output
