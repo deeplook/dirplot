@@ -130,6 +130,11 @@ def replay_cmd(
         ),
         metavar="RANGE",
     ),
+    no_context: bool = typer.Option(
+        False,
+        "--no-context",
+        help="Only show files that appear in the event log; skip the initial directory scan.",
+    ),
     quiet: bool = typer.Option(False, "--quiet", "-q", help="Suppress non-error output."),
     highlight: list[str] = typer.Option(
         [],
@@ -223,10 +228,13 @@ def replay_cmd(
                     except ValueError:
                         pass
 
-    # Build initial files dict: start with a full live scan so untouched files provide context,
-    # then override with first-logged sizes for files that appear in the event log.
-    files: dict[str, int] = scan_to_flat(common_root, excluded)
-    files.update(first_log_sizes)
+    # Build initial files dict: full live scan for context (override with logged sizes),
+    # or event-log-only when --no-context is set.
+    if no_context:
+        files: dict[str, int] = dict(first_log_sizes)
+    else:
+        files = scan_to_flat(common_root, excluded)
+        files.update(first_log_sizes)
     if not quiet:
         typer.echo(f"  {len(files)} unique files from event log", err=True)
 
