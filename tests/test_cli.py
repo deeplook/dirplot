@@ -1221,3 +1221,33 @@ def test_replay_size_filter_invalid_range(tmp_path: Path) -> None:
     )
     assert result.exit_code == 1
     assert "Invalid --size" in result.output
+
+
+# ---------------------------------------------------------------------------
+# replay: first-logged-size as initial baseline
+# ---------------------------------------------------------------------------
+
+
+def test_replay_uses_first_logged_size_as_baseline(tmp_path: Path) -> None:
+    """Events with size fields: first size wins; live stat is not used even if the file changed."""
+    root = tmp_path / "root"
+    root.mkdir()
+    # The file on disk has size 999 — but the log records 100 first, then 200.
+    # The initial baseline should be 100 (first log entry), not 999 (live stat).
+    f = root / "a.py"
+    f.write_bytes(b"x" * 999)
+    log = tmp_path / "events.jsonl"
+    _write_jsonl(
+        log,
+        [
+            {"timestamp": 1.0, "type": "created", "path": str(f), "size": 100},
+            {"timestamp": 2.0, "type": "modified", "path": str(f), "size": 200},
+        ],
+    )
+    out = tmp_path / "replay.apng"
+    result = runner.invoke(
+        app,
+        ["replay", str(log), "--output", str(out), "--canvas", "200x150", "--workers", "1"],
+    )
+    assert result.exit_code == 0, result.output
+    assert out.exists()
