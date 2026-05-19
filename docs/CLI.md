@@ -51,9 +51,15 @@ find . -type d      | dirplot map
 # Read a saved path list from a file
 tree src/ > paths.txt && dirplot map --paths-from paths.txt
 
-# Custom size, colormap, font
-dirplot map . --size 1920x1080 --output treemap.png --no-show
+# Custom canvas size, colormap, font
+dirplot map . --canvas 1920x1080 --output treemap.png --no-show
 dirplot map . --colormap Set2 --font-size 18
+
+# Filter by file size — only show files in a given size range
+dirplot map . --size 10K..1M           # between 10 KiB and 1 MiB
+dirplot map . --size 500K..            # 500 KiB or larger
+dirplot map . --size ..100K            # 100 KiB or smaller
+dirplot map . --size 1M --size ..1K    # exactly 1 MiB or under 1 KiB (OR logic)
 
 # Log scale — use when one large file dominates and squashes everything else
 dirplot map . --log-scale 4
@@ -103,7 +109,9 @@ See [EXAMPLES.md](EXAMPLES.md) for detailed examples of each remote backend and 
 | `--include` | | — | Keep only these subtrees (repeatable, supports nested paths); the inverse of `--exclude` |
 | `--highlight` | `-H` | — | Draw a coloured border around matching paths (repeatable). Accepts exact paths or globs including `**`. Append `@color` to set the colour (e.g. `**/*.py@orange`); defaults to red. Works for files and directories |
 | `--depth` | | unlimited | Maximum recursion depth |
-| `--size` | | terminal size | Output dimensions as `WIDTHxHEIGHT` (e.g. `1920x1080`) |
+| `--size` | `-S` | — | Filter files by size range (e.g. `10M..500M`, `100M..`, `..50K`, `1G`). Repeatable — multiple values combine with OR logic. Units: `B K KB M MB G GB T TB` (powers of 1024, case-insensitive) |
+| `--keep-empty-dirs` | | off | Retain directories that become empty after `--size` filtering |
+| `--canvas` | | terminal size | Output dimensions as `WIDTHxHEIGHT` (e.g. `1920x1080`) |
 | `--header/--no-header` | | `--header` | Print info lines before rendering |
 | `--cushion/--no-cushion` | | `--cushion` | Van Wijk cushion shading for a raised 3-D look |
 | `--log-scale` | | `0` (off) | Log-scale compression ratio; any value > 1 enables it (e.g. `4` = largest tile is at most 4× the smallest) |
@@ -244,7 +252,7 @@ dirplot diff old/ new/ --light --output diff.svg
 | `--include` | | — | Keep only these subtrees (repeatable); the inverse of `--exclude`. The added/removed/changed summary counts in the header are scoped to the included paths |
 | `--highlight` | `-H` | — | Draw a coloured border on top of diff borders (repeatable). Same `pattern[@color]` syntax as `dirplot map --highlight` |
 | `--depth` | | unlimited | Maximum recursion depth |
-| `--size` | | terminal size | Output dimensions as `WIDTHxHEIGHT` (e.g. `1920x1080`) |
+| `--canvas` | | terminal size | Output dimensions as `WIDTHxHEIGHT` (e.g. `1920x1080`) |
 | `--cushion/--no-cushion` | | `--cushion` | Van Wijk cushion shading for a raised 3-D look |
 | `--dark/--light` | | `--dark` | Canvas and label colour scheme |
 | `--log-scale` | | `0` (off) | Log-scale compression ratio; any value > 1 enables it |
@@ -293,7 +301,9 @@ dirplot watch src --snapshot treemap.png --event-log events.jsonl
 | `--debounce` | `0.5` | Seconds of quiet before regenerating; `0` disables |
 | `--event-log` | — | Write raw events as JSONL on Ctrl-C exit |
 | `--log-scale` | `0` (off) | Log-scale compression ratio; any value > 1 enables it |
-| `--size` | terminal size | Output dimensions as `WIDTHxHEIGHT` |
+| `--size` / `-S` | — | Filter files by size range (e.g. `10M..500M`, `100M..`, `..50K`). Repeatable (OR logic) |
+| `--keep-empty-dirs` | off | Retain directories emptied by `--size` filtering |
+| `--canvas` | terminal size | Output dimensions as `WIDTHxHEIGHT` |
 | `--depth` | — | Maximum recursion depth |
 | `--exclude` / `-e` | — | Pattern to exclude (repeatable): plain name, glob (`*.egg-info`), `**` glob, or relative path |
 | `--colormap` | `tab20` | Matplotlib colormap |
@@ -341,7 +351,7 @@ dirplot replay events.jsonl --output replay.png --total-duration 30 --fade-out -
 | `--codec` | `libx264` | MP4 codec: `libx264` (H.264) or `libx265` (H.265) |
 | `--workers` | all CPU cores | Parallel render workers; must be a positive integer |
 | `--log-scale` | `0` (off) | Log-scale compression ratio; any value > 1 enables it |
-| `--size` | terminal size | Output dimensions as `WIDTHxHEIGHT` |
+| `--canvas` | terminal size | Output dimensions as `WIDTHxHEIGHT` |
 | `--depth` | — | Maximum directory depth |
 | `--exclude` / `-e` | — | Pattern to exclude (repeatable): plain name, glob (`*.egg-info`), `**` glob, or relative path |
 | `--highlight` / `-H` | — | Draw a coloured border on matching paths in every frame (repeatable). Same `pattern[@color]` syntax as `dirplot map --highlight` |
@@ -443,7 +453,7 @@ See [EXAMPLES.md — Git History Animation](EXAMPLES.md#git-history-animation) f
 | `--codec` | `libx264` | MP4 codec: `libx264` (H.264) or `libx265` (~40% smaller at same quality) |
 | `--workers` | all CPU cores | Parallel render workers; must be a positive integer. 4–8 is typically optimal |
 | `--log-scale` | `0` (off) | Log-scale compression ratio; any value > 1 enables it |
-| `--size` | terminal size | Output dimensions as `WIDTHxHEIGHT` |
+| `--canvas` | terminal size | Output dimensions as `WIDTHxHEIGHT` |
 | `--depth` | — | Maximum directory depth |
 | `--exclude` / `-e` | — | Pattern to exclude (repeatable): plain name, glob (`*.egg-info`), `**` glob, or relative path |
 | `--highlight` / `-H` | — | Draw a coloured border on matching paths in every frame (repeatable). Same `pattern[@color]` syntax as `dirplot map --highlight` |
@@ -505,7 +515,7 @@ dirplot hg . --range 0:tip --first 20 --output history.png
 | `--codec` | `libx264` | MP4 codec: `libx264` (H.264) or `libx265` (~40% smaller at same quality) |
 | `--workers` | all CPU cores | Parallel render workers; must be a positive integer |
 | `--log-scale` | `0` (off) | Log-scale compression ratio; any value > 1 enables it |
-| `--size` | terminal size | Output dimensions as `WIDTHxHEIGHT` |
+| `--canvas` | terminal size | Output dimensions as `WIDTHxHEIGHT` |
 | `--depth` | — | Maximum directory depth |
 | `--exclude` / `-e` | — | Pattern to exclude (repeatable) |
 | `--highlight` / `-H` | — | Draw a coloured border on matching paths in every frame (repeatable). Same `pattern[@color]` syntax as `dirplot map --highlight` |
@@ -635,7 +645,7 @@ sys.stdout.buffer.write(
 
 > **Note:** `--inline` does not work when running inside a container — dirplot cannot probe your host terminal from within Docker. Use `--output -` and display the bytes on the host side instead, as shown above.
 >
-> **Terminal size:** the container has no tty, so dirplot cannot detect your terminal dimensions. The default 1280×720 fallback is used unless you pass `--size WIDTHxHEIGHT` explicitly or set `-e COLUMNS=$(tput cols) -e LINES=$(tput lines)`.
+> **Terminal size:** the container has no tty, so dirplot cannot detect your terminal dimensions. The default 1280×720 fallback is used unless you pass `--canvas WIDTHxHEIGHT` explicitly or set `-e COLUMNS=$(tput cols) -e LINES=$(tput lines)`.
 
 ---
 
@@ -645,7 +655,7 @@ sys.stdout.buffer.write(
 
 dirplot reads the terminal pixel size via `TIOCGWINSZ`. This can fail or return wrong values when:
 
-- **stdout is a pipe** (e.g. `uv run`, `nohup`, CI): pass `--size WIDTHxHEIGHT` explicitly, or set `COLUMNS` and `LINES` env vars.
+- **stdout is a pipe** (e.g. `uv run`, `nohup`, CI): pass `--canvas WIDTHxHEIGHT` explicitly, or set `COLUMNS` and `LINES` env vars.
 - **Inside Docker**: same as above — the container has no tty.
 - **`--inline` in Docker**: not supported; use `--output - | imgcat` instead (see [Running via Docker](#running-dirplot-via-docker)).
 

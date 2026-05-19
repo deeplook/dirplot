@@ -245,8 +245,8 @@ def git_cmd(
         DEFAULT_FONT_SIZE, "--font-size", help="Directory label font size in pixels"
     ),
     colormap: str = typer.Option(DEFAULT_COLORMAP, "--colormap", help="Matplotlib colormap"),
-    size: str | None = typer.Option(
-        None, "--size", help="Output size as WIDTHxHEIGHT", metavar="WIDTHxHEIGHT"
+    canvas: str | None = typer.Option(
+        None, "--canvas", help="Output size as WIDTHxHEIGHT", metavar="WIDTHxHEIGHT"
     ),
     cushion: bool = typer.Option(
         True, "--cushion/--no-cushion", help="Apply van Wijk cushion shading"
@@ -389,14 +389,14 @@ def git_cmd(
         typer.echo("Error: --first and --last are mutually exclusive.", err=True)
         raise typer.Exit(1)
 
-    if size is not None:
+    if canvas is not None:
         try:
-            _w, _h = (int(p) for p in size.lower().split("x", 1))
+            _w, _h = (int(p) for p in canvas.lower().split("x", 1))
         except ValueError:
             _w, _h = 0, 0
         if _w == 0 or _h == 0:
             typer.echo(
-                f"Invalid --size '{size}': width and height must both be positive.", err=True
+                f"Invalid --canvas '{canvas}': width and height must both be positive.", err=True
             )
             raise typer.Exit(1)
 
@@ -498,23 +498,23 @@ def git_cmd(
             typer.echo(f"Error: not a git repository: {repo}", err=True)
             raise typer.Exit(1)
 
-    if size is not None:
+    if canvas is not None:
         try:
-            w_str, h_str = size.lower().split("x", 1)
+            w_str, h_str = canvas.lower().split("x", 1)
             width_px, height_px = int(w_str), int(h_str)
         except ValueError:
-            typer.echo(f"Invalid --size '{size}'. Expected WIDTHxHEIGHT.", err=True)
+            typer.echo(f"Invalid --canvas '{canvas}'. Expected WIDTHxHEIGHT.", err=True)
             raise typer.Exit(1) from None
         if width_px == 0 or height_px == 0:
             typer.echo(
-                f"Invalid --size '{size}': width and height must both be positive.", err=True
+                f"Invalid --canvas '{canvas}': width and height must both be positive.", err=True
             )
             raise typer.Exit(1)
     else:
         width_px, height_px = default_canvas_size()
 
     inline_cols: int | None = None
-    if inline and size is None:
+    if inline and canvas is None:
         inline_cols, *_ = get_terminal_size()
 
     if not quiet:
@@ -764,8 +764,8 @@ def hg_cmd(
         DEFAULT_FONT_SIZE, "--font-size", help="Directory label font size in pixels"
     ),
     colormap: str = typer.Option(DEFAULT_COLORMAP, "--colormap", help="Matplotlib colormap"),
-    size: str | None = typer.Option(
-        None, "--size", help="Output size as WIDTHxHEIGHT", metavar="WIDTHxHEIGHT"
+    canvas: str | None = typer.Option(
+        None, "--canvas", help="Output size as WIDTHxHEIGHT", metavar="WIDTHxHEIGHT"
     ),
     cushion: bool = typer.Option(
         True, "--cushion/--no-cushion", help="Apply van Wijk cushion shading"
@@ -894,14 +894,14 @@ def hg_cmd(
         typer.echo("Error: --first and --last are mutually exclusive.", err=True)
         raise typer.Exit(1)
 
-    if size is not None:
+    if canvas is not None:
         try:
-            _w, _h = (int(p) for p in size.lower().split("x", 1))
+            _w, _h = (int(p) for p in canvas.lower().split("x", 1))
         except ValueError:
             _w, _h = 0, 0
         if _w == 0 or _h == 0:
             typer.echo(
-                f"Invalid --size '{size}': width and height must both be positive.", err=True
+                f"Invalid --canvas '{canvas}': width and height must both be positive.", err=True
             )
             raise typer.Exit(1)
 
@@ -934,23 +934,23 @@ def hg_cmd(
         typer.echo(f"Error: not a Mercurial repository: {repo}", err=True)
         raise typer.Exit(1)
 
-    if size is not None:
+    if canvas is not None:
         try:
-            w_str, h_str = size.lower().split("x", 1)
+            w_str, h_str = canvas.lower().split("x", 1)
             width_px, height_px = int(w_str), int(h_str)
         except ValueError:
-            typer.echo(f"Invalid --size '{size}'. Expected WIDTHxHEIGHT.", err=True)
+            typer.echo(f"Invalid --canvas '{canvas}'. Expected WIDTHxHEIGHT.", err=True)
             raise typer.Exit(1) from None
         if width_px == 0 or height_px == 0:
             typer.echo(
-                f"Invalid --size '{size}': width and height must both be positive.", err=True
+                f"Invalid --canvas '{canvas}': width and height must both be positive.", err=True
             )
             raise typer.Exit(1)
     else:
         width_px, height_px = default_canvas_size()
 
     inline_cols: int | None = None
-    if inline and size is None:
+    if inline and canvas is None:
         inline_cols, *_ = get_terminal_size()
 
     if not quiet:

@@ -13,8 +13,9 @@ try:
 except ImportError:
     Observer = None  # type: ignore[assignment]
 
+from dirplot.filters import SizeRange
 from dirplot.render_png import create_treemap
-from dirplot.scanner import apply_log_sizes, build_tree_multi
+from dirplot.scanner import apply_log_sizes, build_tree_multi, filter_by_size
 from dirplot.svg_render import create_treemap_svg
 
 
@@ -35,6 +36,8 @@ class TreemapEventHandler(FileSystemEventHandler):
         event_log: Path | None = None,
         depth: int | None = None,
         dark: bool = True,
+        size_ranges: list[SizeRange] | None = None,
+        keep_empty_dirs: bool = False,
     ) -> None:
         super().__init__()
         self.roots = roots
@@ -51,6 +54,8 @@ class TreemapEventHandler(FileSystemEventHandler):
         self.logscale = logscale
         self.debounce = debounce
         self.event_log = event_log
+        self.size_ranges = size_ranges
+        self.keep_empty_dirs = keep_empty_dirs
         self._events: list[dict[str, Any]] = []
         self._timer: threading.Timer | None = None
         self._render_thread: threading.Thread | None = None
@@ -70,6 +75,12 @@ class TreemapEventHandler(FileSystemEventHandler):
 
         try:
             node = build_tree_multi(self.roots, self.exclude, self.depth)
+            if self.size_ranges:
+                filtered = filter_by_size(node, self.size_ranges, self.keep_empty_dirs)
+                if filtered is None:
+                    print("No files match the --size filter.", file=sys.stderr)
+                    return
+                node = filtered
             if self.logscale > 1:
                 apply_log_sizes(node, self.logscale)
             rect_map: dict[str, tuple[int, int, int, int]] = {}

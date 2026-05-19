@@ -72,7 +72,7 @@ def test_git_local_at_branch(local_repo: Path, tmp_path: Path) -> None:
     out = tmp_path / "out.png"
     result = runner.invoke(
         app,
-        ["git", f"{local_repo}@feature", "--output", str(out), "--size", "200x150"],
+        ["git", f"{local_repo}@feature", "--output", str(out), "--canvas", "200x150"],
     )
     assert result.exit_code == 0, result.output
     assert out.exists()
@@ -91,7 +91,7 @@ def test_git_local_at_branch_animate(local_repo: Path, tmp_path: Path) -> None:
             str(out),
             "--range",
             "feature",
-            "--size",
+            "--canvas",
             "200x150",
         ],
     )
@@ -113,7 +113,7 @@ def test_git_local_at_branch_range_precedence(local_repo: Path, tmp_path: Path) 
             str(out),
             "--range",
             "main",
-            "--size",
+            "--canvas",
             "200x150",
         ],
     )
@@ -127,7 +127,7 @@ def test_git_local_no_at_syntax(local_repo: Path, tmp_path: Path) -> None:
     out = tmp_path / "out.png"
     result = runner.invoke(
         app,
-        ["git", str(local_repo), "--output", str(out), "--size", "200x150"],
+        ["git", str(local_repo), "--output", str(out), "--canvas", "200x150"],
     )
     assert result.exit_code == 0, result.output
     assert out.exists()
@@ -140,7 +140,7 @@ def test_git_local_animate_mp4(local_repo: Path, tmp_path: Path) -> None:
     out = tmp_path / "out.mp4"
     result = runner.invoke(
         app,
-        ["git", str(local_repo), "--output", str(out), "--range", "HEAD", "--size", "200x150"],
+        ["git", str(local_repo), "--output", str(out), "--range", "HEAD", "--canvas", "200x150"],
     )
     assert result.exit_code == 0, result.output
     assert out.exists()
@@ -152,7 +152,7 @@ def test_git_local_animate_mp4_crf(local_repo: Path, tmp_path: Path) -> None:
     """--crf controls MP4 quality: lower CRF produces a larger file."""
     out_hq = tmp_path / "hq.mp4"
     out_lq = tmp_path / "lq.mp4"
-    common = ["git", str(local_repo), "--range", "HEAD", "--size", "200x150"]
+    common = ["git", str(local_repo), "--range", "HEAD", "--canvas", "200x150"]
     runner.invoke(app, common + ["--output", str(out_hq), "--crf", "0"])
     runner.invoke(app, common + ["--output", str(out_lq), "--crf", "51"])
     assert out_hq.stat().st_size > out_lq.stat().st_size
@@ -226,7 +226,7 @@ def test_git_period_includes_recent_commits(local_repo: Path, tmp_path: Path) ->
     out = tmp_path / "out.png"
     result = runner.invoke(
         app,
-        ["git", str(local_repo), "--output", str(out), "--size", "200x150", "--period", "1h"],
+        ["git", str(local_repo), "--output", str(out), "--canvas", "200x150", "--period", "1h"],
     )
     assert result.exit_code == 0, result.output
     assert out.exists() and out.stat().st_size > 0
@@ -237,7 +237,7 @@ def test_git_period_invalid_value(local_repo: Path, tmp_path: Path) -> None:
     out = tmp_path / "out.png"
     result = runner.invoke(
         app,
-        ["git", str(local_repo), "--output", str(out), "--size", "200x150", "--period", "3y"],
+        ["git", str(local_repo), "--output", str(out), "--canvas", "200x150", "--period", "3y"],
     )
     assert result.exit_code == 1
     assert "Invalid --period" in result.output
@@ -253,7 +253,7 @@ def test_git_period_combined_with_first(local_repo: Path, tmp_path: Path) -> Non
             str(local_repo),
             "--output",
             str(out),
-            "--size",
+            "--canvas",
             "200x150",
             "--period",
             "1h",
@@ -321,7 +321,7 @@ def test_git_period_excludes_old_commits(repo_with_old_base: Path, tmp_path: Pat
             str(repo_with_old_base),
             "--output",
             str(out),
-            "--size",
+            "--canvas",
             "200x150",
             "--period",
             "1h",
@@ -342,7 +342,7 @@ def test_git_inline_with_range_rejected(local_repo: Path) -> None:
     """--inline is rejected when --range is given (animation mode)."""
     result = runner.invoke(
         app,
-        ["git", str(local_repo), "--inline", "--range", "main", "--size", "200x150"],
+        ["git", str(local_repo), "--inline", "--range", "main", "--canvas", "200x150"],
     )
     assert result.exit_code == 1
     assert "single-frame" in result.output or "--inline" in result.output
@@ -352,7 +352,7 @@ def test_git_inline_with_period_rejected(local_repo: Path) -> None:
     """--inline is rejected when --period is given (animation mode)."""
     result = runner.invoke(
         app,
-        ["git", str(local_repo), "--inline", "--period", "1h", "--size", "200x150"],
+        ["git", str(local_repo), "--inline", "--period", "1h", "--canvas", "200x150"],
     )
     assert result.exit_code == 1
     assert "single-frame" in result.output or "--inline" in result.output
@@ -360,7 +360,7 @@ def test_git_inline_with_period_rejected(local_repo: Path) -> None:
 
 def test_git_output_required_without_inline(local_repo: Path) -> None:
     """--output is required when --inline is not given."""
-    result = runner.invoke(app, ["git", str(local_repo), "--size", "200x150"])
+    result = runner.invoke(app, ["git", str(local_repo), "--canvas", "200x150"])
     assert result.exit_code == 1
     assert "--output" in result.output or "required" in result.output
 
@@ -381,7 +381,7 @@ def test_git_first_last_mutually_exclusive(local_repo: Path, tmp_path: Path) -> 
             "1",
             "--last",
             "1",
-            "--size",
+            "--canvas",
             "200x150",
         ],
     )
@@ -394,7 +394,7 @@ def test_git_first_without_animation_mode_rejected(local_repo: Path, tmp_path: P
     out = tmp_path / "out.png"
     result = runner.invoke(
         app,
-        ["git", str(local_repo), "--output", str(out), "--first", "1", "--size", "200x150"],
+        ["git", str(local_repo), "--output", str(out), "--first", "1", "--canvas", "200x150"],
     )
     assert result.exit_code == 1
     assert "--range" in result.output or "--period" in result.output
@@ -405,7 +405,7 @@ def test_git_last_without_animation_mode_rejected(local_repo: Path, tmp_path: Pa
     out = tmp_path / "out.png"
     result = runner.invoke(
         app,
-        ["git", str(local_repo), "--output", str(out), "--last", "1", "--size", "200x150"],
+        ["git", str(local_repo), "--output", str(out), "--last", "1", "--canvas", "200x150"],
     )
     assert result.exit_code == 1
     assert "--range" in result.output or "--period" in result.output
@@ -430,7 +430,7 @@ def test_git_last_n_animate(local_repo: Path, tmp_path: Path) -> None:
             "main",
             "--last",
             "1",
-            "--size",
+            "--canvas",
             "200x150",
         ],
     )
@@ -454,7 +454,7 @@ def test_git_first_vs_last_select_different_commits(local_repo: Path, tmp_path: 
             "main",
             "--first",
             "1",
-            "--size",
+            "--canvas",
             "200x150",
         ],
     )
@@ -469,7 +469,7 @@ def test_git_first_vs_last_select_different_commits(local_repo: Path, tmp_path: 
             "main",
             "--last",
             "1",
-            "--size",
+            "--canvas",
             "200x150",
         ],
     )

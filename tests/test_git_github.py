@@ -40,7 +40,7 @@ def test_git_github_animate(tmp_path: Path) -> None:
             "HEAD~9..HEAD",
             "--first",
             "10",
-            "--size",
+            "--canvas",
             "400x300",
         ],
     )

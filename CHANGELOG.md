@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **`--size` renamed to `--canvas`** in `map`, `diff`, `watch`, `git`, `hg`, and `replay` — the
+  old flag controlled output pixel dimensions (e.g. `--canvas 1920x1080`). The name was freed up
+  so that `--size` can be used for file-size filtering (see below). **Breaking change.**
+
+### Added
+
+- **`--size`/`-S` file-size filter** — available on `map`, `diff`, and `watch`. Filters the
+  scanned tree to files whose byte size matches a range. Syntax: `10M..500M` (between 10 MiB and
+  500 MiB), `100M..` (≥ 100 MiB), `..50K` (≤ 50 KiB), `1G` (exactly 1 GiB). Units: `B K KB M
+  MB G GB T TB` (powers of 1024, case-insensitive). Repeatable — multiple `--size` flags combine
+  with OR logic. Pass `--keep-empty-dirs` to retain directories that become empty after filtering.
+  Filtering is post-scan; parent directory sizes are recalculated after pruning.
+
 ### Fixed
 
 - Several correctness and robustness fixes: archive stat modes now include file type bits; watch mode SVG snapshots now render change highlights; `diff` summary counts respect `--include`; `--workers` rejects non-positive values; the `watch_events.py` script ignores its own output file when placed inside a watched directory; GitHub tokens are no longer embedded in clone URLs; and various edge-case fixes across the k8s, S3, and animation subsystems.
@@ -56,7 +71,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   local directories, `github://owner/repo[@ref]`, archives (`.zip`, `.tar.gz`, …), `s3://`,
   `ssh://`, `docker://`, and `pod://`. All visual and remote-access options are available:
   `--output`, `--format`, `--show/--no-show`, `--inline`, `--font-size`, `--colormap`,
-  `--exclude`, `--depth`, `--size`, `--cushion/--no-cushion`, `--dark/--light`,
+  `--exclude`, `--depth`, `--canvas`, `--cushion/--no-cushion`, `--dark/--light`,
   `--log-scale`, `--header/--no-header`, `--quiet`, `--ssh-key`, `--ssh-password-file`,
   `--aws-profile`, `--no-sign`, `--github-token-file`, `--k8s-namespace`,
   `--k8s-container`, `--password-file`, and `--no-input`.
@@ -751,5 +766,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - File-extension colours from the GitHub Linguist palette (~500 known extensions); unknown extensions fall back to a stable MD5-derived colour from the chosen colormap.
 - Van Wijk quadratic cushion shading giving each tile a raised 3-D look (`--cushion`, on by default).
 - Bundled JetBrains Mono fonts for crisp directory labels at any size.
-- CLI options: `--output`, `--show/--no-show`, `--inline`, `--legend`, `--font-size`, `--colormap`, `--exclude`, `--size`, `--header/--no-header`, `--cushion/--no-cushion`, `--log`.
+- CLI options: `--output`, `--show/--no-show`, `--inline`, `--legend`, `--font-size`, `--colormap`, `--exclude`, `--canvas`, `--header/--no-header`, `--cushion/--no-cushion`, `--log`.
 - Full test suite (65 tests), strict mypy, ruff linting, pre-commit hooks, and CI on Python 3.10–3.13.

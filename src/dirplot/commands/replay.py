@@ -63,8 +63,8 @@ def replay_cmd(
         DEFAULT_FONT_SIZE, "--font-size", help="Directory label font size in pixels"
     ),
     colormap: str = typer.Option(DEFAULT_COLORMAP, "--colormap", help="Matplotlib colormap"),
-    size: str | None = typer.Option(
-        None, "--size", help="Output size as WIDTHxHEIGHT", metavar="WIDTHxHEIGHT"
+    canvas: str | None = typer.Option(
+        None, "--canvas", help="Output size as WIDTHxHEIGHT", metavar="WIDTHxHEIGHT"
     ),
     cushion: bool = typer.Option(True, "--cushion/--no-cushion", help="Apply cushion shading"),
     dark: bool = typer.Option(True, "--dark/--light", help="Dark background (default) or light"),
@@ -151,16 +151,16 @@ def replay_cmd(
         typer.echo("Error: --output must be a .png, .apng, .mp4, or .mov file.", err=True)
         raise typer.Exit(1)
 
-    if size is not None:
+    if canvas is not None:
         try:
-            w_str, h_str = size.lower().split("x", 1)
+            w_str, h_str = canvas.lower().split("x", 1)
             width_px, height_px = int(w_str), int(h_str)
         except ValueError:
-            typer.echo(f"Invalid --size '{size}'. Expected WIDTHxHEIGHT.", err=True)
+            typer.echo(f"Invalid --canvas '{canvas}'. Expected WIDTHxHEIGHT.", err=True)
             raise typer.Exit(1) from None
         if width_px == 0 or height_px == 0:
             typer.echo(
-                f"Invalid --size '{size}': width and height must both be positive.", err=True
+                f"Invalid --canvas '{canvas}': width and height must both be positive.", err=True
             )
             raise typer.Exit(1)
     else:

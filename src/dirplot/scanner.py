@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, TypedDict
 
 if TYPE_CHECKING:
+    from dirplot.filters import SizeRange
     from dirplot.vpath import StatResult, VirtualPath
 
 NO_EXT = "(no ext)"
@@ -520,3 +521,44 @@ def tree_metrics(
         lines.append(f"    {size_str:<10}  {d['pct']:>5.1f}%  {d['path']}")
 
     return "\n".join(lines)
+
+
+def matches_any_range(size: int, ranges: list[SizeRange]) -> bool:
+    """Return True if *size* (bytes) satisfies at least one SizeRange (OR logic)."""
+    for r in ranges:
+        if r.min_bytes is not None and size < r.min_bytes:
+            continue
+        if r.max_bytes is not None and size > r.max_bytes:
+            continue
+        return True
+    return False
+
+
+def filter_by_size(
+    node: Node,
+    ranges: list[SizeRange],
+    keep_empty_dirs: bool = False,
+) -> Node | None:
+    """Prune tree to leaves whose byte size matches any SizeRange (OR logic).
+
+    Directories are kept if any children survive filtering (or keep_empty_dirs is True).
+    Parent sizes are recalculated after filtering.
+    Uses node.original_size when set (post-log-scale), else node.size.
+    """
+    if not node.is_dir:
+        effective = node.original_size if node.original_size else node.size
+        return node if matches_any_range(effective, ranges) else None
+
+    kept: list[Node] = []
+    for child in node.children:
+        result = filter_by_size(child, ranges, keep_empty_dirs)
+        if result is not None:
+            kept.append(result)
+
+    if not kept and not keep_empty_dirs:
+        return None
+
+    from dataclasses import replace
+
+    new_size = sum(c.size for c in kept)
+    return replace(node, children=kept, size=new_size)

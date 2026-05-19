@@ -30,7 +30,7 @@ _DIFF_EPILOG = (
     "  dirplot diff src/ build/  [dim]# compare two local directories[/dim]\n\n"
     "  dirplot diff v1/ v2/ --output diff.png  [dim]# save to file[/dim]\n\n"
     "  dirplot diff v1/ v2/ --no-show --output diff.svg  [dim]# SVG output[/dim]\n\n"
-    "  dirplot diff v1/ v2/ --size 1920x1080  [dim]# fixed resolution[/dim]\n\n"
+    "  dirplot diff v1/ v2/ --canvas 1920x1080  [dim]# fixed resolution[/dim]\n\n"
     "  dirplot diff v1/ v2/ --depth 3  [dim]# limit directory depth[/dim]\n\n"
     "  dirplot diff github://owner/repo@v1 github://owner/repo@v2"
     "  [dim]# compare two GitHub tags[/dim]\n\n"
@@ -80,8 +80,8 @@ def diff_cmd(
         help="Show only this subtree (repeatable; supports nested paths). Allowlist complement to --exclude.",  # noqa: E501
     ),
     depth: int | None = typer.Option(None, "--depth", help="Maximum directory depth"),
-    size: str | None = typer.Option(
-        None, "--size", help="Output dimensions as WIDTHxHEIGHT", metavar="WIDTHxHEIGHT"
+    canvas: str | None = typer.Option(
+        None, "--canvas", help="Output dimensions as WIDTHxHEIGHT", metavar="WIDTHxHEIGHT"
     ),
     cushion: bool = typer.Option(True, "--cushion/--no-cushion", help="Van Wijk cushion shading"),
     dark: bool = typer.Option(True, "--dark/--light", help="Dark background (default) or light"),
@@ -415,16 +415,16 @@ def diff_cmd(
     if to_stdout:
         show = False
     inline_cols: int | None = None
-    if size is not None:
+    if canvas is not None:
         try:
-            w_str, h_str = size.lower().split("x", 1)
+            w_str, h_str = canvas.lower().split("x", 1)
             width_px, height_px = int(w_str), int(h_str)
         except ValueError:
-            typer.echo(f"Invalid --size '{size}'. Expected WIDTHxHEIGHT.", err=True)
+            typer.echo(f"Invalid --canvas '{canvas}'. Expected WIDTHxHEIGHT.", err=True)
             raise typer.Exit(1) from None
         if width_px == 0 or height_px == 0:
             typer.echo(
-                f"Invalid --size '{size}': width and height must both be positive.", err=True
+                f"Invalid --canvas '{canvas}': width and height must both be positive.", err=True
             )
             raise typer.Exit(1)
         _info(f"Output size: {width_px}x{height_px}px")

@@ -31,8 +31,23 @@ def watch_cmd(
         DEFAULT_FONT_SIZE, "--font-size", help="Directory label font size in pixels"
     ),
     colormap: str = typer.Option(DEFAULT_COLORMAP, "--colormap", help="Matplotlib colormap"),
-    size: str | None = typer.Option(
-        None, "--size", help="Output size as WIDTHxHEIGHT", metavar="WIDTHxHEIGHT"
+    canvas: str | None = typer.Option(
+        None, "--canvas", help="Output size as WIDTHxHEIGHT", metavar="WIDTHxHEIGHT"
+    ),
+    size_filter: list[str] | None = typer.Option(
+        None,
+        "--size",
+        "-S",
+        help=(
+            "Filter files by size range (e.g. 10M..500M, 100M.., ..50K, 1G). "
+            "Repeatable — multiple ranges are combined with OR logic."
+        ),
+        metavar="RANGE",
+    ),
+    keep_empty_dirs: bool = typer.Option(
+        False,
+        "--keep-empty-dirs",
+        help="Retain directories that become empty after --size filtering.",
     ),
     cushion: bool = typer.Option(
         True, "--cushion/--no-cushion", help="Apply van Wijk cushion shading"
@@ -86,20 +101,32 @@ def watch_cmd(
             typer.echo(f"Error: not a directory: {path}", err=True)
             raise typer.Exit(1)
 
-    if size is not None:
+    if canvas is not None:
         try:
-            w_str, h_str = size.lower().split("x", 1)
+            w_str, h_str = canvas.lower().split("x", 1)
             width_px, height_px = int(w_str), int(h_str)
         except ValueError:
-            typer.echo(f"Invalid --size '{size}'. Expected WIDTHxHEIGHT.", err=True)
+            typer.echo(f"Invalid --canvas '{canvas}'. Expected WIDTHxHEIGHT.", err=True)
             raise typer.Exit(1) from None
         if width_px == 0 or height_px == 0:
             typer.echo(
-                f"Invalid --size '{size}': width and height must both be positive.", err=True
+                f"Invalid --canvas '{canvas}': width and height must both be positive.", err=True
             )
             raise typer.Exit(1)
     else:
         width_px, height_px = default_canvas_size()
+
+    parsed_size_ranges = None
+    if size_filter:
+        from dirplot.filters import parse_size_range
+
+        parsed_size_ranges = []
+        for spec in size_filter:
+            try:
+                parsed_size_ranges.append(parse_size_range(spec))
+            except ValueError as exc:
+                typer.echo(f"Invalid --size value: {exc}", err=True)
+                raise typer.Exit(1) from exc
 
     excluded = frozenset(exclude)
     roots = [path.resolve() for path in paths]
@@ -118,6 +145,8 @@ def watch_cmd(
         event_log=event_log,
         depth=depth,
         dark=dark,
+        size_ranges=parsed_size_ranges,
+        keep_empty_dirs=keep_empty_dirs,
     )
 
     observer = Observer()

@@ -670,7 +670,7 @@ dirplot git . --range main --last 50 --total-duration 30 --output history.png
 
 # Tagged release range, MP4 output, log scale
 dirplot git github://openclaw/openclaw --range 871e8882..8445c9a5 \
-  --log-scale 4 --size 1920x1080 --output openclaw.mp4
+  --log-scale 4 --canvas 1920x1080 --output openclaw.mp4
 
 # First 10 commits of a tagged range
 dirplot git github://owner/repo --range v1.0..v2.0 --first 10 --output history.png
@@ -691,7 +691,7 @@ dirplot git . --period 7d --total-duration 20 \
 
 <figure>
   <video src="https://media.githubusercontent.com/media/deeplook/dirplot/main/docs/steipete-birdclaw.mp4#t=12" controls loop muted playsinline width="100%"></video>
-  <figcaption><code>dirplot git https://github.com/steipete/birdclaw --size 1000x600 --range main -o steipete-birdclaw.mp4</code></figcaption>
+  <figcaption><code>dirplot git https://github.com/steipete/birdclaw --canvas 1000x600 --range main -o steipete-birdclaw.mp4</code></figcaption>
 </figure>
 
 ### From live filesystem events

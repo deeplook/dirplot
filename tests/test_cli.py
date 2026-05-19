@@ -75,7 +75,7 @@ def test_cli_stdout_png(sample_tree: Path, tmp_path: Path) -> None:
             "--no-show",
             "--output",
             "-",
-            "--size",
+            "--canvas",
             "100x100",
         ],
         capture_output=True,
@@ -99,7 +99,7 @@ def test_cli_stdout_svg(sample_tree: Path) -> None:
             "-",
             "--format",
             "svg",
-            "--size",
+            "--canvas",
             "100x100",
         ],
         capture_output=True,
@@ -171,47 +171,47 @@ def test_cli_custom_scale(sample_tree: Path) -> None:
 
 
 def test_cli_custom_size(sample_tree: Path) -> None:
-    result = runner.invoke(app, ["map", str(sample_tree), "--no-show", "--size", "800x600"])
+    result = runner.invoke(app, ["map", str(sample_tree), "--no-show", "--canvas", "800x600"])
     assert result.exit_code == 0
     assert "800x600" in result.output
 
 
 def test_cli_invalid_size(sample_tree: Path) -> None:
-    result = runner.invoke(app, ["map", str(sample_tree), "--no-show", "--size", "notasize"])
+    result = runner.invoke(app, ["map", str(sample_tree), "--no-show", "--canvas", "notasize"])
     assert result.exit_code == 1
-    assert "Invalid --size" in result.output
+    assert "Invalid --canvas" in result.output
 
 
 @pytest.mark.parametrize("bad_size", ["0x100", "100x0", "0x0"])
 def test_cli_zero_size_rejected_map(bad_size: str, sample_tree: Path) -> None:
-    result = runner.invoke(app, ["map", str(sample_tree), "--no-show", "--size", bad_size])
+    result = runner.invoke(app, ["map", str(sample_tree), "--no-show", "--canvas", bad_size])
     assert result.exit_code == 1
-    assert "must both be positive" in result.output or "Invalid --size" in result.output
+    assert "must both be positive" in result.output or "Invalid --canvas" in result.output
 
 
 @pytest.mark.parametrize("bad_size", ["0x100", "100x0", "0x0"])
 def test_cli_zero_size_rejected_diff(bad_size: str, sample_tree: Path) -> None:
     result = runner.invoke(
-        app, ["diff", str(sample_tree), str(sample_tree), "--no-show", "--size", bad_size]
+        app, ["diff", str(sample_tree), str(sample_tree), "--no-show", "--canvas", bad_size]
     )
     assert result.exit_code == 1
-    assert "must both be positive" in result.output or "Invalid --size" in result.output
+    assert "must both be positive" in result.output or "Invalid --canvas" in result.output
 
 
 @pytest.mark.parametrize("bad_size", ["0x100", "100x0", "0x0"])
 def test_cli_zero_size_rejected_watch(bad_size: str, sample_tree: Path) -> None:
-    result = runner.invoke(app, ["watch", str(sample_tree), "--size", bad_size])
+    result = runner.invoke(app, ["watch", str(sample_tree), "--canvas", bad_size])
     assert result.exit_code == 1
-    assert "must both be positive" in result.output or "Invalid --size" in result.output
+    assert "must both be positive" in result.output or "Invalid --canvas" in result.output
 
 
 @pytest.mark.parametrize("bad_size", ["0x100", "100x0", "0x0"])
 def test_cli_zero_size_rejected_git(bad_size: str, sample_tree: Path, tmp_path: Path) -> None:
     result = runner.invoke(
-        app, ["git", str(sample_tree), "--output", str(tmp_path / "out.png"), "--size", bad_size]
+        app, ["git", str(sample_tree), "--output", str(tmp_path / "out.png"), "--canvas", bad_size]
     )
     assert result.exit_code == 1
-    assert "must both be positive" in result.output or "Invalid --size" in result.output
+    assert "must both be positive" in result.output or "Invalid --canvas" in result.output
 
 
 @pytest.mark.parametrize("bad_size", ["0x100", "100x0", "0x0"])
@@ -219,10 +219,33 @@ def test_cli_zero_size_rejected_replay(bad_size: str, tmp_path: Path) -> None:
     log = tmp_path / "events.jsonl"
     log.write_text('{"type": "created", "src_path": "x", "time": 1}\n')
     result = runner.invoke(
-        app, ["replay", str(log), "--output", str(tmp_path / "out.apng"), "--size", bad_size]
+        app, ["replay", str(log), "--output", str(tmp_path / "out.apng"), "--canvas", bad_size]
     )
     assert result.exit_code == 1
-    assert "must both be positive" in result.output or "Invalid --size" in result.output
+    assert "must both be positive" in result.output or "Invalid --canvas" in result.output
+
+
+def test_cli_size_filter_keeps_matching_files(sample_tree: Path) -> None:
+    result = runner.invoke(app, ["map", str(sample_tree), "--no-show", "--size", "1.."])
+    assert result.exit_code == 0
+
+
+def test_cli_size_filter_no_match_exits_nonzero(sample_tree: Path) -> None:
+    result = runner.invoke(app, ["map", str(sample_tree), "--no-show", "--size", "999G.."])
+    assert result.exit_code == 1
+    assert "No files match" in result.output
+
+
+def test_cli_size_filter_invalid_range(sample_tree: Path) -> None:
+    result = runner.invoke(app, ["map", str(sample_tree), "--no-show", "--size", "badrange"])
+    assert result.exit_code == 1
+    assert "Invalid --size" in result.output
+
+
+def test_cli_canvas_still_works(sample_tree: Path) -> None:
+    result = runner.invoke(app, ["map", str(sample_tree), "--no-show", "--canvas", "800x600"])
+    assert result.exit_code == 0
+    assert "800x600" in result.output
 
 
 def test_cli_termsize() -> None:
@@ -334,7 +357,7 @@ def test_watch_single_path(sample_tree: Path, tmp_path: Path) -> None:
     ):
         mock_render.return_value = MagicMock(read=lambda: b"\x89PNG\r\n\x1a\n" + b"\x00" * 8)
         result = runner.invoke(
-            app, ["watch", str(sample_tree), "--snapshot", str(output), "--size", "100x100"]
+            app, ["watch", str(sample_tree), "--snapshot", str(output), "--canvas", "100x100"]
         )
     assert result.exit_code == 0
     mock_obs.schedule.assert_called_once_with(ANY, str(sample_tree.resolve()), recursive=True)
@@ -356,7 +379,7 @@ def test_watch_multiple_paths(tmp_path: Path) -> None:
         mock_render.return_value = MagicMock(read=lambda: b"\x89PNG\r\n\x1a\n" + b"\x00" * 8)
         result = runner.invoke(
             app,
-            ["watch", str(dir_a), str(dir_b), "--snapshot", str(output), "--size", "100x100"],
+            ["watch", str(dir_a), str(dir_b), "--snapshot", str(output), "--canvas", "100x100"],
         )
     assert result.exit_code == 0
     scheduled_paths = {call.args[1] for call in mock_obs.schedule.call_args_list}
@@ -473,7 +496,7 @@ def test_watch_missing_watchdog(sample_tree: Path, tmp_path: Path) -> None:
     output = tmp_path / "out.png"
     with patch.dict("sys.modules", {"watchdog.observers": None}):
         result = runner.invoke(
-            app, ["watch", str(sample_tree), "--snapshot", str(output), "--size", "100x100"]
+            app, ["watch", str(sample_tree), "--snapshot", str(output), "--canvas", "100x100"]
         )
     assert result.exit_code == 1
     assert "watchdog" in result.output
@@ -500,7 +523,7 @@ def test_paths_from_find_format(tmp_path: Path, sample_tree: Path) -> None:
     children = sorted(sample_tree.iterdir())[:2]
     paths_file.write_text("\n".join(str(c) for c in children) + "\n")
     result = runner.invoke(
-        app, ["map", "--paths-from", str(paths_file), "--no-show", "--size", "100x100"]
+        app, ["map", "--paths-from", str(paths_file), "--no-show", "--canvas", "100x100"]
     )
     assert result.exit_code == 0, result.output
 
@@ -513,7 +536,7 @@ def test_paths_from_stdin_find_format(tmp_path: Path, sample_tree: Path) -> None
     children = sorted(sample_tree.iterdir())[:2]
     stdin_data = "\n".join(str(c) for c in children) + "\n"
     result = subprocess.run(
-        [sys.executable, "-m", "dirplot", "map", "--no-show", "--size", "100x100"],
+        [sys.executable, "-m", "dirplot", "map", "--no-show", "--canvas", "100x100"],
         input=stdin_data.encode(),
         capture_output=True,
     )
@@ -535,7 +558,7 @@ def test_paths_from_tree_format(tmp_path: Path, sample_tree: Path) -> None:
     paths_file = tmp_path / "tree.txt"
     paths_file.write_text(tree_result.stdout)
     result = runner.invoke(
-        app, ["map", "--paths-from", str(paths_file), "--no-show", "--size", "100x100"]
+        app, ["map", "--paths-from", str(paths_file), "--no-show", "--canvas", "100x100"]
     )
     assert result.exit_code == 0, result.output
 
@@ -663,7 +686,7 @@ def test_replay_basic(tmp_path: Path) -> None:
             str(log),
             "--output",
             str(out),
-            "--size",
+            "--canvas",
             "200x150",
             "--workers",
             "1",
@@ -681,7 +704,7 @@ def test_replay_missing_log(tmp_path: Path) -> None:
             str(tmp_path / "missing.jsonl"),
             "--output",
             str(tmp_path / "out.apng"),
-            "--size",
+            "--canvas",
             "200x150",
         ],
     )
@@ -698,7 +721,7 @@ def test_replay_bad_output_extension(tmp_path: Path) -> None:
             str(log),
             "--output",
             str(tmp_path / "out.gif"),
-            "--size",
+            "--canvas",
             "200x150",
         ],
     )
@@ -776,7 +799,7 @@ def test_replay_total_duration(tmp_path: Path) -> None:
             str(log),
             "--output",
             str(out),
-            "--size",
+            "--canvas",
             "200x150",
             "--total-duration",
             "3",
@@ -825,7 +848,7 @@ def test_replay_fixture_jsonl(tmp_path: Path) -> None:
     out = tmp_path / "replay.apng"
     result = runner.invoke(
         app,
-        ["replay", str(abs_log), "--output", str(out), "--size", "200x150", "--workers", "1"],
+        ["replay", str(abs_log), "--output", str(out), "--canvas", "200x150", "--workers", "1"],
     )
     assert result.exit_code == 0, result.output
     assert out.exists()

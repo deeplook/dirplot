@@ -14,6 +14,7 @@ from rich.console import Console as _Console
 from dirplot.app import app
 from dirplot.defaults import DEFAULT_COLORMAP, DEFAULT_FONT_SIZE
 from dirplot.display import display_inline, display_window
+from dirplot.filters import SizeRange, parse_size_range
 from dirplot.helpers.highlights import resolve_highlight_specs
 from dirplot.helpers.scan import scan_tree
 from dirplot.render_png import create_treemap
@@ -22,6 +23,7 @@ from dirplot.scanner import (
     apply_breadcrumbs,
     apply_log_sizes,
     collect_extensions,
+    filter_by_size,
     max_depth,
     prune_to_subtrees,
     tree_metrics,
@@ -44,7 +46,7 @@ _EPILOG = (
     "  dirplot map . --legend 20  [dim]# show file-count legend (top 20)[/dim]\n\n"
     "  dirplot map . --exclude .venv --exclude .git  [dim]# skip paths[/dim]\n\n"
     "  dirplot map . --colormap Set2 --font-size 14  [dim]# custom colours and label size[/dim]\n\n"
-    "  dirplot map . --size 1920x1080 --no-show --output out.png  [dim]# fixed resolution[/dim]\n\n"
+    "  dirplot map . --canvas 1920x1080 --no-show --output out.png  [dim]# fixed canvas[/dim]\n\n"
     "  dirplot map . --no-header --inline  [dim]# suppress info lines before the plot[/dim]\n\n"
     "  dirplot map . --no-cushion  [dim]# makes tiles look flat[/dim]\n\n"
     "  dirplot map archive.zip  [dim]# map a zip archive without unpacking[/dim]\n\n"
@@ -143,11 +145,26 @@ def main(
     k8s_container: str | None = typer.Option(
         None, "--k8s-container", help="Container name for multi-container pods"
     ),
-    size: str | None = typer.Option(
+    canvas: str | None = typer.Option(
         None,
-        "--size",
+        "--canvas",
         help="Output size as WIDTHxHEIGHT in pixels (e.g. 1920x1080). Defaults to terminal size.",
         metavar="WIDTHxHEIGHT",
+    ),
+    size_filter: list[str] | None = typer.Option(
+        None,
+        "--size",
+        "-S",
+        help=(
+            "Filter files by size range (e.g. 10M..500M, 100M.., ..50K, 1G). "
+            "Repeatable — multiple ranges are combined with OR logic."
+        ),
+        metavar="RANGE",
+    ),
+    keep_empty_dirs: bool = typer.Option(
+        False,
+        "--keep-empty-dirs",
+        help="Retain directories that become empty after --size filtering.",
     ),
     header: bool = typer.Option(
         True, "--header/--no-header", help="Print info lines before rendering (default: on)"
@@ -282,6 +299,20 @@ def main(
     if include:
         root_node = prune_to_subtrees(root_node, set(include))
 
+    if size_filter:
+        parsed_ranges: list[SizeRange] = []
+        for spec in size_filter:
+            try:
+                parsed_ranges.append(parse_size_range(spec))
+            except ValueError as exc:
+                typer.echo(f"Invalid --size value: {exc}", err=True)
+                raise typer.Exit(1) from exc
+        result = filter_by_size(root_node, parsed_ranges, keep_empty_dirs)
+        if result is None:
+            typer.echo("No files match the --size filter.", err=True)
+            raise typer.Exit(1)
+        root_node = result
+
     tree_depth = max_depth(root_node)
 
     if breadcrumbs:
@@ -312,19 +343,19 @@ def main(
         highlights_dict = resolve_highlight_specs(highlight, _collect_paths(root_node))
 
     inline_cols: int | None = None
-    if size is not None:
+    if canvas is not None:
         try:
-            w_str, h_str = size.lower().split("x", 1)
+            w_str, h_str = canvas.lower().split("x", 1)
             width_px, height_px = int(w_str), int(h_str)
         except ValueError:
             typer.echo(
-                f"Invalid --size value '{size}'. Expected format: WIDTHxHEIGHT (e.g. 1920x1080)",
+                f"Invalid --canvas value '{canvas}'. Expected: WIDTHxHEIGHT (e.g. 1920x1080)",
                 err=True,
             )
             raise typer.Exit(1) from None
         if width_px == 0 or height_px == 0:
             typer.echo(
-                f"Invalid --size '{size}': width and height must both be positive.", err=True
+                f"Invalid --canvas '{canvas}': width and height must both be positive.", err=True
             )
             raise typer.Exit(1)
         if header:

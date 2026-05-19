@@ -67,7 +67,7 @@ def test_hg_local_static_png(local_hg_repo: Path, tmp_path: Path) -> None:
     out = tmp_path / "out.png"
     result = runner.invoke(
         app,
-        ["hg", str(local_hg_repo), "--output", str(out), "--size", "200x150"],
+        ["hg", str(local_hg_repo), "--output", str(out), "--canvas", "200x150"],
     )
     assert result.exit_code == 0, result.output
     assert out.exists()
@@ -86,7 +86,7 @@ def test_hg_local_animate_apng(local_hg_repo: Path, tmp_path: Path) -> None:
             str(out),
             "--range",
             "0:tip",
-            "--size",
+            "--canvas",
             "200x150",
         ],
     )
@@ -100,7 +100,7 @@ def test_hg_local_at_rev_syntax(local_hg_repo: Path, tmp_path: Path) -> None:
     out = tmp_path / "out.png"
     result = runner.invoke(
         app,
-        ["hg", f"{local_hg_repo}@tip", "--output", str(out), "--size", "200x150"],
+        ["hg", f"{local_hg_repo}@tip", "--output", str(out), "--canvas", "200x150"],
     )
     assert result.exit_code == 0, result.output
     assert out.exists()
@@ -114,7 +114,7 @@ def test_hg_not_installed(local_hg_repo: Path, tmp_path: Path) -> None:
         mp.setattr(shutil, "which", lambda cmd: None if cmd == "hg" else shutil.which(cmd))
         result = runner.invoke(
             app,
-            ["hg", str(local_hg_repo), "--output", str(out), "--size", "200x150"],
+            ["hg", str(local_hg_repo), "--output", str(out), "--canvas", "200x150"],
         )
     assert result.exit_code == 1
     assert "hg not found" in result.output or "not found" in result.output
@@ -127,7 +127,7 @@ def test_hg_not_a_repo(tmp_path: Path) -> None:
     out = tmp_path / "out.png"
     result = runner.invoke(
         app,
-        ["hg", str(not_a_repo), "--output", str(out), "--size", "200x150"],
+        ["hg", str(not_a_repo), "--output", str(out), "--canvas", "200x150"],
     )
     assert result.exit_code == 1
     assert "not a Mercurial repository" in result.output
@@ -166,7 +166,7 @@ def test_hg_period_includes_recent_commits(local_hg_repo: Path, tmp_path: Path) 
     out = tmp_path / "out.png"
     result = runner.invoke(
         app,
-        ["hg", str(local_hg_repo), "--output", str(out), "--size", "200x150", "--period", "1h"],
+        ["hg", str(local_hg_repo), "--output", str(out), "--canvas", "200x150", "--period", "1h"],
     )
     assert result.exit_code == 0, result.output
     assert out.exists() and out.stat().st_size > 0
@@ -177,7 +177,7 @@ def test_hg_period_invalid_value(local_hg_repo: Path, tmp_path: Path) -> None:
     out = tmp_path / "out.png"
     result = runner.invoke(
         app,
-        ["hg", str(local_hg_repo), "--output", str(out), "--size", "200x150", "--period", "3y"],
+        ["hg", str(local_hg_repo), "--output", str(out), "--canvas", "200x150", "--period", "3y"],
     )
     assert result.exit_code == 1
     assert "Invalid --period" in result.output
@@ -192,7 +192,7 @@ def test_hg_inline_with_range_rejected(local_hg_repo: Path) -> None:
     """--inline is rejected when --range is given (animation mode)."""
     result = runner.invoke(
         app,
-        ["hg", str(local_hg_repo), "--inline", "--range", "0:tip", "--size", "200x150"],
+        ["hg", str(local_hg_repo), "--inline", "--range", "0:tip", "--canvas", "200x150"],
     )
     assert result.exit_code == 1
     assert "single-frame" in result.output or "--inline" in result.output
@@ -214,7 +214,7 @@ def test_hg_first_last_mutually_exclusive(local_hg_repo: Path, tmp_path: Path) -
             "1",
             "--last",
             "1",
-            "--size",
+            "--canvas",
             "200x150",
         ],
     )
@@ -227,7 +227,7 @@ def test_hg_first_without_animation_mode_rejected(local_hg_repo: Path, tmp_path:
     out = tmp_path / "out.png"
     result = runner.invoke(
         app,
-        ["hg", str(local_hg_repo), "--output", str(out), "--first", "1", "--size", "200x150"],
+        ["hg", str(local_hg_repo), "--output", str(out), "--first", "1", "--canvas", "200x150"],
     )
     assert result.exit_code == 1
     assert "--range" in result.output or "--period" in result.output
@@ -252,7 +252,7 @@ def test_hg_first_n_animate(local_hg_repo_3: Path, tmp_path: Path) -> None:
             "0:tip",
             "--first",
             "2",
-            "--size",
+            "--canvas",
             "200x150",
         ],
     )
@@ -275,7 +275,7 @@ def test_hg_last_n_animate(local_hg_repo_3: Path, tmp_path: Path) -> None:
             "0:tip",
             "--last",
             "1",
-            "--size",
+            "--canvas",
             "200x150",
         ],
     )
@@ -301,7 +301,7 @@ def test_hg_first_vs_last_select_different_changesets(
             "0:tip",
             "--first",
             "1",
-            "--size",
+            "--canvas",
             "200x150",
         ],
     )
@@ -316,7 +316,7 @@ def test_hg_first_vs_last_select_different_changesets(
             "0:tip",
             "--last",
             "1",
-            "--size",
+            "--canvas",
             "200x150",
         ],
     )

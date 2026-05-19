@@ -91,7 +91,16 @@ def test_diff_produces_png(tree_a: Path, tree_b: Path, tmp_path: Path) -> None:
     out = tmp_path / "diff.png"
     result = runner.invoke(
         app,
-        ["diff", str(tree_a), str(tree_b), "--output", str(out), "--size", "300x200", "--no-show"],
+        [
+            "diff",
+            str(tree_a),
+            str(tree_b),
+            "--output",
+            str(out),
+            "--canvas",
+            "300x200",
+            "--no-show",
+        ],
     )
     assert result.exit_code == 0, result.output
     assert out.exists()
@@ -102,7 +111,16 @@ def test_diff_reports_counts(tree_a: Path, tree_b: Path, tmp_path: Path) -> None
     out = tmp_path / "diff.png"
     result = runner.invoke(
         app,
-        ["diff", str(tree_a), str(tree_b), "--output", str(out), "--size", "300x200", "--no-show"],
+        [
+            "diff",
+            str(tree_a),
+            str(tree_b),
+            "--output",
+            str(out),
+            "--canvas",
+            "300x200",
+            "--no-show",
+        ],
     )
     assert result.exit_code == 0, result.output
     # 2 added (added.py, sub/sub_added.py), 2 removed (removed.py, sub/sub_removed.py), 1 changed
@@ -125,7 +143,7 @@ def test_diff_include_reports_counts_for_included_subtree(
             "sub",
             "--output",
             str(out),
-            "--size",
+            "--canvas",
             "300x200",
             "--no-show",
         ],
@@ -137,7 +155,7 @@ def test_diff_include_reports_counts_for_included_subtree(
 def test_diff_invalid_tree_a(tmp_path: Path) -> None:
     result = runner.invoke(
         app,
-        ["diff", str(tmp_path / "nonexistent"), str(tmp_path), "--size", "300x200", "--no-show"],
+        ["diff", str(tmp_path / "nonexistent"), str(tmp_path), "--canvas", "300x200", "--no-show"],
     )
     assert result.exit_code == 1
 
@@ -145,7 +163,7 @@ def test_diff_invalid_tree_a(tmp_path: Path) -> None:
 def test_diff_invalid_tree_b(tmp_path: Path) -> None:
     result = runner.invoke(
         app,
-        ["diff", str(tmp_path), str(tmp_path / "nonexistent"), "--size", "300x200", "--no-show"],
+        ["diff", str(tmp_path), str(tmp_path / "nonexistent"), "--canvas", "300x200", "--no-show"],
     )
     assert result.exit_code == 1
 
@@ -156,7 +174,8 @@ def test_diff_identical_trees(tmp_path: Path) -> None:
     (root / "a.py").write_bytes(b"x" * 100)
     out = tmp_path / "diff.png"
     result = runner.invoke(
-        app, ["diff", str(root), str(root), "--output", str(out), "--size", "300x200", "--no-show"]
+        app,
+        ["diff", str(root), str(root), "--output", str(out), "--canvas", "300x200", "--no-show"],
     )
     assert result.exit_code == 0, result.output
     assert "0 added" in result.output
@@ -168,7 +187,16 @@ def test_diff_svg_output(tree_a: Path, tree_b: Path, tmp_path: Path) -> None:
     out = tmp_path / "diff.svg"
     result = runner.invoke(
         app,
-        ["diff", str(tree_a), str(tree_b), "--output", str(out), "--size", "300x200", "--no-show"],
+        [
+            "diff",
+            str(tree_a),
+            str(tree_b),
+            "--output",
+            str(out),
+            "--canvas",
+            "300x200",
+            "--no-show",
+        ],
     )
     assert result.exit_code == 0, result.output
     assert out.exists()
@@ -188,7 +216,7 @@ def test_diff_no_context(tree_a: Path, tree_b: Path, tmp_path: Path) -> None:
             str(tree_b),
             "--output",
             str(out_ctx),
-            "--size",
+            "--canvas",
             "300x200",
             "--no-show",
         ],
@@ -201,7 +229,7 @@ def test_diff_no_context(tree_a: Path, tree_b: Path, tmp_path: Path) -> None:
             str(tree_b),
             "--output",
             str(out_noctx),
-            "--size",
+            "--canvas",
             "300x200",
             "--no-show",
             "--no-context",
@@ -222,7 +250,7 @@ def test_diff_light_mode(tree_a: Path, tree_b: Path, tmp_path: Path) -> None:
             str(tree_b),
             "--output",
             str(out),
-            "--size",
+            "--canvas",
             "300x200",
             "--no-show",
             "--light",
@@ -240,7 +268,7 @@ def test_diff_single_arg_git_repo(git_repo: Path, tmp_path: Path) -> None:
     """Single-argument form diffs working tree against HEAD."""
     out = tmp_path / "diff.png"
     result = runner.invoke(
-        app, ["diff", str(git_repo), "--output", str(out), "--size", "300x200", "--no-show"]
+        app, ["diff", str(git_repo), "--output", str(out), "--canvas", "300x200", "--no-show"]
     )
     assert result.exit_code == 0, result.output
     assert out.exists()
@@ -253,7 +281,7 @@ def test_diff_single_arg_non_repo_fails(tmp_path: Path) -> None:
     """Single-argument form fails for a plain non-git directory."""
     plain = tmp_path / "plain"
     plain.mkdir()
-    result = runner.invoke(app, ["diff", str(plain), "--size", "300x200", "--no-show"])
+    result = runner.invoke(app, ["diff", str(plain), "--canvas", "300x200", "--no-show"])
     assert result.exit_code == 1
     assert "Error" in result.output
 
@@ -270,7 +298,7 @@ def test_diff_git_ref_syntax(git_repo: Path, tmp_path: Path) -> None:
             f"{git_repo}@HEAD",
             "--output",
             str(out),
-            "--size",
+            "--canvas",
             "300x200",
             "--no-show",
         ],
@@ -294,7 +322,7 @@ def test_diff_hash_based_change_detection(git_repo: Path, tmp_path: Path) -> Non
             f"{git_repo}@HEAD",
             "--output",
             str(out),
-            "--size",
+            "--canvas",
             "300x200",
             "--no-show",
         ],
@@ -309,7 +337,7 @@ def test_diff_untracked_files_excluded(git_repo: Path, tmp_path: Path) -> None:
     """Untracked files in a git repo must never appear in the diff."""
     out = tmp_path / "diff.png"
     result = runner.invoke(
-        app, ["diff", str(git_repo), "--output", str(out), "--size", "300x200", "--no-show"]
+        app, ["diff", str(git_repo), "--output", str(out), "--canvas", "300x200", "--no-show"]
     )
     assert result.exit_code == 0, result.output
     # untracked.txt must not count as added
