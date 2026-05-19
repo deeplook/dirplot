@@ -36,10 +36,12 @@ clean:  ## Remove build artifacts and caches
 	find . -type f -name .DS_Store -exec rm {} +
 
 publish-test:  ## Build and publish to TestPyPI
+	rm -rf dist/
 	uv build
 	uv publish --index testpypi --token $(TEST_PYPI_TOKEN)
 
 publish:  ## Build and publish to PyPI
+	rm -rf dist/
 	uv build
 	uv publish --token $(PYPI_TOKEN)
 
