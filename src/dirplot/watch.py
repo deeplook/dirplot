@@ -165,15 +165,24 @@ class TreemapEventHandler(FileSystemEventHandler):
         dest = getattr(event, "dest_path", None)
         src_s = src.decode() if isinstance(src, bytes) else src
         dest_s = dest.decode() if isinstance(dest, bytes) else dest
+        entry: dict[str, object] = {
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "type": verb,
+            "path": src_s,
+            "dest_path": dest_s,
+        }
+        stat_target = (
+            dest_s if verb == "moved" and dest_s else (src_s if verb != "deleted" else None)
+        )
+        if stat_target:
+            try:
+                st = Path(stat_target).stat()
+                entry["size"] = max(1, st.st_size)
+                entry["mtime"] = st.st_mtime
+            except OSError:
+                pass
         with self._lock:
-            self._events.append(
-                {
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
-                    "type": verb,
-                    "path": src_s,
-                    "dest_path": dest_s,
-                }
-            )
+            self._events.append(entry)
 
     def _schedule_regenerate(self) -> None:
         if self.debounce <= 0:

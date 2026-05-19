@@ -30,8 +30,8 @@ def test_parse_events_basic(tmp_path: Path) -> None:
     )
     events = parse_events(log)
     assert len(events) == 2
-    assert events[0] == (1.0, "created", "/a/b.py", "")
-    assert events[1] == (2.0, "modified", "/a/c.py", "")
+    assert events[0] == (1.0, "created", "/a/b.py", "", None, None)
+    assert events[1] == (2.0, "modified", "/a/c.py", "", None, None)
 
 
 def test_parse_events_sorted(tmp_path: Path) -> None:
@@ -69,7 +69,7 @@ def test_parse_events_dest_path(tmp_path: Path) -> None:
         json.dumps({"timestamp": 1.0, "type": "moved", "path": "/a", "dest_path": "/b"}) + "\n"
     )
     events = parse_events(log)
-    assert events[0] == (1.0, "moved", "/a", "/b")
+    assert events[0] == (1.0, "moved", "/a", "/b", None, None)
 
 
 def test_parse_events_empty_file(tmp_path: Path) -> None:
@@ -129,7 +129,7 @@ def test_bucket_events_empty() -> None:
 
 
 def test_bucket_events_single_bucket() -> None:
-    events = [(1.0, "created", "/a", ""), (2.0, "modified", "/b", "")]
+    events = [(1.0, "created", "/a", "", None, None), (2.0, "modified", "/b", "", None, None)]
     buckets = bucket_events(events, 60.0)
     assert len(buckets) == 1
     assert buckets[0][0] == 1.0
@@ -138,10 +138,10 @@ def test_bucket_events_single_bucket() -> None:
 
 def test_bucket_events_multiple_buckets() -> None:
     events = [
-        (0.0, "created", "/a", ""),
-        (30.0, "modified", "/b", ""),
-        (70.0, "created", "/c", ""),
-        (75.0, "deleted", "/d", ""),
+        (0.0, "created", "/a", "", None, None),
+        (30.0, "modified", "/b", "", None, None),
+        (70.0, "created", "/c", "", None, None),
+        (75.0, "deleted", "/d", "", None, None),
     ]
     buckets = bucket_events(events, 60.0)
     assert len(buckets) == 2
@@ -151,7 +151,7 @@ def test_bucket_events_multiple_buckets() -> None:
 
 def test_bucket_events_boundary() -> None:
     """An event exactly at bucket_start + bucket_size starts a new bucket."""
-    events = [(0.0, "created", "/a", ""), (60.0, "modified", "/b", "")]
+    events = [(0.0, "created", "/a", "", None, None), (60.0, "modified", "/b", "", None, None)]
     buckets = bucket_events(events, 60.0)
     assert len(buckets) == 2
 
@@ -165,7 +165,9 @@ def test_apply_events_created(tmp_path: Path) -> None:
     f = tmp_path / "new.py"
     f.write_bytes(b"x" * 50)
     files: dict[str, int] = {}
-    highlights = apply_events(files, tmp_path, [(1.0, "created", str(f), "")], frozenset())
+    highlights = apply_events(
+        files, tmp_path, [(1.0, "created", str(f), "", None, None)], frozenset()
+    )
     assert files["new.py"] == 50
     assert highlights[str(f)] == "created"
 
@@ -174,14 +176,16 @@ def test_apply_events_modified(tmp_path: Path) -> None:
     f = tmp_path / "existing.py"
     f.write_bytes(b"x" * 80)
     files = {"existing.py": 40}
-    apply_events(files, tmp_path, [(1.0, "modified", str(f), "")], frozenset())
+    apply_events(files, tmp_path, [(1.0, "modified", str(f), "", None, None)], frozenset())
     assert files["existing.py"] == 80
 
 
 def test_apply_events_deleted(tmp_path: Path) -> None:
     files = {"bye.py": 100}
     path_str = str(tmp_path / "bye.py")
-    highlights = apply_events(files, tmp_path, [(1.0, "deleted", path_str, "")], frozenset())
+    highlights = apply_events(
+        files, tmp_path, [(1.0, "deleted", path_str, "", None, None)], frozenset()
+    )
     assert "bye.py" not in files
     assert highlights[path_str] == "deleted"
 
@@ -191,7 +195,7 @@ def test_apply_events_moved(tmp_path: Path) -> None:
     dst = tmp_path / "new.py"
     dst.write_bytes(b"x" * 30)
     files = {"old.py": 30}
-    apply_events(files, tmp_path, [(1.0, "moved", str(src), str(dst))], frozenset())
+    apply_events(files, tmp_path, [(1.0, "moved", str(src), str(dst), None, None)], frozenset())
     assert "old.py" not in files
     assert files.get("new.py") == 30
 
@@ -199,7 +203,7 @@ def test_apply_events_moved(tmp_path: Path) -> None:
 def test_apply_events_outside_root_skipped(tmp_path: Path) -> None:
     other = tmp_path.parent / "other.py"
     files: dict[str, int] = {}
-    apply_events(files, tmp_path, [(1.0, "created", str(other), "")], frozenset())
+    apply_events(files, tmp_path, [(1.0, "created", str(other), "", None, None)], frozenset())
     assert not files
 
 
@@ -207,7 +211,9 @@ def test_apply_events_excluded_skipped(tmp_path: Path) -> None:
     f = tmp_path / "secret.py"
     f.write_bytes(b"x" * 10)
     files: dict[str, int] = {}
-    apply_events(files, tmp_path, [(1.0, "created", str(f), "")], frozenset(["secret.py"]))
+    apply_events(
+        files, tmp_path, [(1.0, "created", str(f), "", None, None)], frozenset(["secret.py"])
+    )
     assert not files
 
 
@@ -216,7 +222,7 @@ def test_apply_events_oserror_fallback(tmp_path: Path) -> None:
     f.write_bytes(b"x" * 10)
     files: dict[str, int] = {}
     with patch.object(Path, "stat", side_effect=OSError("no access")):
-        apply_events(files, tmp_path, [(1.0, "created", str(f), "")], frozenset())
+        apply_events(files, tmp_path, [(1.0, "created", str(f), "", None, None)], frozenset())
     assert files.get("f.py") == 1
 
 
@@ -225,7 +231,9 @@ def test_apply_events_moved_dest_outside_root(tmp_path: Path) -> None:
     src = tmp_path / "f.py"
     dest_outside = tmp_path.parent / "elsewhere.py"
     files = {"f.py": 50}
-    apply_events(files, tmp_path, [(1.0, "moved", str(src), str(dest_outside))], frozenset())
+    apply_events(
+        files, tmp_path, [(1.0, "moved", str(src), str(dest_outside), None, None)], frozenset()
+    )
     assert "f.py" not in files
     assert not any("elsewhere" in k for k in files)
 

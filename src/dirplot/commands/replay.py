@@ -208,23 +208,41 @@ def replay_cmd(
 
     excluded = frozenset(exclude)
 
-    # Build initial files dict by statting only paths that appear in the event log
+    # Build a map of the last logged size for each path (used as fallback below).
+    log_sizes: dict[str, int] = {}
+    for _ts, _type, path_str, dest_str, ev_size, _mtime in events:
+        if ev_size is not None:
+            for p_str in (path_str, dest_str) if dest_str else (path_str,):
+                if p_str and p_str.startswith(str(common_root)):
+                    try:
+                        rel = str(Path(p_str).relative_to(common_root)).replace(os.sep, "/")
+                        log_sizes[rel] = ev_size
+                    except ValueError:
+                        pass
+
+    # Build initial files dict: prefer live stat (files still on disk), fall back to logged size.
     files: dict[str, int] = {}
-    for _ts, _type, path_str, dest_str in events:
+    for _ts, _type, path_str, dest_str, _ev_size, _mtime in events:
         for p_str in (path_str, dest_str) if dest_str else (path_str,):
+            if not p_str or not p_str.startswith(str(common_root)):
+                continue
             p = Path(p_str)
-            if not p_str.startswith(str(common_root)):
-                continue
-            if (
-                matches_exclude(str(p.relative_to(common_root)).replace(os.sep, "/"), excluded)
-                or not p.is_file()
-            ):
-                continue
             try:
                 rel = str(p.relative_to(common_root)).replace(os.sep, "/")
-                files[rel] = max(1, p.stat().st_size)
-            except (OSError, ValueError):
-                pass
+            except ValueError:
+                continue
+            if matches_exclude(rel, excluded):
+                continue
+            if rel in files:
+                continue
+            if p.is_file():
+                try:
+                    files[rel] = max(1, p.stat().st_size)
+                except OSError:
+                    if rel in log_sizes:
+                        files[rel] = log_sizes[rel]
+            elif rel in log_sizes:
+                files[rel] = log_sizes[rel]
     if not quiet:
         typer.echo(f"  {len(files)} unique files from event log", err=True)
 

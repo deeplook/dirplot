@@ -18,9 +18,12 @@ def _parse_timestamp(value: str | float) -> float:
     return float(value)
 
 
-def parse_events(path: Path) -> list[tuple[float, str, str, str]]:
-    """Parse JSONL events → [(timestamp, type, path, dest_path)], sorted by time."""
-    events: list[tuple[float, str, str, str]] = []
+def parse_events(path: Path) -> list[Event]:
+    """Parse JSONL events → [(timestamp, type, path, dest_path, size, mtime)], sorted by time.
+
+    *size* and *mtime* are ``None`` for old logs that predate these fields.
+    """
+    events: list[Event] = []
     with open(path) as f:
         for line in f:
             line = line.strip()
@@ -32,7 +35,9 @@ def parse_events(path: Path) -> list[tuple[float, str, str, str]]:
                     _parse_timestamp(obj["timestamp"]),
                     obj["type"],
                     obj["path"],
-                    obj.get("dest_path", ""),
+                    obj.get("dest_path") or "",
+                    obj.get("size"),
+                    obj.get("mtime"),
                 )
             )
     events.sort(key=lambda e: e[0])
@@ -64,19 +69,22 @@ def scan_to_flat(root: Path, exclude: frozenset[str] = frozenset()) -> dict[str,
     return files
 
 
+Event = tuple[float, str, str, str, int | None, float | None]
+
+
 def bucket_events(
-    events: list[tuple[float, str, str, str]],
+    events: list[Event],
     bucket_size: float,
-) -> list[tuple[float, list[tuple[float, str, str, str]]]]:
+) -> list[tuple[float, list[Event]]]:
     """Group *events* into non-overlapping time buckets of *bucket_size* seconds.
 
     Returns ``[(bucket_start_ts, [events...])]``.
     """
     if not events:
         return []
-    buckets: list[tuple[float, list[tuple[float, str, str, str]]]] = []
+    buckets: list[tuple[float, list[Event]]] = []
     current_start = events[0][0]
-    current: list[tuple[float, str, str, str]] = []
+    current: list[Event] = []
     for ev in events:
         if ev[0] >= current_start + bucket_size:
             if current:
@@ -92,7 +100,7 @@ def bucket_events(
 def apply_events(
     files: dict[str, int],
     root: Path,
-    events: list[tuple[float, str, str, str]],
+    events: list[Event],
     exclude: frozenset[str],
 ) -> dict[str, str]:
     """Apply *events* to *files* in-place.
@@ -102,7 +110,7 @@ def apply_events(
     """
     root_str = str(root)
     highlights: dict[str, str] = {}
-    for _ts, event_type, path_str, dest_str in events:
+    for _ts, event_type, path_str, dest_str, event_size, _mtime in events:
         if not path_str.startswith(root_str):
             continue
         p = Path(path_str)
@@ -124,13 +132,22 @@ def apply_events(
                 dest_rel = None
             old_size = files.pop(rel, None)
             if dest_rel is not None and not matches_exclude(dest_rel, exclude):
-                files[dest_rel] = old_size if old_size is not None else 1
+                # use the logged dest size; fall back to the source size or 1
+                if event_size is not None:
+                    files[dest_rel] = event_size
+                elif old_size is not None:
+                    files[dest_rel] = old_size
+                else:
+                    files[dest_rel] = 1
                 highlights[dest_str] = "modified"
         else:  # created, modified
-            try:
-                size = max(1, p.stat().st_size)
-            except OSError:
-                size = 1
+            if event_size is not None:
+                size = event_size
+            else:
+                try:
+                    size = max(1, p.stat().st_size)
+                except OSError:
+                    size = 1
             files[rel] = size
             highlights[path_str] = event_type
 
