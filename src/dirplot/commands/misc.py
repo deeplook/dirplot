@@ -271,21 +271,6 @@ def demo_cmd(
             ],
         ),
         (
-            "git — last 10 commits of steipete/peekaboo (animated MP4, log scale)",
-            [
-                "git",
-                "github://steipete/peekaboo",
-                "--output",
-                str(output / "git-steipete-peekaboo.mp4"),
-                "--canvas",
-                "1920x1080",
-                "--range",
-                "HEAD~10..HEAD",
-                "--log-scale",
-                "4",
-            ],
-        ),
-        (
             "read-meta — metadata embedded in a generated PNG",
             ["read-meta", str(output / "map-local.png")],
         ),
