@@ -389,6 +389,10 @@ def git_cmd(
         typer.echo("Error: --first and --last are mutually exclusive.", err=True)
         raise typer.Exit(1)
 
+    if logscale != 0 and logscale <= 1:
+        typer.echo("Error: --log-scale must be > 1 (or 0 to disable).", err=True)
+        raise typer.Exit(1)
+
     if canvas is not None:
         try:
             _w, _h = (int(p) for p in canvas.lower().split("x", 1))
@@ -892,6 +896,10 @@ def hg_cmd(
         raise typer.Exit(1)
     if first is not None and last is not None:
         typer.echo("Error: --first and --last are mutually exclusive.", err=True)
+        raise typer.Exit(1)
+
+    if logscale != 0 and logscale <= 1:
+        typer.echo("Error: --log-scale must be > 1 (or 0 to disable).", err=True)
         raise typer.Exit(1)
 
     if canvas is not None:

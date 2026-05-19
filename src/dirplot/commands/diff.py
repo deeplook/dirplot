@@ -437,6 +437,9 @@ def diff_cmd(
 
         highlights.update(resolve_highlight_specs(highlight, _collect_paths(root_node)))
 
+    if log_scale != 0 and log_scale <= 1:
+        typer.echo("Error: --log-scale must be > 1 (or 0 to disable).", err=True)
+        raise typer.Exit(1)
     if log_scale > 1:
         apply_log_sizes(root_node, log_scale)
 

@@ -285,7 +285,12 @@ def apply_log_sizes(node: Node, logscale: float = 4.0) -> None:
         logscale: Controls the compression ratio. After transformation the ratio of
             the largest to smallest file-size layout value equals *logscale*.  Must
             be greater than 1.  Default is 4.
+
+    Raises:
+        ValueError: If *logscale* is not greater than 1.
     """
+    if logscale <= 1:
+        raise ValueError(f"logscale must be > 1, got {logscale}")
     # First pass: collect all leaf sizes to determine the transformation parameters.
     leaf_sizes: list[int] = []
 

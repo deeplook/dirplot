@@ -318,6 +318,9 @@ def main(
     if breadcrumbs:
         root_node = apply_breadcrumbs(root_node)
 
+    if logscale != 0 and logscale <= 1:
+        typer.echo("Error: --log-scale must be > 1 (or 0 to disable).", err=True)
+        raise typer.Exit(1)
     if logscale > 1:
         apply_log_sizes(root_node, logscale)
     total_files = len(collect_extensions(root_node))

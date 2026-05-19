@@ -81,6 +81,9 @@ class TreemapEventHandler(FileSystemEventHandler):
                     print("No files match the --size filter.", file=sys.stderr)
                     return
                 node = filtered
+            if self.logscale != 0 and self.logscale <= 1:
+                print("Error: --log-scale must be > 1 (or 0 to disable).", file=sys.stderr)
+                return
             if self.logscale > 1:
                 apply_log_sizes(node, self.logscale)
             rect_map: dict[str, tuple[int, int, int, int]] = {}

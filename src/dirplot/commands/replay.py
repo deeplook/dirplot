@@ -155,6 +155,10 @@ def replay_cmd(
         typer.echo("Error: --workers must be a positive integer.", err=True)
         raise typer.Exit(1)
 
+    if logscale != 0 and logscale <= 1:
+        typer.echo("Error: --log-scale must be > 1 (or 0 to disable).", err=True)
+        raise typer.Exit(1)
+
     if not event_log.exists():
         typer.echo(f"Error: event log not found: {event_log}", err=True)
         raise typer.Exit(1)

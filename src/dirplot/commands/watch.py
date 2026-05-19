@@ -101,6 +101,10 @@ def watch_cmd(
             typer.echo(f"Error: not a directory: {path}", err=True)
             raise typer.Exit(1)
 
+    if logscale != 0 and logscale <= 1:
+        typer.echo("Error: --log-scale must be > 1 (or 0 to disable).", err=True)
+        raise typer.Exit(1)
+
     if canvas is not None:
         try:
             w_str, h_str = canvas.lower().split("x", 1)
