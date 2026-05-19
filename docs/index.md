@@ -77,7 +77,7 @@ pip install dirplot
 - `dirplot git` — requires `git` on `PATH`.
 - `dirplot hg` — requires `hg` (Mercurial) on `PATH`.
 - MP4 output (`dirplot git`, `dirplot hg`, `dirplot replay`) — requires [ffmpeg](https://ffmpeg.org/) on `PATH`.
-- `dirplot read-meta` on `.mp4` files — requires `ffprobe` (bundled with ffmpeg).
+- `dirplot meta` on `.mp4` files — requires `ffprobe` (bundled with ffmpeg).
 
 ## Quick start
 

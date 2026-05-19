@@ -26,6 +26,6 @@ _CMD_ORDER = [
     "hg",
     "watch",
     "replay",
-    "read-meta",
+    "meta",
 ]
 app.registered_commands.sort(key=lambda c: _CMD_ORDER.index(c.name or ""))

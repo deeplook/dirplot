@@ -6,7 +6,7 @@
 - [dirplot watch](#dirplot-watch-live-watch-mode)
 - [dirplot replay](#dirplot-replay-event-log-replay)
 - [dirplot git](#dirplot-git-git-history-animation)
-- [dirplot read-meta](#dirplot-read-meta-read-embedded-metadata)
+- [dirplot meta](#dirplot-meta-read-embedded-metadata)
 - [dirplot demo](#dirplot-demo-run-example-commands)
 - [Inline terminal display](#inline-terminal-display)
 - [Running via Docker](#running-dirplot-via-docker)
@@ -530,18 +530,27 @@ dirplot hg . --range 0:tip --first 20 --output history.png
 
 ---
 
-## `dirplot read-meta` — read embedded metadata
+## `dirplot meta` — read embedded metadata
 
 Reads dirplot metadata (date, software version, OS, Python version, executed command) embedded in a PNG, SVG, or MP4/MOV output file.
 
 > **Requires** `ffprobe` on `PATH` (bundled with [ffmpeg](https://ffmpeg.org/)) to read metadata from `.mp4` / `.mov` files.
 
 ```bash
-dirplot read-meta treemap.png
-dirplot read-meta treemap.svg
-dirplot read-meta history.mp4
-dirplot read-meta a.png b.png c.svg   # multiple files
+dirplot meta treemap.png
+dirplot meta treemap.svg
+dirplot meta history.mp4
+dirplot meta a.png b.png c.svg   # multiple files
+dirplot meta --json treemap.png  # structured JSON output
 ```
+
+### Options
+
+| Flag | Default | Description |
+|---|---|---|
+| `--json` | off | Output metadata as structured JSON |
+
+When `--json` is used, each file produces an object with: `file`, `has_metadata`, `created`, `version`, `command`, `os`, `python`. Multiple files return a JSON array.
 
 ---
 
@@ -572,7 +581,7 @@ Examples produced:
 | `git-static.png` | `dirplot git github://owner/repo --first 1` (static PNG of latest commit) |
 | `git.mp4` | `dirplot git github://owner/repo --range main --first 10 --total-duration 20` |
 | `git-animated.png` | `dirplot git github://owner/repo --range main --first 10 --total-duration 20 --fade-out` |
-| *(stdout)* | `dirplot read-meta map-local.png` |
+| *(stdout)* | `dirplot meta map-local.png` |
 
 `dirplot watch` and `dirplot replay` are listed but skipped with an explanatory note — both require interactive or pre-recorded input.
 

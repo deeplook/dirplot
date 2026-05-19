@@ -1,4 +1,4 @@
-"""Small standalone commands: termsize, read-meta, demo."""
+"""Small standalone commands: termsize, meta, demo."""
 
 import re
 import sys
@@ -16,13 +16,14 @@ _TERMSIZE_EPILOG = (
     "  dirplot termsize  [dim]# run before dirplot map to check the default canvas size[/dim]"
 )
 
-_READ_META_EPILOG = (
+_META_EPILOG = (
     "[bold]Examples[/bold]\n\n"
-    "  dirplot read-meta treemap.png  [dim]# read metadata from a PNG[/dim]\n\n"
-    "  dirplot read-meta treemap.svg  [dim]# read metadata from an SVG[/dim]\n\n"
-    "  dirplot read-meta history.mp4  [dim]# read metadata from an MP4 (requires ffprobe)[/dim]\n\n"
-    "  dirplot read-meta a.png b.png c.svg  [dim]# multiple files[/dim]\n\n"
-    "  dirplot read-meta *.png  [dim]# glob expansion[/dim]"
+    "  dirplot meta treemap.png  [dim]# read metadata from a PNG[/dim]\n\n"
+    "  dirplot meta treemap.svg  [dim]# read metadata from an SVG[/dim]\n\n"
+    "  dirplot meta history.mp4  [dim]# read metadata from an MP4 (requires ffprobe)[/dim]\n\n"
+    "  dirplot meta a.png b.png c.svg  [dim]# multiple files[/dim]\n\n"
+    "  dirplot meta *.png  [dim]# glob expansion[/dim]\n\n"
+    "  dirplot meta --json treemap.png  [dim]# structured JSON output[/dim]"
 )
 
 _DEMO_EPILOG = (
@@ -43,97 +44,123 @@ def termsize() -> None:
     typer.echo(f"Pixels     : {width_px} × {height_px}")
 
 
-@app.command(name="read-meta", epilog=_READ_META_EPILOG)
-def read_meta(
+def _read_meta_from_file(file: Path) -> tuple[dict[str, str] | None, str | None]:
+    """Extract dirplot metadata from a file. Returns (meta_dict, error_message)."""
+    if not file.exists():
+        return None, f"file not found: {file}"
+
+    suffix = file.suffix.lower()
+
+    if suffix == ".png":
+        from PIL import Image
+
+        img = Image.open(file)
+        meta_keys = {"Date", "Software", "URL", "Python", "OS", "Command"}
+        found: dict[str, str] = {str(k): str(v) for k, v in img.info.items() if k in meta_keys}
+        return (found if found else {}), None
+
+    elif suffix == ".svg":
+        content = file.read_text(encoding="utf-8")
+        try:
+            root = ET.fromstring(content)
+        except ET.ParseError as exc:
+            return None, f"Error parsing SVG: {exc}"
+        svg_meta: dict[str, str] = {}
+        for desc in root.iter("{http://www.w3.org/1999/02/22-rdf-syntax-ns#}Description"):
+            for child in desc:
+                local = child.tag.split("}")[-1] if "}" in child.tag else child.tag
+                ns_uri = child.tag.split("}")[0].lstrip("{") if "}" in child.tag else ""
+                if ns_uri == "https://github.com/deeplook/dirplot#" and child.text:
+                    svg_meta[local] = child.text
+        return svg_meta, None
+
+    elif suffix in {".mp4", ".mov"}:
+        import json as _json
+        import shutil
+        import subprocess
+
+        if not shutil.which("ffprobe"):
+            return None, "ffprobe not found on PATH (install ffmpeg)"
+        result = subprocess.run(
+            ["ffprobe", "-v", "quiet", "-print_format", "json", "-show_format", str(file)],
+            capture_output=True,
+        )
+        if result.returncode != 0:
+            return None, f"Error reading MP4 metadata: {result.stderr.decode(errors='replace')}"
+        tags = _json.loads(result.stdout).get("format", {}).get("tags", {})
+        meta_keys = {"Date", "Software", "URL", "Python", "OS", "Command"}
+        mp4_found: dict[str, str] = {str(k): str(v) for k, v in tags.items() if k in meta_keys}
+        return (mp4_found if mp4_found else {}), None
+
+    else:
+        return None, f"Unsupported file type: {suffix!r}. Expected .png, .svg, or .mp4/.mov"
+
+
+@app.command(name="meta", epilog=_META_EPILOG)
+def meta_cmd(
     files: list[Path] = typer.Argument(
         ..., help="PNG, SVG, or MP4/MOV file(s) to read dirplot metadata from"
     ),
+    json_output: bool = typer.Option(False, "--json", help="Output metadata as structured JSON"),
 ) -> None:
     """Read dirplot metadata embedded in one or more PNG, SVG, or MP4/MOV files."""
+    import json
+
     any_error = False
 
-    for file in files:
-        if len(files) > 1:
-            typer.echo(f"==> {file} <==")
+    if json_output:
+        results: list[dict[str, object]] = []
+        for file in files:
+            meta, error = _read_meta_from_file(file)
+            if error and meta is None:
+                results.append({"file": file.name, "has_metadata": False, "error": error})
+                any_error = True
+            else:
+                has = bool(meta)
+                entry: dict[str, object] = {
+                    "file": file.name,
+                    "has_metadata": has,
+                    "created": (meta or {}).get("Date"),
+                    "version": (meta or {}).get("Software"),
+                    "command": (meta or {}).get("Command"),
+                    "os": (meta or {}).get("OS"),
+                    "python": (meta or {}).get("Python"),
+                }
+                results.append(entry)
+                if not has:
+                    any_error = True
+        typer.echo(json.dumps(results if len(files) > 1 else results[0], indent=2))
+    else:
+        for file in files:
+            if len(files) > 1:
+                typer.echo(f"==> {file.name} <==")
 
-        if not file.exists():
-            typer.echo(f"Error: file not found: {file}", err=True)
-            any_error = True
-            continue
+            meta, error = _read_meta_from_file(file)
 
-        suffix = file.suffix.lower()
-
-        if suffix == ".png":
-            from PIL import Image
-
-            img = Image.open(file)
-            info = img.info
-            meta_keys = {"Date", "Software", "URL", "Python", "OS", "Command"}
-            found = {k: v for k, v in info.items() if k in meta_keys}
-            if not found:
-                typer.echo("No dirplot metadata found in PNG.", err=True)
+            if error and meta is None:
+                typer.echo(f"Error: {error}", err=True)
                 any_error = True
                 continue
-            for k, v in found.items():
-                typer.echo(f"{k}: {v}")
 
-        elif suffix == ".svg":
-            content = file.read_text(encoding="utf-8")
-            try:
-                root = ET.fromstring(content)
-            except ET.ParseError as exc:
-                typer.echo(f"Error parsing SVG: {exc}", err=True)
+            if not meta:
+                typer.echo("No dirplot metadata found.")
                 any_error = True
                 continue
-            svg_meta: dict[str, str] = {}
-            for desc in root.iter("{http://www.w3.org/1999/02/22-rdf-syntax-ns#}Description"):
-                for child in desc:
-                    local = child.tag.split("}")[-1] if "}" in child.tag else child.tag
-                    ns_uri = child.tag.split("}")[0].lstrip("{") if "}" in child.tag else ""
-                    if ns_uri == "https://github.com/deeplook/dirplot#" and child.text:
-                        svg_meta[local] = child.text
-            if not svg_meta:
-                typer.echo("No dirplot metadata found in SVG.", err=True)
-                any_error = True
-                continue
-            for k, v in svg_meta.items():
-                typer.echo(f"{k}: {v}")
 
-        elif suffix in {".mp4", ".mov"}:
-            import json
-            import shutil
-            import subprocess
+            label_map = {
+                "Date": "Created",
+                "Software": "Version",
+                "URL": "URL",
+                "Command": "Command",
+                "OS": "OS",
+                "Python": "Python",
+            }
+            for k, v in meta.items():
+                label = label_map.get(k, k)
+                typer.echo(f"{label}: {v}")
 
-            if not shutil.which("ffprobe"):
-                typer.echo("Error: ffprobe not found on PATH (install ffmpeg).", err=True)
-                any_error = True
-                continue
-            result = subprocess.run(
-                ["ffprobe", "-v", "quiet", "-print_format", "json", "-show_format", str(file)],
-                capture_output=True,
-            )
-            if result.returncode != 0:
-                typer.echo(
-                    f"Error reading MP4 metadata: {result.stderr.decode(errors='replace')}",
-                    err=True,
-                )
-                any_error = True
-                continue
-            tags = json.loads(result.stdout).get("format", {}).get("tags", {})
-            meta_keys = {"Date", "Software", "URL", "Python", "OS", "Command"}
-            found = {k: v for k, v in tags.items() if k in meta_keys}
-            if not found:
-                typer.echo("No dirplot metadata found in MP4.", err=True)
-                any_error = True
-                continue
-            for k, v in found.items():
-                typer.echo(f"{k}: {v}")
-
-        else:
-            typer.echo(
-                f"Unsupported file type: {suffix!r}. Expected .png, .svg, or .mp4/.mov", err=True
-            )
-            any_error = True
+            if len(files) > 1:
+                typer.echo("")
 
     if any_error:
         raise typer.Exit(1)
@@ -271,8 +298,8 @@ def demo_cmd(
             ],
         ),
         (
-            "read-meta — metadata embedded in a generated PNG",
-            ["read-meta", str(output / "map-local.png")],
+            "meta — metadata embedded in a generated PNG",
+            ["meta", str(output / "map-local.png")],
         ),
     ]
 

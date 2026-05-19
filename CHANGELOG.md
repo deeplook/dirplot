@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **`read-meta` renamed to `meta`** — `dirplot read-meta` is now `dirplot meta`. The new command
+  also gains a `--json` flag that outputs structured JSON with fields `file`, `has_metadata`,
+  `created`, `version`, `command`, `os`, and `python`. Multiple files return a JSON array.
+  Human-readable output now uses friendlier labels (`Created:`, `Version:` instead of `Date:`,
+  `Software:`). **Breaking change.**
+
 - **`--size` renamed to `--canvas`** in `map`, `diff`, `watch`, `git`, `hg`, and `replay` — the
   old flag controlled output pixel dimensions (e.g. `--canvas 1920x1080`). The name was freed up
   so that `--size` can be used for file-size filtering (see below). **Breaking change.**

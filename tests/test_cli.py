@@ -269,81 +269,125 @@ def test_overview() -> None:
     assert "git" in result.output
 
 
-def test_read_meta_png(sample_tree: Path, tmp_path: Path) -> None:
+def test_meta_png(sample_tree: Path, tmp_path: Path) -> None:
     output = tmp_path / "out.png"
     runner.invoke(app, ["map", str(sample_tree), "--no-show", "--output", str(output)])
-    result = runner.invoke(app, ["read-meta", str(output)])
+    result = runner.invoke(app, ["meta", str(output)])
     assert result.exit_code == 0
-    assert "Date:" in result.output
-    assert "Software:" in result.output
+    assert "Created:" in result.output
+    assert "Version:" in result.output
     assert "dirplot" in result.output
     assert "Command:" in result.output
 
 
-def test_read_meta_svg(sample_tree: Path, tmp_path: Path) -> None:
+def test_meta_svg(sample_tree: Path, tmp_path: Path) -> None:
     output = tmp_path / "out.svg"
     runner.invoke(
         app, ["map", str(sample_tree), "--no-show", "--output", str(output), "--format", "svg"]
     )
-    result = runner.invoke(app, ["read-meta", str(output)])
+    result = runner.invoke(app, ["meta", str(output)])
     assert result.exit_code == 0
-    assert "Date:" in result.output
-    assert "Software:" in result.output
+    assert "Created:" in result.output
+    assert "Version:" in result.output
     assert "dirplot" in result.output
     assert "Command:" in result.output
 
 
-def test_read_meta_missing_file() -> None:
-    result = runner.invoke(app, ["read-meta", "/nonexistent/file.png"])
+def test_meta_missing_file() -> None:
+    result = runner.invoke(app, ["meta", "/nonexistent/file.png"])
     assert result.exit_code == 1
 
 
-def test_read_meta_unsupported_type(tmp_path: Path) -> None:
+def test_meta_unsupported_type(tmp_path: Path) -> None:
     f = tmp_path / "file.txt"
     f.write_text("hello")
-    result = runner.invoke(app, ["read-meta", str(f)])
+    result = runner.invoke(app, ["meta", str(f)])
     assert result.exit_code == 1
     assert "Unsupported" in result.output
 
 
-def test_read_meta_png_no_metadata(tmp_path: Path) -> None:
+def test_meta_png_no_metadata(tmp_path: Path) -> None:
     from PIL import Image
 
     img = Image.new("RGB", (10, 10))
     p = tmp_path / "plain.png"
     img.save(p, format="PNG")
-    result = runner.invoke(app, ["read-meta", str(p)])
+    result = runner.invoke(app, ["meta", str(p)])
     assert result.exit_code == 1
     assert "No dirplot metadata" in result.output
 
 
-def test_read_meta_svg_no_metadata(tmp_path: Path) -> None:
+def test_meta_svg_no_metadata(tmp_path: Path) -> None:
     p = tmp_path / "plain.svg"
     p.write_text('<svg xmlns="http://www.w3.org/2000/svg"><rect/></svg>')
-    result = runner.invoke(app, ["read-meta", str(p)])
+    result = runner.invoke(app, ["meta", str(p)])
     assert result.exit_code == 1
     assert "No dirplot metadata" in result.output
 
 
-def test_read_meta_multiple_files(sample_tree: Path, tmp_path: Path) -> None:
+def test_meta_multiple_files(sample_tree: Path, tmp_path: Path) -> None:
     out1 = tmp_path / "out1.png"
     out2 = tmp_path / "out2.png"
     runner.invoke(app, ["map", str(sample_tree), "--no-show", "--output", str(out1)])
     runner.invoke(app, ["map", str(sample_tree), "--no-show", "--output", str(out2)])
-    result = runner.invoke(app, ["read-meta", str(out1), str(out2)])
+    result = runner.invoke(app, ["meta", str(out1), str(out2)])
     assert result.exit_code == 0
-    assert f"==> {out1} <==" in result.output
-    assert f"==> {out2} <==" in result.output
-    assert result.output.count("Date:") == 2
+    assert "==> out1.png <==" in result.output
+    assert "==> out2.png <==" in result.output
+    assert result.output.count("Created:") == 2
 
 
-def test_read_meta_multiple_files_partial_error(sample_tree: Path, tmp_path: Path) -> None:
+def test_meta_multiple_files_partial_error(sample_tree: Path, tmp_path: Path) -> None:
     out1 = tmp_path / "out1.png"
     runner.invoke(app, ["map", str(sample_tree), "--no-show", "--output", str(out1)])
-    result = runner.invoke(app, ["read-meta", str(out1), "/nonexistent/file.png"])
+    result = runner.invoke(app, ["meta", str(out1), "/nonexistent/file.png"])
     assert result.exit_code == 1
-    assert "Date:" in result.output
+    assert "Created:" in result.output
     assert "file not found" in result.output
+
+
+def test_meta_json_output(sample_tree: Path, tmp_path: Path) -> None:
+    import json
+
+    output = tmp_path / "out.png"
+    runner.invoke(app, ["map", str(sample_tree), "--no-show", "--output", str(output)])
+    result = runner.invoke(app, ["meta", "--json", str(output)])
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert data["has_metadata"] is True
+    assert data["file"] == "out.png"
+    assert data["created"] is not None
+    assert data["version"] is not None
+    assert data["command"] is not None
+
+
+def test_meta_json_no_metadata(tmp_path: Path) -> None:
+    import json
+
+    from PIL import Image
+
+    img = Image.new("RGB", (10, 10))
+    p = tmp_path / "plain.png"
+    img.save(p, format="PNG")
+    result = runner.invoke(app, ["meta", "--json", str(p)])
+    assert result.exit_code == 1
+    data = json.loads(result.output)
+    assert data["has_metadata"] is False
+
+
+def test_meta_json_multiple_files(sample_tree: Path, tmp_path: Path) -> None:
+    import json
+
+    out1 = tmp_path / "out1.png"
+    out2 = tmp_path / "out2.png"
+    runner.invoke(app, ["map", str(sample_tree), "--no-show", "--output", str(out1)])
+    runner.invoke(app, ["map", str(sample_tree), "--no-show", "--output", str(out2)])
+    result = runner.invoke(app, ["meta", "--json", str(out1), str(out2)])
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert isinstance(data, list)
+    assert len(data) == 2
+    assert all(d["has_metadata"] is True for d in data)
 
 
 def test_watch_single_path(sample_tree: Path, tmp_path: Path) -> None:
@@ -586,8 +630,8 @@ def test_paths_from_nonexistent_file(sample_tree: Path) -> None:
     not __import__("shutil").which("ffmpeg") or not __import__("shutil").which("ffprobe"),
     reason="ffmpeg/ffprobe not found",
 )
-def test_read_meta_mp4(tmp_path: Path) -> None:
-    """read-meta extracts all dirplot metadata fields from an MP4 file."""
+def test_meta_mp4(tmp_path: Path) -> None:
+    """meta extracts all dirplot metadata fields from an MP4 file."""
     import io
 
     from PIL import Image
@@ -599,10 +643,10 @@ def test_read_meta_mp4(tmp_path: Path) -> None:
     out = tmp_path / "anim.mp4"
     write_mp4(out, [frame.getvalue()], [500], metadata=build_metadata())
 
-    result = runner.invoke(app, ["read-meta", str(out)])
+    result = runner.invoke(app, ["meta", str(out)])
     assert result.exit_code == 0
-    for key in ("Date", "Software", "URL", "Python", "OS", "Command"):
-        assert f"{key}:" in result.output
+    for label in ("Created", "Version", "URL", "Python", "OS", "Command"):
+        assert f"{label}:" in result.output
 
 
 # ---------------------------------------------------------------------------
