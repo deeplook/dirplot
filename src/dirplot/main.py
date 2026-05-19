@@ -16,16 +16,16 @@ add_overview_command(app)
 
 # Reorder help output regardless of definition order.
 _CMD_ORDER = [
-    "demo",
-    "overview",
-    "termsize",
     "map",
     "diff",
-    "metrics",
     "git",
     "hg",
     "watch",
     "replay",
+    "metrics",
     "meta",
+    "demo",
+    "overview",
+    "termsize",
 ]
 app.registered_commands.sort(key=lambda c: _CMD_ORDER.index(c.name or ""))
