@@ -274,40 +274,41 @@ dirplot diff old/ new/ --light --output diff.svg
 
 ## `dirplot watch` — live watch mode
 
-Monitors directories and regenerates the treemap on every filesystem change. Use `--snapshot` to write the current PNG on each change (useful for external tools or wallpaper updaters). To produce an animated APNG or MP4, record events with `--event-log` and replay with `dirplot replay`.
+Records filesystem events as JSONL for later replay as an animated treemap. Use `dirplot replay` to turn the recording into an APNG or MP4. Pass `--snapshot` to also write a live PNG/SVG on each change — best for small trees only, as rendering adds latency.
 
 ```bash
-# Watch a directory (display only, no file output)
-dirplot watch .
+# Record events to a JSONL file (primary use case)
+dirplot watch src --output events.jsonl
 
 # Watch multiple directories
-dirplot watch src tests
+dirplot watch src tests --output events.jsonl
 
-# Write a snapshot PNG on each change
-dirplot watch . --snapshot treemap.png
+# Append to an existing log instead of truncating
+dirplot watch src --output events.jsonl --append
 
-# Adjust debounce (default 0.5 s)
+# Also write a live snapshot PNG on each change (small trees only)
+dirplot watch . --output events.jsonl --snapshot treemap.png
+
+# Snapshot only, no event log
 dirplot watch . --snapshot treemap.png --debounce 1.0
-dirplot watch . --snapshot treemap.png --debounce 0   # immediate
-
-# Log all events to a JSONL file (replay later with dirplot replay)
-dirplot watch src --event-log events.jsonl
-dirplot watch src --snapshot treemap.png --event-log events.jsonl
 ```
 
 ### Options
 
 | Flag | Default | Description |
 |---|---|---|
-| `--snapshot` | — | Write the current treemap as a PNG to this file on each change. If the output path falls inside a watched directory, events for that file are automatically ignored to prevent self-logging loops |
+| `--output` / `-o` | — | Write filesystem events as JSONL to this file, flushed after each regeneration. Use with `dirplot replay` to produce an animation |
+| `--append/--no-append` | off | Append to an existing `--output` file instead of truncating on startup |
+| `--snapshot` | — | Also write the current treemap as a PNG or SVG on each change (best for small trees) |
 | `--debounce` | `0.5` | Seconds of quiet before regenerating; `0` disables |
-| `--event-log` | — | Write raw events as JSONL on Ctrl-C exit |
 | `--log-scale` | `0` (off) | Log-scale compression ratio; any value > 1 enables it |
 | `--size` / `-S` | — | Filter files by size range (e.g. `10M..500M`, `100M..`, `..50K`). Repeatable (OR logic) |
 | `--keep-empty-dirs` | off | Retain directories emptied by `--size` filtering |
 | `--canvas` | terminal size | Output dimensions as `WIDTHxHEIGHT` |
 | `--depth` | — | Maximum recursion depth |
+| `--include` | — | Show only this subtree (repeatable). Allowlist complement to `--exclude` |
 | `--exclude` / `-e` | — | Pattern to exclude (repeatable): plain name, glob (`*.egg-info`), `**` glob, or relative path |
+| `--highlight` / `-H` | — | Highlight matching paths with a coloured border (repeatable); append `@color` to set colour |
 | `--colormap` | `tab20` | Matplotlib colormap |
 | `--font-size` | `12` | Directory label font size in pixels |
 | `--cushion/--no-cushion` | `--cushion` | Van Wijk cushion shading |
@@ -316,7 +317,7 @@ dirplot watch src --snapshot treemap.png --event-log events.jsonl
 
 ## `dirplot replay` — event log replay
 
-Replays a JSONL event log produced by `dirplot watch --event-log` as an animated treemap. Events are grouped into time buckets (one frame per bucket).
+Replays a JSONL event log produced by `dirplot watch --output` as an animated treemap. Events are grouped into time buckets (one frame per bucket).
 
 > **Requires** `ffmpeg` on `PATH` for MP4 output.
 

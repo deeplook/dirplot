@@ -700,7 +700,7 @@ To animate real-time filesystem activity (e.g. a build or test run), use `dirplo
 
 ```bash
 # 1. Record events while you work
-dirplot watch . --event-log events.jsonl
+dirplot watch . --output events.jsonl
 
 # 2. Replay as a video (Ctrl-C watch first)
 dirplot replay events.jsonl --output timelapse.mp4 --total-duration 30

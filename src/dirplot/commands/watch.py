@@ -11,14 +11,12 @@ from dirplot.terminal import default_canvas_size
 
 _WATCH_EPILOG = (
     "[bold]Examples[/bold]\n\n"
-    "  dirplot watch .  [dim]# watch current directory[/dim]\n\n"
-    "  dirplot watch src tests  [dim]# watch multiple directories[/dim]\n\n"
-    "  dirplot watch . --snapshot treemap.png  [dim]# write PNG/SVG on each change[/dim]\n\n"
-    "  dirplot watch . --snapshot treemap.png --debounce 1.0  [dim]# 1-second debounce[/dim]\n\n"
-    "  dirplot watch . --snapshot treemap.png --debounce 0  [dim]# immediate regeneration[/dim]\n\n"
-    "  dirplot watch src --event-log events.jsonl  [dim]# record events for replay[/dim]\n\n"
-    "  dirplot watch src --snapshot treemap.png --event-log events.jsonl"
-    "  [dim]# snapshot + log[/dim]\n\n"
+    "  dirplot watch src --output events.jsonl  [dim]# record events for replay[/dim]\n\n"
+    "  dirplot watch src tests --output events.jsonl  [dim]# watch multiple directories[/dim]\n\n"
+    "  dirplot watch src --output events.jsonl --append  [dim]# append to existing log[/dim]\n\n"
+    "  dirplot watch . --output events.jsonl --snapshot treemap.png"
+    "  [dim]# log + live snapshot[/dim]\n\n"
+    "  dirplot watch . --snapshot treemap.png --debounce 1.0  [dim]# snapshot only[/dim]\n\n"
     "  dirplot watch . --highlight '**/*.py@orange'  [dim]# highlight Python files[/dim]\n\n"
     "  dirplot watch . --include src  [dim]# show only the src subtree[/dim]"
 )
@@ -27,7 +25,50 @@ _WATCH_EPILOG = (
 @app.command(name="watch", epilog=_WATCH_EPILOG)
 def watch_cmd(
     paths: list[Path] = typer.Argument(..., help="Directories to watch"),
+    output: Path | None = typer.Option(
+        None,
+        "--output",
+        "-o",
+        help=(
+            "Write filesystem events as JSONL to this file, flushed after each regeneration. "
+            "Use with `dirplot replay` to turn the recording into an animation."
+        ),
+        metavar="FILE",
+    ),
+    append: bool = typer.Option(
+        False,
+        "--append/--no-append",
+        help="Append to an existing --output file instead of truncating it on startup.",
+    ),
+    snapshot: Path | None = typer.Option(
+        None,
+        "--snapshot",
+        help=(
+            "Also write the current treemap as a PNG or SVG on each change. "
+            "Convenient for small trees; avoid on large directories as rendering adds latency."
+        ),
+        metavar="FILE",
+    ),
     exclude: list[str] = typer.Option([], "--exclude", "-e", help="Paths to exclude (repeatable)"),
+    include: list[str] = typer.Option(
+        [],
+        "--include",
+        help=(
+            "Show only this subtree (repeatable; supports nested paths like src/fonts). "
+            "Allowlist complement to --exclude."
+        ),
+    ),
+    highlight: list[str] = typer.Option(
+        [],
+        "--highlight",
+        "-H",
+        help=(
+            "Highlight matching paths with a coloured border (repeatable). "
+            "Accepts exact paths or glob patterns including ** (e.g. src/**/*.py). "
+            "Append @color to set the border colour (e.g. '**/*.py@orange'); "
+            "defaults to red."
+        ),
+    ),
     font_size: int = typer.Option(
         DEFAULT_FONT_SIZE, "--font-size", help="Directory label font size in pixels"
     ),
@@ -71,47 +112,14 @@ def watch_cmd(
         help="Seconds of quiet after last event before regenerating (0 to disable)",
         show_default=True,
     ),
-    event_log: Path | None = typer.Option(
-        None,
-        "--event-log",
-        help="Write filesystem events as JSONL to this file (flushed after each regeneration)",
-        metavar="FILE",
-    ),
-    append_event_log: bool = typer.Option(
-        False,
-        "--append-event-log/--no-append-event-log",
-        help="Append to an existing --event-log file instead of truncating it on startup.",
-    ),
-    snapshot: Path | None = typer.Option(
-        None,
-        "--snapshot",
-        help="Write the current treemap as a PNG or SVG to this file on each filesystem change.",
-        metavar="FILE",
-    ),
-    highlight: list[str] = typer.Option(
-        [],
-        "--highlight",
-        "-H",
-        help=(
-            "Highlight matching paths with a coloured border (repeatable). "
-            "Accepts exact paths or glob patterns including ** (e.g. src/**/*.py). "
-            "Append @color to set the border colour (e.g. '**/*.py@orange'); "
-            "defaults to red."
-        ),
-    ),
-    include: list[str] = typer.Option(
-        [],
-        "--include",
-        help=(
-            "Show only this subtree (repeatable; supports nested paths like src/fonts). "
-            "Allowlist complement to --exclude."
-        ),
-    ),
     quiet: bool = typer.Option(False, "--quiet", "-q", help="Suppress non-error output."),
 ) -> None:
-    """Watch one or more directories and regenerate the treemap on every file change.
+    """Watch directories and record filesystem events as JSONL for later replay.
 
-    Example: dirplot watch . --snapshot out.png
+    Use `dirplot replay` to turn the recording into an animated treemap.
+    Pass --snapshot to also write a live PNG/SVG on each change (best for small trees).
+
+    Example: dirplot watch src --output events.jsonl
     """
     from dirplot.watch import TreemapEventHandler
 
@@ -166,7 +174,7 @@ def watch_cmd(
 
     handler = TreemapEventHandler(
         roots,
-        output=snapshot,
+        snapshot=snapshot,
         exclude=excluded,
         width_px=width_px,
         height_px=height_px,
@@ -175,8 +183,8 @@ def watch_cmd(
         cushion=cushion,
         logscale=logscale,
         debounce=debounce,
-        event_log=event_log,
-        append_event_log=append_event_log,
+        output=output,
+        append_output=append,
         depth=depth,
         dark=dark,
         size_ranges=parsed_size_ranges,
@@ -187,7 +195,6 @@ def watch_cmd(
 
     observer = Observer()
     try:
-        # Generate an initial treemap immediately
         roots_str = ", ".join(str(r) for r in roots)
         if not quiet:
             typer.echo(f"Scanning {roots_str} ...", err=True)
@@ -197,8 +204,11 @@ def watch_cmd(
             observer.schedule(handler, str(root), recursive=True)
         observer.start()
         if not quiet:
-            snapshot_info = f" → {snapshot}" if snapshot else ""
-            typer.echo(f"Watching {roots_str}{snapshot_info}  (Ctrl-C to stop)", err=True)
+            output_info = f" → {output}" if output else ""
+            snapshot_info = f" (snapshot: {snapshot})" if snapshot else ""
+            typer.echo(
+                f"Watching {roots_str}{output_info}{snapshot_info}  (Ctrl-C to stop)", err=True
+            )
 
         while True:
             time.sleep(1)

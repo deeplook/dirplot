@@ -24,7 +24,7 @@ class TreemapEventHandler(FileSystemEventHandler):
     def __init__(
         self,
         roots: list[Path],
-        output: Path | None = None,
+        snapshot: Path | None = None,
         *,
         exclude: frozenset[str] = frozenset(),
         width_px: int,
@@ -34,8 +34,8 @@ class TreemapEventHandler(FileSystemEventHandler):
         cushion: bool,
         logscale: float = 0.0,
         debounce: float = 0.0,
-        event_log: Path | None = None,
-        append_event_log: bool = False,
+        output: Path | None = None,
+        append_output: bool = False,
         depth: int | None = None,
         dark: bool = True,
         size_ranges: list[SizeRange] | None = None,
@@ -45,7 +45,7 @@ class TreemapEventHandler(FileSystemEventHandler):
     ) -> None:
         super().__init__()
         self.roots = roots
-        self.output = output
+        self.snapshot = snapshot
         self.exclude = exclude
         self.depth = depth
         self.width_px = width_px
@@ -54,17 +54,17 @@ class TreemapEventHandler(FileSystemEventHandler):
         self.colormap = colormap
         self.cushion = cushion
         self.dark = dark
-        self.use_svg = output is not None and output.suffix.lower() == ".svg"
+        self.use_svg = snapshot is not None and snapshot.suffix.lower() == ".svg"
         self.logscale = logscale
         self.debounce = debounce
-        self.event_log = event_log
+        self.output = output
         self.size_ranges = size_ranges
         self.keep_empty_dirs = keep_empty_dirs
         self.highlight_specs = highlight_specs or []
         self.include = include
         self._events: list[dict[str, Any]] = []
-        if event_log is not None and not append_event_log:
-            event_log.write_text("", encoding="utf-8")
+        if output is not None and not append_output:
+            output.write_text("", encoding="utf-8")
         self._timer: threading.Timer | None = None
         self._render_thread: threading.Thread | None = None
         self._lock = threading.Lock()
@@ -112,7 +112,7 @@ class TreemapEventHandler(FileSystemEventHandler):
                 )
             merged = current_highlights or None
             rect_map: dict[str, tuple[int, int, int, int]] = {}
-            if self.use_svg and self.output is not None:
+            if self.use_svg and self.snapshot is not None:
                 buf = create_treemap_svg(
                     node,
                     self.width_px,
@@ -124,7 +124,7 @@ class TreemapEventHandler(FileSystemEventHandler):
                     dark=self.dark,
                     highlights=merged,
                 )
-                self.output.write_bytes(buf.read())
+                self.snapshot.write_bytes(buf.read())
             else:
                 buf = create_treemap(
                     node,
@@ -139,9 +139,9 @@ class TreemapEventHandler(FileSystemEventHandler):
                     dark=self.dark,
                     logscale=self.logscale,
                 )
-                if self.output is not None:
-                    self.output.write_bytes(buf.read())
-                    print(f"Updated {self.output}", file=sys.stderr)
+                if self.snapshot is not None:
+                    self.snapshot.write_bytes(buf.read())
+                    print(f"Updated {self.snapshot}", file=sys.stderr)
             self._prev_rect_map = rect_map
         except Exception as exc:  # noqa: BLE001
             print(f"Error regenerating treemap: {exc}", file=sys.stderr)
@@ -149,7 +149,7 @@ class TreemapEventHandler(FileSystemEventHandler):
 
     def _flush_events(self) -> None:
         """Append any buffered events to the event log file and clear the buffer."""
-        if self.event_log is None:
+        if self.output is None:
             return
         with self._lock:
             if not self._events:
@@ -157,7 +157,7 @@ class TreemapEventHandler(FileSystemEventHandler):
             batch = self._events[:]
             self._events.clear()
         lines = [json.dumps(e, ensure_ascii=False) for e in batch]
-        with self.event_log.open("a", encoding="utf-8") as f:
+        with self.output.open("a", encoding="utf-8") as f:
             f.write("\n".join(lines) + "\n")
 
     def _record_event(self, verb: str, event: FileSystemEvent) -> None:

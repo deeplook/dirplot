@@ -32,7 +32,7 @@ def test_watch_snapshot_written(tmp_path: Path) -> None:
 
     handler = TreemapEventHandler(
         [tmp_path],
-        output=out,
+        snapshot=out,
         width_px=200,
         height_px=150,
         font_size=12,
@@ -216,7 +216,7 @@ def _handler(tmp_path: Path, out: Path, **kw: object) -> TreemapEventHandler:
     """Helper: create a handler with a large debounce so the timer never fires in tests."""
     return TreemapEventHandler(
         [tmp_path],
-        out,
+        snapshot=out,
         width_px=100,
         height_px=100,
         font_size=12,
@@ -286,7 +286,7 @@ def test_on_moved_file(tmp_path: Path) -> None:
 
 
 # ---------------------------------------------------------------------------
-# event_log written by flush()
+# output (event log) written by flush()
 # ---------------------------------------------------------------------------
 
 
@@ -297,7 +297,7 @@ def test_flush_writes_event_log(tmp_path: Path) -> None:
 
     out = tmp_path / "t.png"
     log = tmp_path / "events.jsonl"
-    handler = _handler(tmp_path, out, event_log=log)
+    handler = _handler(tmp_path, out, output=log)
 
     event = FileCreatedEvent(str(tmp_path / "x.py"))
     handler.on_created(event)

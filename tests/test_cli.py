@@ -455,17 +455,17 @@ def test_watch_flush_fires_pending(sample_tree: Path, tmp_path: Path) -> None:
 def test_watch_event_log_written(tmp_path: Path) -> None:
     from dirplot.watch import TreemapEventHandler
 
-    output = tmp_path / "out.png"
+    snapshot = tmp_path / "out.png"
     log_file = tmp_path / "events.jsonl"
     handler = TreemapEventHandler(
         [tmp_path],
-        output,
+        snapshot=snapshot,
         width_px=100,
         height_px=100,
         font_size=12,
         colormap="tab20",
         cushion=True,
-        event_log=log_file,
+        output=log_file,
     )
     handler._events = [
         {"timestamp": 1.0, "type": "created", "path": "/foo/bar.txt", "dest_path": None},
