@@ -13,8 +13,9 @@ import typer
 from dirplot.app import app
 from dirplot.defaults import DEFAULT_COLORMAP, DEFAULT_FONT_SIZE
 from dirplot.display import display_inline, display_window
+from dirplot.filters import SizeRange, parse_size_range
 from dirplot.helpers.highlights import resolve_highlight_specs
-from dirplot.scanner import Node, prune_to_subtrees
+from dirplot.scanner import Node, filter_by_size, prune_to_subtrees
 from dirplot.terminal import default_canvas_size, get_terminal_size
 
 # Border colours for diff status — applied to file tile borders only.
@@ -146,6 +147,21 @@ def diff_cmd(
             "Append @color to set the border colour (e.g. '**/*.py@orange'); "
             "defaults to red."
         ),
+    ),
+    size_filter: list[str] | None = typer.Option(
+        None,
+        "--size",
+        "-S",
+        help=(
+            "Filter files by size range (e.g. 10M..500M, 100M.., ..50K, 1G). "
+            "Repeatable — multiple ranges are combined with OR logic."
+        ),
+        metavar="RANGE",
+    ),
+    keep_empty_dirs: bool = typer.Option(
+        False,
+        "--keep-empty-dirs",
+        help="Retain directories that become empty after --size filtering.",
     ),
 ) -> None:
     """Compare two directory trees A and B as a treemap with diff highlights.
@@ -394,6 +410,20 @@ def diff_cmd(
 
     if include:
         root_node = prune_to_subtrees(root_node, set(include))
+
+    if size_filter:
+        parsed_ranges: list[SizeRange] = []
+        for spec in size_filter:
+            try:
+                parsed_ranges.append(parse_size_range(spec))
+            except ValueError as exc:
+                typer.echo(f"Invalid --size value: {exc}", err=True)
+                raise typer.Exit(1) from exc
+        result = filter_by_size(root_node, parsed_ranges, keep_empty_dirs)
+        if result is None:
+            typer.echo("No files match the --size filter.", err=True)
+            raise typer.Exit(1)
+        root_node = result
 
     if highlight:
 

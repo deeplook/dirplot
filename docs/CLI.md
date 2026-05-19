@@ -252,6 +252,8 @@ dirplot diff old/ new/ --light --output diff.svg
 | `--include` | | — | Keep only these subtrees (repeatable); the inverse of `--exclude`. The added/removed/changed summary counts in the header are scoped to the included paths |
 | `--highlight` | `-H` | — | Draw a coloured border on top of diff borders (repeatable). Same `pattern[@color]` syntax as `dirplot map --highlight` |
 | `--depth` | | unlimited | Maximum recursion depth |
+| `--size` | `-S` | — | Filter files by size range (e.g. `10M..500M`, `100M..`, `..50K`, `1G`). Repeatable — multiple values combine with OR logic |
+| `--keep-empty-dirs` | | off | Retain directories that become empty after `--size` filtering |
 | `--canvas` | | terminal size | Output dimensions as `WIDTHxHEIGHT` (e.g. `1920x1080`) |
 | `--cushion/--no-cushion` | | `--cushion` | Van Wijk cushion shading for a raised 3-D look |
 | `--dark/--light` | | `--dark` | Canvas and label colour scheme |
