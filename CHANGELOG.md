@@ -61,6 +61,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   highlights a single file (`conftest.py@red`), a glob (`**/test_git*.py@cyan`), and a folder
   (`tests/fixtures@lime`) to demonstrate the feature.
 
+- **`replay` shows full directory context by default** — the initial frame now includes all files
+  in the watched directory tree, not just those that appear in the event log. Files touched during
+  recording use the first logged size as their baseline; untouched files use a live stat. Pass
+  `--no-context` to revert to the old behaviour (event-log files only), which is faster for large
+  trees where the surrounding context is not needed.
+
 ## [0.4.5] - 2026-05-15
 
 ### Changed
