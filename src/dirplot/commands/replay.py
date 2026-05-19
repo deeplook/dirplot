@@ -9,13 +9,14 @@ import typer
 
 from dirplot.app import app
 from dirplot.defaults import DEFAULT_COLORMAP, DEFAULT_FONT_SIZE
-from dirplot.filters import matches_exclude
+from dirplot.filters import SizeRange, matches_exclude, parse_size_range
 from dirplot.helpers.animation import (
     proportional_durations,
     resolve_fade_color,
     worker_ignore_sigint,
 )
 from dirplot.helpers.highlights import resolve_highlight_specs
+from dirplot.scanner import matches_any_range
 from dirplot.terminal import default_canvas_size
 
 _REPLAY_EPILOG = (
@@ -118,6 +119,17 @@ def replay_cmd(
         ),
         metavar="COLOR",
     ),
+    size_filter: list[str] | None = typer.Option(
+        None,
+        "--size",
+        "-S",
+        help=(
+            "Filter files by size range (e.g. 10M..500M, 100M.., ..50K, 1G). "
+            "Repeatable — multiple ranges are combined with OR logic. "
+            "Frames with no matching files are skipped."
+        ),
+        metavar="RANGE",
+    ),
     quiet: bool = typer.Option(False, "--quiet", "-q", help="Suppress non-error output."),
     highlight: list[str] = typer.Option(
         [],
@@ -165,6 +177,15 @@ def replay_cmd(
             raise typer.Exit(1)
     else:
         width_px, height_px = default_canvas_size()
+
+    parsed_ranges: list[SizeRange] = []
+    if size_filter:
+        for spec in size_filter:
+            try:
+                parsed_ranges.append(parse_size_range(spec))
+            except ValueError as exc:
+                typer.echo(f"Invalid --size value: {exc}", err=True)
+                raise typer.Exit(1) from exc
 
     if not quiet:
         typer.echo(f"Reading events from {event_log} ...", err=True)
@@ -243,7 +264,18 @@ def replay_cmd(
         if highlight:
             abs_paths = [(common_root / rel).as_posix() for rel in files]
             cur_hl.update(resolve_highlight_specs(highlight, abs_paths))
-        snapshots.append((i, ts, dict(files), cur_hl, deletions))
+        files_copy = (
+            {k: v for k, v in files.items() if matches_any_range(v, parsed_ranges)}
+            if parsed_ranges
+            else dict(files)
+        )
+        if not files_copy:
+            continue
+        snapshots.append((i, ts, files_copy, cur_hl, deletions))
+
+    if not snapshots:
+        typer.echo("No files match the --size filter in any frame.", err=True)
+        raise typer.Exit(1)
 
     # Phase 2: parallel render
     total = len(snapshots)

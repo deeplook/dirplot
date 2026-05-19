@@ -1143,3 +1143,81 @@ def test_parse_size_zero_dimension() -> None:
 
     with pytest.raises(typer.BadParameter, match="must both be positive"):
         _parse_size("0x600")
+
+
+# ---------------------------------------------------------------------------
+# replay --size filter
+# ---------------------------------------------------------------------------
+
+
+def _make_replay_log(tmp_path: Path) -> tuple[Path, Path]:
+    """Return (root, log) with a.py=500B and b.py=300B."""
+    root = tmp_path / "root"
+    root.mkdir()
+    (root / "a.py").write_bytes(b"x" * 500)
+    (root / "b.py").write_bytes(b"x" * 300)
+    log = tmp_path / "events.jsonl"
+    _write_jsonl(
+        log,
+        [
+            {"timestamp": 1.0, "type": "created", "path": str(root / "a.py")},
+            {"timestamp": 2.0, "type": "created", "path": str(root / "b.py")},
+            {"timestamp": 70.0, "type": "modified", "path": str(root / "a.py")},
+        ],
+    )
+    return root, log
+
+
+def test_replay_size_filter_keeps_matching_frames(tmp_path: Path) -> None:
+    _root, log = _make_replay_log(tmp_path)
+    out = tmp_path / "out.apng"
+    result = runner.invoke(
+        app,
+        [
+            "replay",
+            str(log),
+            "--output",
+            str(out),
+            "--canvas",
+            "200x150",
+            "--workers",
+            "1",
+            "--size",
+            "400..",
+        ],
+    )
+    assert result.exit_code == 0, result.output
+    assert out.exists()
+
+
+def test_replay_size_filter_no_match_exits_nonzero(tmp_path: Path) -> None:
+    _root, log = _make_replay_log(tmp_path)
+    out = tmp_path / "out.apng"
+    result = runner.invoke(
+        app,
+        [
+            "replay",
+            str(log),
+            "--output",
+            str(out),
+            "--canvas",
+            "200x150",
+            "--workers",
+            "1",
+            "--size",
+            "999G..",
+        ],
+    )
+    assert result.exit_code == 1
+    assert "No files match" in result.output
+
+
+def test_replay_size_filter_invalid_range(tmp_path: Path) -> None:
+    _root, log = _make_replay_log(tmp_path)
+    out = tmp_path / "out.apng"
+    result = runner.invoke(
+        app,
+        ["replay", str(log), "--output", str(out), "--canvas", "200x150", "--size", "badrange"],
+    )
+    assert result.exit_code == 1
+    assert "Invalid --size" in result.output

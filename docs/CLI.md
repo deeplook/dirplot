@@ -353,6 +353,7 @@ dirplot replay events.jsonl --output replay.png --total-duration 30 --fade-out -
 | `--codec` | `libx264` | MP4 codec: `libx264` (H.264) or `libx265` (H.265) |
 | `--workers` | all CPU cores | Parallel render workers; must be a positive integer |
 | `--log-scale` | `0` (off) | Log-scale compression ratio; any value > 1 enables it |
+| `--size` / `-S` | — | Filter files by size range (e.g. `10M..500M`, `100M..`, `..50K`). Repeatable (OR logic). Frames with no matching files are skipped |
 | `--canvas` | terminal size | Output dimensions as `WIDTHxHEIGHT` |
 | `--depth` | — | Maximum directory depth |
 | `--exclude` / `-e` | — | Pattern to exclude (repeatable): plain name, glob (`*.egg-info`), `**` glob, or relative path |
