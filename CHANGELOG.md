@@ -15,7 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **`--size`/`-S` file-size filter** — available on `map`, `diff`, and `watch`. Filters the
+- **`--size`/`-S` file-size filter** — available on `map`, `diff`, `watch`, and `replay`. Filters the
   scanned tree to files whose byte size matches a range. Syntax: `10M..500M` (between 10 MiB and
   500 MiB), `100M..` (≥ 100 MiB), `..50K` (≤ 50 KiB), `1G` (exactly 1 GiB). Units: `B K KB M
   MB G GB T TB` (powers of 1024, case-insensitive). Repeatable — multiple `--size` flags combine
@@ -27,6 +27,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Several correctness and robustness fixes: archive stat modes now include file type bits; watch mode SVG snapshots now render change highlights; `diff` summary counts respect `--include`; `--workers` rejects non-positive values; the `watch_events.py` script ignores its own output file when placed inside a watched directory; GitHub tokens are no longer embedded in clone URLs; and various edge-case fixes across the k8s, S3, and animation subsystems.
 
 ### Added
+
+- **`watch` improvements**:
+  - **`--event-log` renamed to `--output`/`-o`** — the JSONL event log is now the primary named
+    output of `watch`, consistent with all other commands. **Breaking change.**
+  - **`--append-event-log` renamed to `--append`** — shorter flag to append to an existing log
+    instead of truncating on startup.
+  - **Continuous event-log flushing** — events are flushed to `--output` after each regeneration
+    (debounce window) rather than only at exit, so the log is safe against crashes or SIGKILL.
+  - **`--highlight`/`-H`** — highlight matching paths with a coloured border, same syntax as
+    `map` and `diff`. Patterns are re-evaluated on every regeneration.
+  - **`--include`** — show only a named subtree, same as the `map` command.
+  - **`--debounce` validation** — negative values are now rejected with an error.
+  - **`--snapshot` help text** clarified: PNG or SVG; best for small trees as rendering adds
+    latency on large directories.
+  - **Signal handling fixed** — removed a stray `signal.signal(SIGINT, SIG_IGN)` call in the
+    cleanup path that was unnecessarily suppressing Ctrl-C globally during shutdown.
+
+- **`--log-scale` validation** — values ≤ 1 (including negative values) are now rejected with an
+  error in all commands (`map`, `diff`, `watch`, `git`, `hg`, `replay`). Previously, invalid
+  values were silently ignored. The programmatic API (`apply_log_sizes`) raises `ValueError`.
 
 - **`--highlight`/`-H` flag** — available on `map`, `diff`, `git`, `hg`, and `replay`. Draws a
   coloured border around tiles whose paths match a pattern. Accepts exact paths or glob patterns

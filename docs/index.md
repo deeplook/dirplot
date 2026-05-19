@@ -43,7 +43,7 @@ dirplot map . --inline # display inline in terminal (iTerm2 / Kitty / Ghostty)
 - Squarified treemap layout; file area proportional to size; per-extension colours (GitHub Linguist palette for known types, configurable Matplotlib colormap for the rest).
 - PNG, animated PNG (APNG), MP4, and MOV output for single frames and animations; interactive SVG for static maps; renders at terminal pixel size or a custom `WIDTHxHEIGHT`.
 - **Inline terminal display** — renders directly into iTerm2, Kitty, Ghostty, WezTerm, and Warp without opening a separate window; protocol auto-detected.
-- **Animate git history** (`dirplot git`), **Mercurial history** (`dirplot hg`), and **replay filesystem event logs** (`dirplot replay`) — output APNG, MP4, or MOV. **Watch live filesystems** (`dirplot watch`) with optional snapshot and event logging.
+- **Animate git history** (`dirplot git`), **Mercurial history** (`dirplot hg`), and **replay filesystem event logs** (`dirplot replay`) — output APNG, MP4, or MOV. **Watch live filesystems** (`dirplot watch`) to record a JSONL event log for replay, with an optional live snapshot.
 - **Scan metrics** (`dirplot metrics`) — file/dir counts, total size, depth, top extensions by count or size, largest files and directories with percentage of total; JSON output supported.
 - **Compare two trees** (`dirplot diff`) — treemap diff of any two sources (local dirs, GitHub repos, archives, S3, SSH, Docker, K8s, or two commits/tags); `dirplot diff .` shows uncommitted changes; files sized by B; colour-coded borders show added (green), removed (red), and changed (blue) files. Git/hg repos scan only tracked files; change detection uses blob hashes (LFS-aware).
 - Scan **SSH hosts**, **AWS S3**, **GitHub repos** (public and private), **Docker containers**, **Kubernetes pods**, and **Google Drive** — no extra deps beyond the respective CLI.
@@ -101,8 +101,8 @@ dirplot git github://owner/repo -o h.mp4 --period 7d             # GitHub, last 
 dirplot hg /path/to/repo -o history.png --range 0:tip            # full hg history
 dirplot hg /path/to/repo@tip -o history.png                      # static, tip only
 
-dirplot watch . --snapshot treemap.png                           # live watch, snapshot on each change
-dirplot watch . --event-log events.jsonl                         # record events for replay
+dirplot watch src --output events.jsonl                          # record events for replay
+dirplot watch . --output events.jsonl --snapshot treemap.png     # record + live snapshot (small trees)
 dirplot replay events.jsonl -o timelapse.mp4 --total-duration 30 # render recording as MP4
 
 dirplot demo                                                     # run examples, save to ./demo/
