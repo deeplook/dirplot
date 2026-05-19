@@ -35,6 +35,7 @@ class TreemapEventHandler(FileSystemEventHandler):
         logscale: float = 0.0,
         debounce: float = 0.0,
         event_log: Path | None = None,
+        append_event_log: bool = False,
         depth: int | None = None,
         dark: bool = True,
         size_ranges: list[SizeRange] | None = None,
@@ -62,6 +63,8 @@ class TreemapEventHandler(FileSystemEventHandler):
         self.highlight_specs = highlight_specs or []
         self.include = include
         self._events: list[dict[str, Any]] = []
+        if event_log is not None and not append_event_log:
+            event_log.write_text("", encoding="utf-8")
         self._timer: threading.Timer | None = None
         self._render_thread: threading.Thread | None = None
         self._lock = threading.Lock()
@@ -142,6 +145,20 @@ class TreemapEventHandler(FileSystemEventHandler):
             self._prev_rect_map = rect_map
         except Exception as exc:  # noqa: BLE001
             print(f"Error regenerating treemap: {exc}", file=sys.stderr)
+        self._flush_events()
+
+    def _flush_events(self) -> None:
+        """Append any buffered events to the event log file and clear the buffer."""
+        if self.event_log is None:
+            return
+        with self._lock:
+            if not self._events:
+                return
+            batch = self._events[:]
+            self._events.clear()
+        lines = [json.dumps(e, ensure_ascii=False) for e in batch]
+        with self.event_log.open("a", encoding="utf-8") as f:
+            f.write("\n".join(lines) + "\n")
 
     def _record_event(self, verb: str, event: FileSystemEvent) -> None:
         src = event.src_path
@@ -190,11 +207,7 @@ class TreemapEventHandler(FileSystemEventHandler):
             self._regenerate()
         elif render_thread is not None:
             render_thread.join()
-        if self.event_log is not None and self._events:
-            with self._lock:
-                snapshot = list(self._events)
-            lines = [json.dumps(e, ensure_ascii=False) for e in snapshot]
-            self.event_log.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        self._flush_events()
 
     def _log_event(self, verb: str, event: FileSystemEvent) -> None:
         src = event.src_path

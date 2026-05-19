@@ -74,8 +74,13 @@ def watch_cmd(
     event_log: Path | None = typer.Option(
         None,
         "--event-log",
-        help="Write all raw events as JSONL to this file on exit",
+        help="Write filesystem events as JSONL to this file (flushed after each regeneration)",
         metavar="FILE",
+    ),
+    append_event_log: bool = typer.Option(
+        False,
+        "--append-event-log/--no-append-event-log",
+        help="Append to an existing --event-log file instead of truncating it on startup.",
     ),
     snapshot: Path | None = typer.Option(
         None,
@@ -171,6 +176,7 @@ def watch_cmd(
         logscale=logscale,
         debounce=debounce,
         event_log=event_log,
+        append_event_log=append_event_log,
         depth=depth,
         dark=dark,
         size_ranges=parsed_size_ranges,
