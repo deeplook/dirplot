@@ -204,8 +204,8 @@ def test_diff_svg_output(tree_a: Path, tree_b: Path, tmp_path: Path) -> None:
     assert "<svg" in content
 
 
-def test_diff_no_context(tree_a: Path, tree_b: Path, tmp_path: Path) -> None:
-    """--no-context produces a smaller image (fewer tiles) than --context."""
+def test_diff_changed_only(tree_a: Path, tree_b: Path, tmp_path: Path) -> None:
+    """--changed-only produces a smaller image (fewer tiles) than --context."""
     out_ctx = tmp_path / "diff_ctx.png"
     out_noctx = tmp_path / "diff_noctx.png"
     runner.invoke(
@@ -232,11 +232,11 @@ def test_diff_no_context(tree_a: Path, tree_b: Path, tmp_path: Path) -> None:
             "--canvas",
             "300x200",
             "--no-show",
-            "--no-context",
+            "--changed-only",
         ],
     )
     assert out_ctx.exists() and out_noctx.exists()
-    # --no-context excludes unchanged files so the image should differ
+    # --changed-only excludes unchanged files so the image should differ
     assert out_ctx.read_bytes() != out_noctx.read_bytes()
 
 

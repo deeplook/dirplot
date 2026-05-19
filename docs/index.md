@@ -113,7 +113,7 @@ dirplot metrics . --top 5 --json                                 # top-5 entries
 dirplot map . --metrics --no-show                                # treemap + metrics in one pass
 
 dirplot diff .                                                   # uncommitted changes (git/hg)
-dirplot diff . --no-context                                      # only show changed files
+dirplot diff . --changed-only                                      # only show changed files
 dirplot diff .@HEAD~5 .@HEAD                                     # last 5 commits
 dirplot diff old/ new/                                           # compare two directories
 dirplot diff old/ new/ --output diff.png --no-show               # save to file

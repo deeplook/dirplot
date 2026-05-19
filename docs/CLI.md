@@ -198,7 +198,7 @@ dirplot map . --metrics --no-show
 
 ## `dirplot diff` — compare two directory trees
 
-Compares two directory trees A and B as a treemap. Tiles are sized by B (the new tree). Colour-coded borders indicate the diff status of each file: **green** = added (present in B, absent in A), **red** = removed (present in A, absent in B), **blue** = changed (present in both, but content differs). Unchanged files have no border. By default, unchanged files are included as context (`--context`); pass `--no-context` to show only changed, added, and removed files.
+Compares two directory trees A and B as a treemap. Tiles are sized by B (the new tree). Colour-coded borders indicate the diff status of each file: **green** = added (present in B, absent in A), **red** = removed (present in A, absent in B), **blue** = changed (present in both, but content differs). Unchanged files have no border. By default, unchanged files are included as context (`--context`); pass `--changed-only` to show only changed, added, and removed files.
 
 A and B can be **any source supported by `dirplot map`** — local directories, GitHub repos, archives, S3 paths, SSH hosts, Docker containers, or Kubernetes pods.
 
@@ -225,7 +225,7 @@ dirplot diff github://owner/repo@v1.0 github://owner/repo@v2.0   # GitHub tags
 dirplot diff old/ new/
 
 # Uncommitted changes, only show changed files
-dirplot diff . --no-context
+dirplot diff . --changed-only
 
 # Compare an S3 prefix against a local directory
 dirplot diff s3://my-bucket/v1 ./v2
@@ -245,7 +245,7 @@ dirplot diff old/ new/ --light --output diff.svg
 | `--format` | `-f` | auto | Output format: `png` or `svg` |
 | `--show/--no-show` | | `--show` | Display the image after rendering; SVG saved with `-o` defaults to `--no-show` (`--output -` also implies `--no-show`) |
 | `--inline` | | off | Display in terminal (auto-detected protocol; PNG only) |
-| `--context/--no-context` | | `--context` | Include unchanged files in the treemap |
+| `--context/--changed-only` | | `--context` | Include unchanged files in the treemap |
 | `--font-size` | | `12` | Directory label font size in pixels |
 | `--colormap` | | `tab20` | Colormap for unknown extensions |
 | `--exclude` | `-e` | — | Pattern to exclude (repeatable): plain name, glob (`*.egg-info`), `**` glob, or relative path |
@@ -317,7 +317,7 @@ dirplot watch . --snapshot treemap.png --debounce 1.0
 
 ## `dirplot replay` — event log replay
 
-Replays a JSONL event log produced by `dirplot watch --output` as an animated treemap. Events are grouped into time buckets (one frame per bucket). By default the full directory tree is scanned at replay time so unchanged files appear as context; pass `--no-context` to show only files that appear in the event log.
+Replays a JSONL event log produced by `dirplot watch --output` as an animated treemap. Events are grouped into time buckets (one frame per bucket). By default the full directory tree is scanned at replay time so unchanged files appear as context; pass `--changed-only` to show only files that appear in the event log.
 
 > **Requires** `ffmpeg` on `PATH` for MP4 output.
 
@@ -362,7 +362,7 @@ dirplot replay events.jsonl --output replay.png --total-duration 30 --fade-out -
 | `--colormap` | `tab20` | Matplotlib colormap |
 | `--font-size` | `12` | Directory label font size in pixels |
 | `--cushion/--no-cushion` | `--cushion` | Van Wijk cushion shading |
-| `--no-context` | off | Show only files from the event log; skip the initial directory scan |
+| `--changed-only` | off | Show only files from the event log; skip the initial directory scan |
 
 ---
 

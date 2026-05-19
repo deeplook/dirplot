@@ -70,7 +70,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`replay` shows full directory context by default** — the initial frame now includes all files
   in the watched directory tree, not just those that appear in the event log. Files touched during
   recording use the first logged size as their baseline; untouched files use a live stat. Pass
-  `--no-context` to revert to the old behaviour (event-log files only), which is faster for large
+  `--changed-only` to revert to the old behaviour (event-log files only), which is faster for large
   trees where the surrounding context is not needed.
 
 ## [0.4.5] - 2026-05-15
@@ -98,7 +98,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **`dirplot diff` command** — compares two directory trees A and B as a treemap. Files are
   sized by B. Borders show diff status: green = added, red = removed, blue = changed (content
-  differs). Unchanged files show no border. Supports `--context/--no-context` (default: on,
+  differs). Unchanged files show no border. Supports `--context/--changed-only` (default: on,
   i.e. unchanged files are shown). A and B accept any source supported by `dirplot map`:
   local directories, `github://owner/repo[@ref]`, archives (`.zip`, `.tar.gz`, …), `s3://`,
   `ssh://`, `docker://`, and `pod://`. All visual and remote-access options are available:

@@ -94,8 +94,8 @@ def diff_cmd(
     ),
     context: bool = typer.Option(
         True,
-        "--context/--no-context",
-        help="Include unchanged files for context. --no-context shows only diff files.",
+        "--context/--changed-only",
+        help="Include unchanged files for context. --changed-only shows only diff files.",
     ),
     header: bool = typer.Option(True, "--header/--no-header", help="Print info lines to stderr"),
     quiet: bool = typer.Option(False, "--quiet", "-q", help="Suppress non-error output"),
@@ -175,7 +175,7 @@ def diff_cmd(
     Files are sized by their size in B (the target tree). Borders indicate
     diff status: [green]green[/green] = added, [red]red[/red] = removed,
     [blue]blue[/blue] = changed (size differs).
-    Unchanged files show no border. Use --no-context to hide them entirely.
+    Unchanged files show no border. Use --changed-only to hide them entirely.
     """
     import sys
 
@@ -383,7 +383,7 @@ def diff_cmd(
 
     # Build combined node tree sized by B.
     # With --context: include all files (unchanged for context + diff files).
-    # With --no-context: include only files that changed, were added, or were removed.
+    # With --changed-only: include only files that changed, were added, or were removed.
     # Use hash comparison when available so LFS files (pointer size != disk size)
     # are not falsely counted as changed.
     def _is_changed(rel: str) -> bool:

@@ -102,7 +102,7 @@ dirplot diff .
 dirplot diff /path/to/repo
 
 # Uncommitted changes — only show changed files
-dirplot diff . --no-context
+dirplot diff . --changed-only
 
 # Compare two commits in the current repo
 dirplot diff .@HEAD~5 .@HEAD
@@ -114,7 +114,7 @@ dirplot diff old/ new/
 dirplot diff old/ new/ --output diff.png --no-show
 
 # Show only changed/added/removed files (hide unchanged context)
-dirplot diff old/ new/ --no-context
+dirplot diff old/ new/ --changed-only
 
 # Two GitHub tags
 dirplot diff github://owner/repo@v1.0 github://owner/repo@v2.0
