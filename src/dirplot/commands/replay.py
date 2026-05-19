@@ -9,7 +9,7 @@ import typer
 
 from dirplot.app import app
 from dirplot.defaults import DEFAULT_COLORMAP, DEFAULT_FONT_SIZE
-from dirplot.filters import SizeRange, matches_exclude, parse_size_range
+from dirplot.filters import SizeRange, parse_size_range
 from dirplot.helpers.animation import (
     proportional_durations,
     resolve_fade_color,
@@ -149,6 +149,7 @@ def replay_cmd(
         apply_events,
         bucket_events,
         parse_events,
+        scan_to_flat,
     )
 
     if workers is not None and workers <= 0:
@@ -222,29 +223,10 @@ def replay_cmd(
                     except ValueError:
                         pass
 
-    # Build initial files dict: prefer first logged size; fall back to live stat only for
-    # files that appear in the log without a recorded size (old logs pre-dating this field).
-    files: dict[str, int] = {}
-    for _ts, _type, path_str, dest_str, _ev_size, _mtime in events:
-        for p_str in (path_str, dest_str) if dest_str else (path_str,):
-            if not p_str or not p_str.startswith(str(common_root)):
-                continue
-            p = Path(p_str)
-            try:
-                rel = str(p.relative_to(common_root)).replace(os.sep, "/")
-            except ValueError:
-                continue
-            if matches_exclude(rel, excluded):
-                continue
-            if rel in files:
-                continue
-            if rel in first_log_sizes:
-                files[rel] = first_log_sizes[rel]
-            elif p.is_file():
-                import contextlib
-
-                with contextlib.suppress(OSError):
-                    files[rel] = max(1, p.stat().st_size)
+    # Build initial files dict: start with a full live scan so untouched files provide context,
+    # then override with first-logged sizes for files that appear in the event log.
+    files: dict[str, int] = scan_to_flat(common_root, excluded)
+    files.update(first_log_sizes)
     if not quiet:
         typer.echo(f"  {len(files)} unique files from event log", err=True)
 
