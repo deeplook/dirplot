@@ -1,6 +1,5 @@
 """The ``watch`` command: regenerate treemap on filesystem changes."""
 
-import signal
 import time
 from pathlib import Path
 
@@ -14,12 +13,14 @@ _WATCH_EPILOG = (
     "[bold]Examples[/bold]\n\n"
     "  dirplot watch .  [dim]# watch current directory[/dim]\n\n"
     "  dirplot watch src tests  [dim]# watch multiple directories[/dim]\n\n"
-    "  dirplot watch . --snapshot treemap.png  [dim]# write PNG on each change[/dim]\n\n"
+    "  dirplot watch . --snapshot treemap.png  [dim]# write PNG/SVG on each change[/dim]\n\n"
     "  dirplot watch . --snapshot treemap.png --debounce 1.0  [dim]# 1-second debounce[/dim]\n\n"
     "  dirplot watch . --snapshot treemap.png --debounce 0  [dim]# immediate regeneration[/dim]\n\n"
     "  dirplot watch src --event-log events.jsonl  [dim]# record events for replay[/dim]\n\n"
     "  dirplot watch src --snapshot treemap.png --event-log events.jsonl"
-    "  [dim]# snapshot + log[/dim]"
+    "  [dim]# snapshot + log[/dim]\n\n"
+    "  dirplot watch . --highlight '**/*.py@orange'  [dim]# highlight Python files[/dim]\n\n"
+    "  dirplot watch . --include src  [dim]# show only the src subtree[/dim]"
 )
 
 
@@ -79,8 +80,27 @@ def watch_cmd(
     snapshot: Path | None = typer.Option(
         None,
         "--snapshot",
-        help="Write the current treemap as a PNG to this file on each filesystem change.",
+        help="Write the current treemap as a PNG or SVG to this file on each filesystem change.",
         metavar="FILE",
+    ),
+    highlight: list[str] = typer.Option(
+        [],
+        "--highlight",
+        "-H",
+        help=(
+            "Highlight matching paths with a coloured border (repeatable). "
+            "Accepts exact paths or glob patterns including ** (e.g. src/**/*.py). "
+            "Append @color to set the border colour (e.g. '**/*.py@orange'); "
+            "defaults to red."
+        ),
+    ),
+    include: list[str] = typer.Option(
+        [],
+        "--include",
+        help=(
+            "Show only this subtree (repeatable; supports nested paths like src/fonts). "
+            "Allowlist complement to --exclude."
+        ),
     ),
     quiet: bool = typer.Option(False, "--quiet", "-q", help="Suppress non-error output."),
 ) -> None:
@@ -103,6 +123,10 @@ def watch_cmd(
 
     if logscale != 0 and logscale <= 1:
         typer.echo("Error: --log-scale must be > 1 (or 0 to disable).", err=True)
+        raise typer.Exit(1)
+
+    if debounce < 0:
+        typer.echo("Error: --debounce must be >= 0.", err=True)
         raise typer.Exit(1)
 
     if canvas is not None:
@@ -151,6 +175,8 @@ def watch_cmd(
         dark=dark,
         size_ranges=parsed_size_ranges,
         keep_empty_dirs=keep_empty_dirs,
+        highlight_specs=highlight or None,
+        include=set(include) if include else None,
     )
 
     observer = Observer()
@@ -173,7 +199,6 @@ def watch_cmd(
     except KeyboardInterrupt:
         pass
     finally:
-        signal.signal(signal.SIGINT, signal.SIG_IGN)
         handler.flush()
         if observer.is_alive():
             observer.stop()

@@ -14,8 +14,9 @@ except ImportError:
     Observer = None  # type: ignore[assignment]
 
 from dirplot.filters import SizeRange
+from dirplot.helpers.highlights import resolve_highlight_specs
 from dirplot.render_png import create_treemap
-from dirplot.scanner import apply_log_sizes, build_tree_multi, filter_by_size
+from dirplot.scanner import apply_log_sizes, build_tree_multi, filter_by_size, prune_to_subtrees
 from dirplot.svg_render import create_treemap_svg
 
 
@@ -38,6 +39,8 @@ class TreemapEventHandler(FileSystemEventHandler):
         dark: bool = True,
         size_ranges: list[SizeRange] | None = None,
         keep_empty_dirs: bool = False,
+        highlight_specs: list[str] | None = None,
+        include: set[str] | None = None,
     ) -> None:
         super().__init__()
         self.roots = roots
@@ -56,6 +59,8 @@ class TreemapEventHandler(FileSystemEventHandler):
         self.event_log = event_log
         self.size_ranges = size_ranges
         self.keep_empty_dirs = keep_empty_dirs
+        self.highlight_specs = highlight_specs or []
+        self.include = include
         self._events: list[dict[str, Any]] = []
         self._timer: threading.Timer | None = None
         self._render_thread: threading.Thread | None = None
@@ -71,10 +76,12 @@ class TreemapEventHandler(FileSystemEventHandler):
             all_highlights = dict(self._pending_highlights) if self._pending_highlights else {}
             self._pending_highlights.clear()
 
-        current_highlights = {p: v for p, v in all_highlights.items() if v != "deleted"} or None
+        current_highlights = {p: v for p, v in all_highlights.items() if v != "deleted"}
 
         try:
             node = build_tree_multi(self.roots, self.exclude, self.depth)
+            if self.include:
+                node = prune_to_subtrees(node, self.include)
             if self.size_ranges:
                 filtered = filter_by_size(node, self.size_ranges, self.keep_empty_dirs)
                 if filtered is None:
@@ -86,6 +93,21 @@ class TreemapEventHandler(FileSystemEventHandler):
                 return
             if self.logscale > 1:
                 apply_log_sizes(node, self.logscale)
+            if self.highlight_specs:
+                from dirplot.scanner import Node as _Node
+
+                def _collect(n: _Node) -> list[str]:
+                    paths = []
+                    if hasattr(n, "path"):
+                        paths.append(n.path.as_posix())
+                    for c in n.children:
+                        paths.extend(_collect(c))
+                    return paths
+
+                current_highlights.update(
+                    resolve_highlight_specs(self.highlight_specs, _collect(node))
+                )
+            merged = current_highlights or None
             rect_map: dict[str, tuple[int, int, int, int]] = {}
             if self.use_svg and self.output is not None:
                 buf = create_treemap_svg(
@@ -97,7 +119,7 @@ class TreemapEventHandler(FileSystemEventHandler):
                     None,
                     self.cushion,
                     dark=self.dark,
-                    highlights=current_highlights,
+                    highlights=merged,
                 )
                 self.output.write_bytes(buf.read())
             else:
@@ -109,7 +131,7 @@ class TreemapEventHandler(FileSystemEventHandler):
                     self.colormap,
                     None,
                     self.cushion,
-                    highlights=current_highlights,
+                    highlights=merged,
                     rect_map_out=rect_map,
                     dark=self.dark,
                     logscale=self.logscale,
