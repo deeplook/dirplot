@@ -23,6 +23,18 @@ uv run pytest tests/test_cli.py
 uv run pytest tests/test_drawing.py::test_cushion_shading -v
 ```
 
+## Archive test fixtures
+
+`tests/fixtures/` contains one pre-built archive per supported format. To regenerate them:
+
+```bash
+python scripts/make_fixtures.py
+```
+
+The script creates a small sample tree and archives it in every supported format. The RAR fixture is skipped automatically if the `rar` CLI is not found.
+
+The pytest `sample_archives` session fixture in `tests/conftest.py` regenerates the same files into a temporary directory at test-session start, so running the script is not required for CI or for running the test suite locally.
+
 ## Code Style
 
 This project uses [ruff](https://docs.astral.sh/ruff/) for linting and formatting, and [mypy](https://mypy.readthedocs.io/) for type checking. Pre-commit hooks run these automatically on each commit.

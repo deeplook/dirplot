@@ -27,6 +27,11 @@ from dirplot.sources import registry as source_registry
 from dirplot.ssh import build_tree_ssh, connect, is_ssh_path, parse_ssh_path
 
 
+def _tilde(p: str) -> str:
+    home = str(Path.home())
+    return "~" + p[len(home) :] if p.startswith(home) else p
+
+
 def scan_with_unified_sources(
     root: str,
     *,
@@ -111,7 +116,7 @@ def scan_tree(
         excluded = frozenset(exclude)
         root_paths = [p.resolve() for p in parsed]
         common_str = os.path.commonpath([str(p) for p in root_paths])
-        _emit(f"Scanning {len(root_paths)} paths under {common_str} ...")
+        _emit(f"Scanning {len(root_paths)} paths under {_tilde(common_str)} ...")
         root_node = build_tree_multi(root_paths, excluded, depth)
     elif not roots:
         typer.echo("Error: at least one path is required.", err=True)
@@ -148,7 +153,7 @@ def scan_tree(
             root_paths.append(rp.resolve())
         excluded = frozenset(exclude)
         common_str = os.path.commonpath([str(p) for p in root_paths])
-        _emit(f"Scanning {len(roots)} paths under {common_str} ...")
+        _emit(f"Scanning {len(roots)} paths under {_tilde(common_str)} ...")
         root_node = build_tree_multi(root_paths, excluded, depth)
     elif is_gdrive_path(root):
         gdrive_folder_id = parse_gdrive_path(root)
@@ -336,7 +341,7 @@ def scan_tree(
                     is_dir=True,
                     children=[file_node],
                 )
-                _emit(f"Scanning {root} ...")
+                _emit(f"Scanning {_tilde(root)} ...")
                 # Skip the rest of the else block - we already have root_node
                 t_scan = time.monotonic() - t_scan_start
                 return root_node, t_scan, display_title
@@ -372,10 +377,10 @@ def scan_tree(
                     is_dir=True,
                     children=[file_node],
                 )
-                _emit(f"Scanning {root} ...")
+                _emit(f"Scanning {_tilde(root)} ...")
             else:
                 excluded = frozenset(exclude)
-                _emit(f"Scanning {root} ...")
+                _emit(f"Scanning {_tilde(root)} ...")
                 root_node = build_tree(root_path.resolve(), excluded, depth)
 
     t_scan = time.monotonic() - t_scan_start

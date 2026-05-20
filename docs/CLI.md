@@ -1,16 +1,18 @@
 # CLI Reference
 
+← [Home](index.md)
+
 - [dirplot map](#dirplot-map-treemap-for-any-directory-tree)
-- [dirplot metrics](#dirplot-metrics-directory-metrics)
 - [dirplot diff](#dirplot-diff-compare-two-directory-trees)
+- [dirplot git](#dirplot-git-git-history-treemap)
+- [dirplot hg](#dirplot-hg-mercurial-history-treemap)
 - [dirplot watch](#dirplot-watch-live-watch-mode)
 - [dirplot replay](#dirplot-replay-event-log-replay)
-- [dirplot git](#dirplot-git-git-history-animation)
+- [dirplot metrics](#dirplot-metrics-directory-metrics)
 - [dirplot meta](#dirplot-meta-read-embedded-metadata)
 - [dirplot demo](#dirplot-demo-run-example-commands)
-- [Inline terminal display](#inline-terminal-display)
-- [Running via Docker](#running-dirplot-via-docker)
-- [Troubleshooting](#troubleshooting)
+- [dirplot overview](#dirplot-overview-command-overview)
+- [dirplot termsize](#dirplot-termsize-terminal-size)
 
 ---
 
@@ -91,7 +93,7 @@ dirplot map docker://my-container:/app
 dirplot map pod://my-pod:/app
 ```
 
-See [EXAMPLES.md](EXAMPLES.md) for detailed examples of each remote backend and git history animation.
+See [EXAMPLES.md](examples.md) for detailed examples of each remote backend and git history animation.
 
 ### Options
 
@@ -101,7 +103,7 @@ See [EXAMPLES.md](EXAMPLES.md) for detailed examples of each remote backend and 
 | `--output` | `-o` | — | Save to this path (PNG or SVG); `-` for stdout |
 | `--format` | `-f` | auto | Output format: `png` or `svg` |
 | `--show/--no-show` | | `--show` | Display the image after rendering; SVG saved with `-o` defaults to `--no-show` (`--output -` also implies `--no-show`) |
-| `--inline` | | off | Display in terminal (auto-detected protocol; PNG only) — see [Inline terminal display](#inline-terminal-display) |
+| `--inline` | | off | Display in terminal (auto-detected protocol; PNG only) — see [Inline terminal display](guides.md#inline-terminal-display) |
 | `--legend [N]` | | off | File-count legend; `N` = max entries (default: 20) |
 | `--font-size` | | `12` | Directory label font size in pixels |
 | `--colormap` | | `tab20` | Matplotlib colormap for unknown extensions |
@@ -119,80 +121,10 @@ See [EXAMPLES.md](EXAMPLES.md) for detailed examples of each remote backend and 
 | `--metrics/--no-metrics` | | off | Print detailed metrics after scanning (same output as `dirplot metrics`) |
 | `--password-file` | | — | File containing archive password; prompted interactively if not supplied |
 | `--github-token-file` | | `$GITHUB_TOKEN` | File containing GitHub personal access token |
-| `--ssh-key` | | `~/.ssh/id_rsa` | SSH private key path |
+| `--ssh-key` | | — | SSH private key path |
 | `--ssh-password-file` | | — | File containing SSH password |
 | `--aws-profile` | | `$AWS_PROFILE` | Named AWS profile |
 | `--no-sign` | | off | Anonymous access for public S3 buckets |
-
----
-
-## `dirplot metrics` — directory metrics
-
-Scans a directory tree and prints a structured text summary: file/directory counts, total size, tree depth, scan time, top file extensions (by count or size), and the largest files and directories with their share of total size. All remote sources supported by `dirplot map` are accepted.
-
-```bash
-# Basic metrics for the current directory
-dirplot metrics .
-
-# Remote sources work identically to `dirplot map`
-dirplot metrics github://pallets/flask
-dirplot metrics s3://my-bucket --no-sign
-dirplot metrics project.zip
-
-# Sort top extensions by total bytes instead of file count
-dirplot metrics . --sort-by size
-
-# Show only top 5 entries in each list
-dirplot metrics . --top 5
-
-# JSON output — pipe into jq, scripts, or monitoring tools
-dirplot metrics . --json
-dirplot metrics . --json | jq '.largest_files[0]'
-
-# Combine with map to get treemap + metrics in one pass
-dirplot map . --metrics --no-show
-```
-
-### Output fields
-
-```
-  Files:      1,011
-  Dirs:       70  (0 empty)
-  Total size: 4.5 MB
-  Depth:      7          ← maximum nesting level in the tree
-  Scan time:  1.28s
-  Top extensions (10) [by count]:
-    .py                    962    2.3 MB
-    .json                   19    48.2 KB
-    …
-  Largest files:
-    671.6 KB     14.9%  uv.lock
-    191.8 KB      4.3%  CHANGELOG.md
-    …
-  Largest dirs:
-    2.3 MB       51.1%  src
-    …
-```
-
-### Options
-
-| Flag | Short | Default | Description |
-|---|---|---|---|
-| `--top` | | `10` | Number of entries to show in each list |
-| `--sort-by` | | `count` | Sort top extensions by `count` (files) or `size` (bytes) |
-| `--json` / `--no-json` | | off | Output all metrics as JSON |
-| `--exclude` | `-e` | — | Pattern to exclude (repeatable): plain name, glob (`*.egg-info`), `**` glob, or relative path |
-| `--include` | | — | Keep only these subtrees (repeatable); the inverse of `--exclude` |
-| `--depth` | | unlimited | Maximum recursion depth |
-| `--paths-from` | | — | File with path list (`tree`/`find` output); `-` for stdin |
-| `--password-file` | | — | File containing archive password; prompted interactively if needed |
-| `--github-token-file` | | `$GITHUB_TOKEN` | File containing GitHub personal access token |
-| `--ssh-key` | | `~/.ssh/id_rsa` | SSH private key path |
-| `--ssh-password-file` | | — | File containing SSH password |
-| `--aws-profile` | | `$AWS_PROFILE` | Named AWS profile |
-| `--no-sign` | | off | Anonymous access for public S3 buckets |
-| `--k8s-namespace` | | — | Kubernetes namespace |
-| `--k8s-container` | | — | Container name for multi-container pods |
 
 ---
 
@@ -260,7 +192,7 @@ dirplot diff old/ new/ --light --output diff.svg
 | `--log-scale` | | `0` (off) | Log-scale compression ratio; any value > 1 enables it |
 | `--header/--no-header` | | `--header` | Print info lines before rendering |
 | `--quiet` | | off | Suppress all status output |
-| `--ssh-key` | | `~/.ssh/id_rsa` | SSH private key file |
+| `--ssh-key` | | — | SSH private key file |
 | `--ssh-password-file` | | — | File containing SSH password |
 | `--aws-profile` | | `$AWS_PROFILE` | Named AWS profile for S3 access |
 | `--no-sign` | | off | Anonymous access for public S3 buckets |
@@ -269,6 +201,170 @@ dirplot diff old/ new/ --light --output diff.svg
 | `--k8s-container` | | — | Container name for multi-container pods |
 | `--password-file` | | — | File containing archive password |
 | `--no-input` | | off | Fail instead of prompting for passwords |
+
+---
+
+## `dirplot git` — git history treemap
+
+Renders a single commit or an animated history of a git repository as a treemap. Without `--range` or `--period`, a single PNG of the last commit (HEAD or the given ref) is produced. With `--range` or `--period`, an animated APNG or MP4 is produced — one frame per commit.
+
+> **Requires** `git` on `PATH`. `ffmpeg` is also required for MP4 output.
+
+The `repo` argument accepts:
+
+| Form | Example |
+|---|---|
+| Local path | `.`, `/path/to/repo` |
+| Local path with ref | `.@my-branch`, `.@v1.0`, `.@abc1234` |
+| `github://` URL | `github://owner/repo`, `github://owner/repo@branch` |
+| HTTPS GitHub URL | `https://github.com/owner/repo`, `https://github.com/owner/repo@v1.0` |
+| HTTPS GitHub tree URL | `https://github.com/owner/repo/tree/branch` |
+
+For GitHub URLs, dirplot clones into a temporary directory (shallow when possible) and removes it on exit.
+
+**Single frame** (no `--range` or `--period`):
+
+```bash
+# Snapshot of HEAD
+dirplot git . --output snapshot.png
+
+# Specific local branch or tag
+dirplot git .@my-branch --output branch.png
+dirplot git .@v1.0 --output v1.png --inline
+
+# GitHub repo at a specific tag — display inline
+dirplot git https://github.com/owner/repo@v1.0 --inline
+dirplot git github://owner/repo@v1.0 --inline
+```
+
+**Animation** (`--range` or `--period` triggers multi-frame output):
+
+A bare branch or tag name (`--range main`) animates **all** commits on that branch.
+The `A..B` syntax animates only commits reachable from B but not from A (standard git range).
+
+```bash
+# All commits on main → animated PNG
+dirplot git . --range main --output history.png
+
+# All commits on main, time-proportional frame durations
+dirplot git . --range main --total-duration 30 --output history.png
+
+# Only the last 50 commits on main
+dirplot git . --range main --last 50 --output history.png
+
+# Specific revision range → animated PNG
+dirplot git . --range main~50..main --output history.png
+
+# Tagged release range
+dirplot git . --range v1.0..v2.0 --output release.mp4
+
+# First 10 commits of a range
+dirplot git github://owner/repo --range v1.0..v2.0 --first 10 --output history.png
+
+# Last 10 commits of a range
+dirplot git github://owner/repo --range v1.0..v2.0 --last 10 --output history.png
+
+# All commits in the last 30 days
+dirplot git . --period 30d --output history.mp4
+
+# Commits in a branch that fall within the last 3 days of that branch's history
+dirplot git github://owner/repo --range main --period 3d --output history.png
+
+# Fade out to black at the end
+dirplot git . --period 7d --total-duration 20 \
+  --fade-out --fade-out-duration 2.0 --output history.mp4
+```
+
+See [EXAMPLES.md — Git History Animation](examples.md#git-history-animation) for more examples including video output.
+
+### Options
+
+| Flag | Default | Description |
+|---|---|---|
+| `--output` / `-o` | — | Output file: `.png` (static or animated APNG) or `.mp4` / `.mov`. Required unless `--inline` is given |
+| `--inline` | off | Render and display the image directly in the terminal (single-frame mode only; not compatible with `--range` or `--period`) |
+| `--range` | — | Git revision range. A bare branch/tag name (e.g. `main`) animates all commits on it; `A..B` animates commits in B but not A. Triggers animation mode |
+| `--period` | — | Relative time filter: `30d`, `24h`, `2w`, `1mo`, `30m`. Triggers animation mode. Without `--range`, filters from now; with `--range`, filters relative to the range end |
+| `--first` / `--last` | — | After applying `--range` / `--period`, keep only the first or last N commits |
+| `--frame-duration` | `1000` | Frame display time in ms (when `--total-duration` is not set) |
+| `--total-duration` | — | Target total animation length in seconds; frames scale proportionally to real time gaps between commits |
+| `--fade-out` / `--no-fade-out` | off | Append a fade-out sequence at the end (animation mode only) |
+| `--fade-out-duration` | `1.0` | Duration of the fade-out in seconds |
+| `--fade-out-frames` | 4 × duration | Number of fade frames; defaults to 4 per second |
+| `--fade-out-color` | `auto` | Fade target: `auto` (black/white per mode), `transparent` (PNG/APNG only), CSS name, or hex |
+| `--crf` | `23` | MP4 quality: 0 = lossless, 51 = worst. Ignored for APNG |
+| `--codec` | `libx264` | MP4 codec: `libx264` (H.264) or `libx265` (~40% smaller at same quality) |
+| `--workers` | all CPU cores | Parallel render workers; must be a positive integer. 4–8 is typically optimal |
+| `--log-scale` | `0` (off) | Log-scale compression ratio; any value > 1 enables it |
+| `--canvas` | terminal size | Output dimensions as `WIDTHxHEIGHT` |
+| `--depth` | — | Maximum directory depth |
+| `--exclude` / `-e` | — | Pattern to exclude (repeatable): plain name, glob (`*.egg-info`), `**` glob, or relative path |
+| `--highlight` / `-H` | — | Draw a coloured border on matching paths in every frame (repeatable). Same `pattern[@color]` syntax as `dirplot map --highlight` |
+| `--colormap` | `tab20` | Matplotlib colormap |
+| `--font-size` | `12` | Directory label font size in pixels |
+| `--cushion/--no-cushion` | `--cushion` | Van Wijk cushion shading |
+| `--github-token-file` | `$GITHUB_TOKEN` | File containing GitHub personal access token |
+
+---
+
+## `dirplot hg` — Mercurial history treemap
+
+Renders a single changeset or an animated history of a Mercurial repository as a treemap. Without `--range` or `--period`, a single PNG of the tip (or the given rev) is produced. With `--range` or `--period`, an animated APNG or MP4 is produced — one frame per changeset.
+
+> **Requires** `hg` on `PATH`. `ffmpeg` is also required for MP4 output.
+
+The `repo` argument accepts a local path (`.`, `/path/to/repo`) optionally followed by `@rev` to pin to a specific revision or tag (e.g. `.@tip`, `.@1.0`, `.@abc1234`).
+
+**Single frame** (no `--range` or `--period`):
+
+```bash
+# Snapshot of tip
+dirplot hg . --output snapshot.png
+
+# Specific revision or tag
+dirplot hg .@tip --output tip.png
+dirplot hg .@1.0 --inline
+```
+
+**Animation** (`--range` triggers multi-frame output):
+
+```bash
+# Full history as animated PNG
+dirplot hg . --range 0:tip --output history.png
+
+# Revision range
+dirplot hg . --range 10:tip --output history.mp4
+
+# First 20 changesets of a range
+dirplot hg . --range 0:tip --first 20 --output history.png
+```
+
+### Options
+
+| Flag | Default | Description |
+|---|---|---|
+| `--output` / `-o` | — | Output file: `.png` (static or animated APNG) or `.mp4` / `.mov`. Required unless `--inline` is given |
+| `--inline` | off | Render and display the image directly in the terminal (single-frame mode only; not compatible with `--range`) |
+| `--range` | — | Mercurial revision range (e.g. `0:tip`, `10:tip`). Triggers animation mode |
+| `--period` | — | Relative time filter: `30d`, `24h`, `2w`, `1mo`, `30m`. Triggers animation mode |
+| `--first` / `--last` | — | After applying `--range` / `--period`, keep only the first or last N changesets |
+| `--frame-duration` | `1000` | Frame display time in ms (when `--total-duration` is not set) |
+| `--total-duration` | — | Target total animation length in seconds |
+| `--fade-out` / `--no-fade-out` | off | Append a fade-out sequence at the end (animation mode only) |
+| `--fade-out-duration` | `1.0` | Duration of the fade-out in seconds |
+| `--fade-out-frames` | 4 × duration | Number of fade frames; defaults to 4 per second |
+| `--fade-out-color` | `auto` | Fade target: `auto` (black/white per mode), `transparent` (PNG/APNG only), CSS name, or hex |
+| `--crf` | `23` | MP4 quality: 0 = lossless, 51 = worst. Ignored for APNG |
+| `--codec` | `libx264` | MP4 codec: `libx264` (H.264) or `libx265` (~40% smaller at same quality) |
+| `--workers` | all CPU cores | Parallel render workers; must be a positive integer |
+| `--log-scale` | `0` (off) | Log-scale compression ratio; any value > 1 enables it |
+| `--canvas` | terminal size | Output dimensions as `WIDTHxHEIGHT` |
+| `--depth` | — | Maximum directory depth |
+| `--exclude` / `-e` | — | Pattern to exclude (repeatable) |
+| `--highlight` / `-H` | — | Draw a coloured border on matching paths in every frame (repeatable). Same `pattern[@color]` syntax as `dirplot map --highlight` |
+| `--colormap` | `tab20` | Matplotlib colormap |
+| `--font-size` | `12` | Directory label font size in pixels |
+| `--cushion/--no-cushion` | `--cushion` | Van Wijk cushion shading |
 
 ---
 
@@ -366,167 +462,73 @@ dirplot replay events.jsonl --output replay.png --total-duration 30 --fade-out -
 
 ---
 
-## `dirplot git` — git history treemap
+## `dirplot metrics` — directory metrics
 
-Renders a single commit or an animated history of a git repository as a treemap. Without `--range` or `--period`, a single PNG of the last commit (HEAD or the given ref) is produced. With `--range` or `--period`, an animated APNG or MP4 is produced — one frame per commit.
-
-> **Requires** `git` on `PATH`. `ffmpeg` is also required for MP4 output.
-
-The `repo` argument accepts:
-
-| Form | Example |
-|---|---|
-| Local path | `.`, `/path/to/repo` |
-| Local path with ref | `.@my-branch`, `.@v1.0`, `.@abc1234` |
-| `github://` URL | `github://owner/repo`, `github://owner/repo@branch` |
-| HTTPS GitHub URL | `https://github.com/owner/repo`, `https://github.com/owner/repo@v1.0` |
-| HTTPS GitHub tree URL | `https://github.com/owner/repo/tree/branch` |
-
-For GitHub URLs, dirplot clones into a temporary directory (shallow when possible) and removes it on exit.
-
-**Single frame** (no `--range` or `--period`):
+Scans a directory tree and prints a structured text summary: file/directory counts, total size, tree depth, scan time, top file extensions (by count or size), and the largest files and directories with their share of total size. All remote sources supported by `dirplot map` are accepted.
 
 ```bash
-# Snapshot of HEAD
-dirplot git . --output snapshot.png
+# Basic metrics for the current directory
+dirplot metrics .
 
-# Specific local branch or tag
-dirplot git .@my-branch --output branch.png
-dirplot git .@v1.0 --output v1.png --inline
+# Remote sources work identically to `dirplot map`
+dirplot metrics github://pallets/flask
+dirplot metrics s3://my-bucket --no-sign
+dirplot metrics project.zip
 
-# GitHub repo at a specific tag — display inline
-dirplot git https://github.com/owner/repo@v1.0 --inline
-dirplot git github://owner/repo@v1.0 --inline
+# Sort top extensions by total bytes instead of file count
+dirplot metrics . --sort-by size
+
+# Show only top 5 entries in each list
+dirplot metrics . --top 5
+
+# JSON output — pipe into jq, scripts, or monitoring tools
+dirplot metrics . --json
+dirplot metrics . --json | jq '.largest_files[0]'
+
+# Combine with map to get treemap + metrics in one pass
+dirplot map . --metrics --no-show
 ```
 
-**Animation** (`--range` or `--period` triggers multi-frame output):
+### Output fields
 
-A bare branch or tag name (`--range main`) animates **all** commits on that branch.
-The `A..B` syntax animates only commits reachable from B but not from A (standard git range).
-
-```bash
-# All commits on main → animated PNG
-dirplot git . --range main --output history.png
-
-# All commits on main, time-proportional frame durations
-dirplot git . --range main --total-duration 30 --output history.png
-
-# Only the last 50 commits on main
-dirplot git . --range main --last 50 --output history.png
-
-# Specific revision range → animated PNG
-dirplot git . --range main~50..main --output history.png
-
-# Tagged release range
-dirplot git . --range v1.0..v2.0 --output release.mp4
-
-# First 10 commits of a range
-dirplot git github://owner/repo --range v1.0..v2.0 --first 10 --output history.png
-
-# Last 10 commits of a range
-dirplot git github://owner/repo --range v1.0..v2.0 --last 10 --output history.png
-
-# All commits in the last 30 days
-dirplot git . --period 30d --output history.mp4
-
-# Commits in a branch that fall within the last 3 days of that branch's history
-dirplot git github://owner/repo --range main --period 3d --output history.png
-
-# Fade out to black at the end
-dirplot git . --period 7d --total-duration 20 \
-  --fade-out --fade-out-duration 2.0 --output history.mp4
 ```
-
-See [EXAMPLES.md — Git History Animation](EXAMPLES.md#git-history-animation) for more examples including video output.
-
-### Options
-
-| Flag | Default | Description |
-|---|---|---|
-| `--output` / `-o` | — | Output file: `.png` (static or animated APNG) or `.mp4` / `.mov`. Required unless `--inline` is given |
-| `--inline` | off | Render and display the image directly in the terminal (single-frame mode only; not compatible with `--range` or `--period`) |
-| `--range` | — | Git revision range. A bare branch/tag name (e.g. `main`) animates all commits on it; `A..B` animates commits in B but not A. Triggers animation mode |
-| `--period` | — | Relative time filter: `30d`, `24h`, `2w`, `1mo`, `30m`. Triggers animation mode. Without `--range`, filters from now; with `--range`, filters relative to the range end |
-| `--first` / `--last` | — | After applying `--range` / `--period`, keep only the first or last N commits |
-| `--frame-duration` | `1000` | Frame display time in ms (when `--total-duration` is not set) |
-| `--total-duration` | — | Target total animation length in seconds; frames scale proportionally to real time gaps between commits |
-| `--fade-out` / `--no-fade-out` | off | Append a fade-out sequence at the end (animation mode only) |
-| `--fade-out-duration` | `1.0` | Duration of the fade-out in seconds |
-| `--fade-out-frames` | 4 × duration | Number of fade frames; defaults to 4 per second |
-| `--fade-out-color` | `auto` | Fade target: `auto` (black/white per mode), `transparent` (PNG/APNG only), CSS name, or hex |
-| `--crf` | `23` | MP4 quality: 0 = lossless, 51 = worst. Ignored for APNG |
-| `--codec` | `libx264` | MP4 codec: `libx264` (H.264) or `libx265` (~40% smaller at same quality) |
-| `--workers` | all CPU cores | Parallel render workers; must be a positive integer. 4–8 is typically optimal |
-| `--log-scale` | `0` (off) | Log-scale compression ratio; any value > 1 enables it |
-| `--canvas` | terminal size | Output dimensions as `WIDTHxHEIGHT` |
-| `--depth` | — | Maximum directory depth |
-| `--exclude` / `-e` | — | Pattern to exclude (repeatable): plain name, glob (`*.egg-info`), `**` glob, or relative path |
-| `--highlight` / `-H` | — | Draw a coloured border on matching paths in every frame (repeatable). Same `pattern[@color]` syntax as `dirplot map --highlight` |
-| `--colormap` | `tab20` | Matplotlib colormap |
-| `--font-size` | `12` | Directory label font size in pixels |
-| `--cushion/--no-cushion` | `--cushion` | Van Wijk cushion shading |
-| `--github-token-file` | `$GITHUB_TOKEN` | File containing GitHub personal access token |
-
----
-
-## `dirplot hg` — Mercurial history treemap
-
-Renders a single changeset or an animated history of a Mercurial repository as a treemap. Without `--range` or `--period`, a single PNG of the tip (or the given rev) is produced. With `--range` or `--period`, an animated APNG or MP4 is produced — one frame per changeset.
-
-> **Requires** `hg` on `PATH`. `ffmpeg` is also required for MP4 output.
-
-The `repo` argument accepts a local path (`.`, `/path/to/repo`) optionally followed by `@rev` to pin to a specific revision or tag (e.g. `.@tip`, `.@1.0`, `.@abc1234`).
-
-**Single frame** (no `--range` or `--period`):
-
-```bash
-# Snapshot of tip
-dirplot hg . --output snapshot.png
-
-# Specific revision or tag
-dirplot hg .@tip --output tip.png
-dirplot hg .@1.0 --inline
-```
-
-**Animation** (`--range` triggers multi-frame output):
-
-```bash
-# Full history as animated PNG
-dirplot hg . --range 0:tip --output history.png
-
-# Revision range
-dirplot hg . --range 10:tip --output history.mp4
-
-# First 20 changesets of a range
-dirplot hg . --range 0:tip --first 20 --output history.png
+  Files:      1,011
+  Dirs:       70  (0 empty)
+  Total size: 4.5 MB
+  Depth:      7          ← maximum nesting level in the tree
+  Scan time:  1.28s
+  Top extensions (10) [by count]:
+    .py                    962    2.3 MB
+    .json                   19    48.2 KB
+    …
+  Largest files:
+    671.6 KB     14.9%  uv.lock
+    191.8 KB      4.3%  CHANGELOG.md
+    …
+  Largest dirs:
+    2.3 MB       51.1%  src
+    …
 ```
 
 ### Options
 
-| Flag | Default | Description |
-|---|---|---|
-| `--output` / `-o` | — | Output file: `.png` (static or animated APNG) or `.mp4` / `.mov`. Required unless `--inline` is given |
-| `--inline` | off | Render and display the image directly in the terminal (single-frame mode only; not compatible with `--range`) |
-| `--range` | — | Mercurial revision range (e.g. `0:tip`, `10:tip`). Triggers animation mode |
-| `--period` | — | Relative time filter: `30d`, `24h`, `2w`, `1mo`, `30m`. Triggers animation mode |
-| `--first` / `--last` | — | After applying `--range` / `--period`, keep only the first or last N changesets |
-| `--frame-duration` | `1000` | Frame display time in ms (when `--total-duration` is not set) |
-| `--total-duration` | — | Target total animation length in seconds |
-| `--fade-out` / `--no-fade-out` | off | Append a fade-out sequence at the end (animation mode only) |
-| `--fade-out-duration` | `1.0` | Duration of the fade-out in seconds |
-| `--fade-out-frames` | 4 × duration | Number of fade frames; defaults to 4 per second |
-| `--fade-out-color` | `auto` | Fade target: `auto` (black/white per mode), `transparent` (PNG/APNG only), CSS name, or hex |
-| `--crf` | `23` | MP4 quality: 0 = lossless, 51 = worst. Ignored for APNG |
-| `--codec` | `libx264` | MP4 codec: `libx264` (H.264) or `libx265` (~40% smaller at same quality) |
-| `--workers` | all CPU cores | Parallel render workers; must be a positive integer |
-| `--log-scale` | `0` (off) | Log-scale compression ratio; any value > 1 enables it |
-| `--canvas` | terminal size | Output dimensions as `WIDTHxHEIGHT` |
-| `--depth` | — | Maximum directory depth |
-| `--exclude` / `-e` | — | Pattern to exclude (repeatable) |
-| `--highlight` / `-H` | — | Draw a coloured border on matching paths in every frame (repeatable). Same `pattern[@color]` syntax as `dirplot map --highlight` |
-| `--colormap` | `tab20` | Matplotlib colormap |
-| `--font-size` | `12` | Directory label font size in pixels |
-| `--cushion/--no-cushion` | `--cushion` | Van Wijk cushion shading |
+| Flag | Short | Default | Description |
+|---|---|---|---|
+| `--top` | | `10` | Number of entries to show in each list |
+| `--sort-by` | | `count` | Sort top extensions by `count` (files) or `size` (bytes) |
+| `--json` / `--no-json` | | off | Output all metrics as JSON |
+| `--exclude` | `-e` | — | Pattern to exclude (repeatable): plain name, glob (`*.egg-info`), `**` glob, or relative path |
+| `--include` | | — | Keep only these subtrees (repeatable); the inverse of `--exclude` |
+| `--depth` | | unlimited | Maximum recursion depth |
+| `--paths-from` | | — | File with path list (`tree`/`find` output); `-` for stdin |
+| `--password-file` | | — | File containing archive password; prompted interactively if needed |
+| `--github-token-file` | | `$GITHUB_TOKEN` | File containing GitHub personal access token |
+| `--ssh-key` | | — | SSH private key path |
+| `--ssh-password-file` | | — | File containing SSH password |
+| `--aws-profile` | | `$AWS_PROFILE` | Named AWS profile |
+| `--no-sign` | | off | Anonymous access for public S3 buckets |
+| `--k8s-namespace` | | — | Kubernetes namespace |
+| `--k8s-container` | | — | Container name for multi-container pods |
 
 ---
 
@@ -595,125 +597,33 @@ Examples produced:
 
 ---
 
-## Inline terminal display
+## `dirplot overview` — command overview
 
-The `--inline` flag renders the image directly in the terminal. The protocol is auto-detected at runtime.
+Prints a structured overview of all commands, their arguments, options, and default values. Useful as a quick reference without leaving the terminal.
 
-| Terminal | Platform | Protocol |
-|---|---|---|
-| [iTerm2](https://iterm2.com/) | macOS | iTerm2 |
-| [WezTerm](https://wezfurlong.org/wezterm/) | macOS, Linux, Windows | Kitty & iTerm2 |
-| [Warp](https://www.warp.dev/) | macOS, Linux | iTerm2 |
-| [Hyper](https://hyper.is/) | macOS, Linux, Windows | iTerm2 |
-| [Kitty](https://sw.kovidgoyal.net/kitty/) | macOS, Linux | Kitty |
-| [Ghostty](https://ghostty.org/) | macOS, Linux | Kitty |
+```bash
+dirplot overview
+```
 
-The default `--show` mode opens the image in the system viewer (`open` on macOS, `xdg-open` on Linux) and works in any terminal.
-
-> **Windows:** Common shells and terminal emulators (PowerShell, cmd, Windows Terminal) do not support inline image protocols. [WezTerm](https://wezfurlong.org/wezterm/) is currently the only mainstream Windows terminal with support (Kitty protocol). WSL2 is treated as Linux and has full support.
-
-> **AI coding assistants:** `--inline` does not work in Claude Code, Cursor, or GitHub Copilot Chat — these tools intercept terminal output as plain text. Use `--show` or `--output` instead.
-
-> **Tip:** In supported terminals, the rendered image can often be dragged directly out of the terminal window into another application.
+There are no options beyond `--help`.
 
 ---
 
-## Running dirplot via Docker
+## `dirplot termsize` — terminal size
 
-Build the image once from the repo root:
-
-```bash
-docker build -t dirplot .
-```
-
-Then run any `dirplot` command inside the container. Since the container has no display, use `--output -` to stream the PNG to stdout and display it on the host.
-
-**Save to a local file:**
+Shows the current terminal size in characters and pixels. Run this before `dirplot map` to check what canvas size dirplot will use by default.
 
 ```bash
-docker run --rm -v "$PWD":/out dirplot dirplot map github://steipete/birdclaw \
-  --output /out/birdclaw.png --no-show
-open birdclaw.png
+dirplot termsize
 ```
 
-**Display inline (iTerm2 with `imgcat`):**
+Example output:
 
-```bash
-docker run --rm dirplot dirplot map github://steipete/birdclaw \
-  --output - | imgcat
+```
+Characters : 160 cols × 45 rows
+Pixels     : 1280 × 720
 ```
 
-**Display inline (any iTerm2-compatible terminal, no extra tools):**
-
-```bash
-docker run --rm dirplot dirplot map github://steipete/birdclaw \
-  --output - | python3 -c "
-import sys, base64
-data = sys.stdin.buffer.read()
-sys.stdout.buffer.write(
-    b'\033]1337;File=inline=1;size=' + str(len(data)).encode()
-    + b':' + base64.b64encode(data) + b'\a\n'
-)
-"
-```
-
-> **Note:** `--inline` does not work when running inside a container — dirplot cannot probe your host terminal from within Docker. Use `--output -` and display the bytes on the host side instead, as shown above.
->
-> **Terminal size:** the container has no tty, so dirplot cannot detect your terminal dimensions. The default 1280×720 fallback is used unless you pass `--canvas WIDTHxHEIGHT` explicitly or set `-e COLUMNS=$(tput cols) -e LINES=$(tput lines)`.
+There are no options beyond `--help`.
 
 ---
-
-## Troubleshooting
-
-### Image is the wrong size or too small in `--inline` mode
-
-dirplot reads the terminal pixel size via `TIOCGWINSZ`. This can fail or return wrong values when:
-
-- **stdout is a pipe** (e.g. `uv run`, `nohup`, CI): pass `--canvas WIDTHxHEIGHT` explicitly, or set `COLUMNS` and `LINES` env vars.
-- **Inside Docker**: same as above — the container has no tty.
-- **`--inline` in Docker**: not supported; use `--output - | imgcat` instead (see [Running via Docker](#running-dirplot-via-docker)).
-
-### `--inline` shows nothing or garbled output
-
-- Confirm your terminal is in the supported list above.
-- In tmux/screen, the inline protocol may be blocked. Try running dirplot in a bare terminal session.
-- AI coding tool terminals (Claude Code, Cursor, Copilot Chat) do not support inline images — use `--show` or `--output`.
-
-### GitHub rate limit errors
-
-Without a token, GitHub allows 60 unauthenticated API requests per IP per hour. Authenticate via:
-
-```bash
-gh auth login                        # Option 1: gh CLI (picked up automatically)
-export GITHUB_TOKEN=ghp_…            # Option 2: env var
-dirplot map github://… --github-token-file ~/.github-token   # Option 3: token file
-```
-
-See [EXAMPLES.md — GitHub Repositories](EXAMPLES.md#github-repositories) for full authentication details.
-
-### Large remote trees are slow or truncated
-
-- Use `--depth N` to limit recursion (start with `--depth 3`).
-- GitHub's Git Trees API truncates responses above ~100k entries; dirplot warns and renders what it received.
-- For SSH scans, slow hosts may time out on very large trees — use `--depth` to reduce the `find` traversal.
-- If one large file squashes everything else into tiny tiles, add `--log-scale 4`.
-
-### Archive errors
-
-- **`libarchive-c` import error**: the Python binding is installed but the system C library is missing. Install it:
-  ```bash
-  brew install libarchive        # macOS
-  sudo apt install libarchive-dev  # Debian/Ubuntu
-  ```
-- **Password-protected archive**: pass `--password-file <file>` or let dirplot prompt interactively. Use `--no-input` to fail instead of prompting.
-- **`.deb` / UDIF `.dmg` not supported**: see [ARCHIVES.md — Intentionally unsupported formats](ARCHIVES.md#intentionally-unsupported-formats).
-
-### MP4 output fails
-
-Ensure `ffmpeg` is installed and on `PATH`:
-
-```bash
-ffmpeg -version   # should print version info
-brew install ffmpeg   # macOS
-sudo apt install ffmpeg   # Debian/Ubuntu
-```

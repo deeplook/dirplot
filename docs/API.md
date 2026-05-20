@@ -1,5 +1,7 @@
 # Python API
 
+← [Home](index.md)
+
 > **Note:** The programmatic Python API is still evolving and may change between releases without notice. Pin a specific version if you depend on it. The CLI interface is stable.
 
 The public API centres on `build_tree`, `create_treemap`, and `create_treemap_svg`:
@@ -59,17 +61,17 @@ from dirplot.scanner import tree_metrics, tree_metrics_dict
 root = build_tree(Path("/path/to/project"))
 
 # Human-readable string (same as CLI output)
-print(tree_metrics(root, t_scan=0.0))
+print(tree_metrics(root))
 
 # Sort extensions by total bytes instead of file count
-print(tree_metrics(root, t_scan=0.0, sort_by="size"))
+print(tree_metrics(root, sort_by="size"))
 
 # Limit to top 5 entries per list
-print(tree_metrics(root, t_scan=0.0, top_n=5))
+print(tree_metrics(root, top_n=5))
 
 # Structured dict — suitable for JSON serialisation or downstream processing
 import json
-data = tree_metrics_dict(root, t_scan=0.0)
+data = tree_metrics_dict(root)
 print(json.dumps(data, indent=2))
 ```
 
@@ -100,7 +102,7 @@ print(json.dumps(data, indent=2))
 
 ## Remote backends
 
-Each remote backend exposes a `build_tree_*` function that returns the same `Node` type accepted by `create_treemap`. See [EXAMPLES.md](EXAMPLES.md) for full per-backend documentation and authentication details.
+Each remote backend exposes a `build_tree_*` function that returns the same `Node` type accepted by `create_treemap`. See [EXAMPLES.md](examples.md) for full per-backend documentation and authentication details.
 
 ```python
 # GitHub
@@ -130,4 +132,9 @@ root = build_tree_docker("my-container", "/app", depth=5)
 # Kubernetes
 from dirplot.k8s import build_tree_pod
 root = build_tree_pod("my-pod", "/app", namespace="staging", container="main", depth=5)
+
+# Google Drive (requires gog CLI: brew install gogcli && gog auth)
+from dirplot.gdrive import build_tree_gdrive
+root = build_tree_gdrive(depth=3)                                          # Drive root
+root = build_tree_gdrive("1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms", depth=5)  # specific folder
 ```

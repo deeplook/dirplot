@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-05-20
+
+### Documentation
+
+- Documentation greatly expanded: new dedicated pages for Installation, Examples, Remote Sources, Guides, and Troubleshooting; richer use-case descriptions; API page updated with tested code snippets; CLI reference reordered to match `dirplot -h`.
+
 ### Changed
 
 - **`read-meta` renamed to `meta`** — `dirplot read-meta` is now `dirplot meta`. The new command

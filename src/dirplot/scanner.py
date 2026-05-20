@@ -422,7 +422,7 @@ def _collect_dirs(node: Node) -> list[Node]:
 
 def tree_metrics_dict(
     root_node: Node,
-    t_scan: float,
+    t_scan: float = 0.0,
     top_n: int = 10,
     sort_by: str = "count",
 ) -> TreeMetricsDict:
@@ -492,7 +492,7 @@ def tree_metrics_dict(
 
 def tree_metrics(
     root_node: Node,
-    t_scan: float,
+    t_scan: float = 0.0,
     top_n: int = 10,
     sort_by: str = "count",
 ) -> str:

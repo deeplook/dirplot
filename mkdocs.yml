@@ -23,15 +23,22 @@ theme:
     - navigation.tabs
     - navigation.sections
     - navigation.top
+    - navigation.indexes
     - search.highlight
+    - search.suggest
     - content.code.copy
 
 nav:
   - Home: index.md
-  - CLI Reference: CLI.md
-  - Examples: EXAMPLES.md
-  - Archive Formats: ARCHIVES.md
-  - Python API: API.md
+  - Installation: installation.md
+  - Examples: examples.md
+  - Remote Sources: remote-sources.md
+  - Archive Formats: archives.md
+  - CLI Reference: cli.md
+  - Python API: api.md
+  - Guides: guides.md
+  - Troubleshooting: troubleshooting.md
+
 
 plugins:
   - search
