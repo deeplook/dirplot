@@ -57,3 +57,7 @@ See [Examples](examples.md) for the full command gallery.
 Bug reports, feature requests, and example contributions are welcome — please [open an issue](https://github.com/deeplook/dirplot/issues) on GitHub.
 
 See the full [changelog and releases](https://github.com/deeplook/dirplot/releases) for what's new in each version.
+
+## Transparency
+
+A significant portion of this codebase was developed with AI assistance (primarily Claude by Anthropic). All generated code was reviewed and curated by the author.
