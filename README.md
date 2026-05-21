@@ -106,6 +106,8 @@ make test
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for full details.
 
+A significant portion of this codebase was developed with AI assistance (primarily Claude by Anthropic). All generated code was reviewed and curated by the author.
+
 ## License
 
 MIT — see [LICENSE](LICENSE).
