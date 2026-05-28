@@ -62,6 +62,31 @@ def local_hg_repo(tmp_path: Path) -> Path:
     return repo
 
 
+def test_hg_local_static_svg(local_hg_repo: Path, tmp_path: Path) -> None:
+    """dirplot hg renders a static SVG for the final changeset."""
+    out = tmp_path / "out.svg"
+    result = runner.invoke(
+        app,
+        ["hg", str(local_hg_repo), "--output", str(out), "--canvas", "200x150"],
+    )
+    assert result.exit_code == 0, result.output
+    assert out.exists()
+    assert out.stat().st_size > 0
+    content = out.read_text()
+    assert "<svg" in content
+
+
+def test_hg_snapshot_invalid_extension_rejected(local_hg_repo: Path, tmp_path: Path) -> None:
+    """A snapshot --output with an unsupported extension exits 1."""
+    out = tmp_path / "out.jpg"
+    result = runner.invoke(
+        app,
+        ["hg", str(local_hg_repo), "--output", str(out), "--canvas", "200x150"],
+    )
+    assert result.exit_code == 1
+    assert ".png" in result.output and ".svg" in result.output
+
+
 def test_hg_local_static_png(local_hg_repo: Path, tmp_path: Path) -> None:
     """dirplot hg renders a static PNG for the final changeset."""
     out = tmp_path / "out.png"

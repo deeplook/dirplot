@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "dirplot"
-version = "0.5.0"
+version = "0.5.1"
 description = "Nested treemap visualizations for directory trees and archives"
 readme = "README.md"
 license = {text = "MIT"}
@@ -37,6 +37,7 @@ dependencies = [
     "py7zr>=0.20",
     "rarfile>=4.0",
     "squarify>=0.4",
+    "click>=8.0",
     "typer>=0.9",
     "watchdog>=6.0.0",
 ]

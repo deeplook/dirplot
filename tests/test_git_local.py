@@ -67,6 +67,31 @@ def local_repo(tmp_path: Path) -> Path:
     return repo
 
 
+def test_git_local_snapshot_svg(local_repo: Path, tmp_path: Path) -> None:
+    """dirplot git renders a snapshot as SVG when --output ends in .svg."""
+    out = tmp_path / "out.svg"
+    result = runner.invoke(
+        app,
+        ["git", str(local_repo), "--output", str(out), "--canvas", "200x150"],
+    )
+    assert result.exit_code == 0, result.output
+    assert out.exists()
+    assert out.stat().st_size > 0
+    content = out.read_text()
+    assert "<svg" in content
+
+
+def test_git_snapshot_invalid_extension_rejected(local_repo: Path, tmp_path: Path) -> None:
+    """A snapshot --output with an unsupported extension exits 1."""
+    out = tmp_path / "out.jpg"
+    result = runner.invoke(
+        app,
+        ["git", str(local_repo), "--output", str(out), "--canvas", "200x150"],
+    )
+    assert result.exit_code == 1
+    assert ".png" in result.output and ".svg" in result.output
+
+
 def test_git_local_at_branch(local_repo: Path, tmp_path: Path) -> None:
     """dirplot git path@branch renders the branch without --range."""
     out = tmp_path / "out.png"

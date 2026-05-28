@@ -607,9 +607,10 @@ wheels = [
 
 [[package]]
 name = "dirplot"
-version = "0.5.0"
+version = "0.5.1"
 source = { editable = "." }
 dependencies = [
+    { name = "click" },
     { name = "cmap" },
     { name = "drawsvg" },
     { name = "pillow" },
@@ -641,6 +642,7 @@ ssh = [
 [package.metadata]
 requires-dist = [
     { name = "boto3", marker = "extra == 's3'", specifier = ">=1.26" },
+    { name = "click", specifier = ">=8.0" },
     { name = "cmap", specifier = ">=0.4" },
     { name = "drawsvg", specifier = ">=2.4.1" },
     { name = "libarchive-c", marker = "extra == 'libarchive'", specifier = ">=5.0" },
