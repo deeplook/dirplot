@@ -5,7 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.5.1] - 2026-05-28
+
+### Fixed
+
+- **`click` declared as an explicit dependency** — `dirplot` imports `click` directly in
+  `_overview.py`, but relied on it being pulled in transitively by `typer`. Starting around
+  typer 0.12, click became optional in some typer builds, causing `ModuleNotFoundError: No module
+  named 'click'` when running the installed tool under Python 3.14. `click>=8.0` is now a direct
+  dependency.
+
+### Added
+
+- **SVG snapshot output for `git` and `hg`** — both commands now accept `--output file.svg` for
+  single-frame snapshots, producing an interactive SVG (hover tooltips, CSS highlight) identical to
+  `map`'s SVG output. Animation output (APNG/MP4) is unchanged and still requires `.png`/`.mp4`/`.mov`.
+
+- **Remote URL support for `hg`** — `dirplot hg` now accepts `https://`, `http://`, and `ssh://`
+  URLs directly (e.g. `dirplot hg https://hg.reportlab.com/hg-public/reportlab --inline`). The
+  repository is cloned into a temporary directory automatically, mirroring the GitHub URL support
+  already available in `dirplot git`.
 
 ## [0.5.0] - 2026-05-20
 
