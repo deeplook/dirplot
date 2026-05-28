@@ -37,8 +37,10 @@ dependencies = [
     "py7zr>=0.20",
     "rarfile>=4.0",
     "squarify>=0.4",
+    "click>=8.0",
     "typer>=0.9",
     "watchdog>=6.0.0",
+    "svglib==2.0b1",
 ]
 
 [project.scripts]

@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **`click` declared as an explicit dependency** — `dirplot` imports `click` directly in
+  `_overview.py`, but relied on it being pulled in transitively by `typer`. Starting around
+  typer 0.12, click became optional in some typer builds, causing `ModuleNotFoundError: No module
+  named 'click'` when running the installed tool under Python 3.14. `click>=8.0` is now a direct
+  dependency.
+
 ### Added
 
 - **SVG snapshot output for `git` and `hg`** — both commands now accept `--output file.svg` for
