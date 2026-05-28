@@ -410,8 +410,8 @@ def git_cmd(
                 "Error: animation --output must be a .png (APNG), .mp4, or .mov file.", err=True
             )
             raise typer.Exit(1)
-        if not is_animation and output.suffix.lower() != ".png":
-            typer.echo("Error: snapshot --output must be a .png file.", err=True)
+        if not is_animation and output.suffix.lower() not in {".png", ".svg"}:
+            typer.echo("Error: snapshot --output must be a .png or .svg file.", err=True)
             raise typer.Exit(1)
 
     period_dt: datetime | None = None
@@ -706,31 +706,48 @@ def git_cmd(
         if logscale > 1:
             apply_log_sizes(node, logscale)
 
-        from dirplot.render_png import create_treemap
-
         hl: dict[str, str] | None = None
         if highlight:
             abs_paths = [(repo / rel).as_posix() for rel in files]
             hl = resolve_highlight_specs(highlight, abs_paths)
 
-        png_buf = create_treemap(
-            node,
-            width_px,
-            height_px,
-            font_size,
-            colormap,
-            None,
-            cushion,
-            title_suffix=f"sha:{sha[:8]}  {datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M')}",
-            dark=dark,
-            logscale=logscale,
-            highlights=hl,
-        )
+        use_svg = output is not None and output.suffix.lower() == ".svg"
+        if use_svg:
+            from dirplot.svg_render import create_treemap_svg
+
+            out_buf = create_treemap_svg(
+                node,
+                width_px,
+                height_px,
+                font_size,
+                colormap,
+                None,
+                cushion,
+                depth,
+                dark,
+                highlights=hl,
+            )
+        else:
+            from dirplot.render_png import create_treemap
+
+            out_buf = create_treemap(
+                node,
+                width_px,
+                height_px,
+                font_size,
+                colormap,
+                None,
+                cushion,
+                title_suffix=f"sha:{sha[:8]}  {datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M')}",  # noqa: E501
+                dark=dark,
+                logscale=logscale,
+                highlights=hl,
+            )
         if inline:
-            display_inline(png_buf, cols=inline_cols)
+            display_inline(out_buf, cols=inline_cols)
         else:
             assert output is not None
-            output.write_bytes(png_buf.read())
+            output.write_bytes(out_buf.read())
             if not quiet:
                 typer.echo(f"Wrote {output}", err=True)
 
@@ -865,6 +882,7 @@ def hg_cmd(
     """
     import shutil
     import subprocess
+    import tempfile
     from datetime import datetime
 
     if not shutil.which("hg"):
@@ -919,8 +937,8 @@ def hg_cmd(
                 "Error: animation --output must be a .png (APNG), .mp4, or .mov file.", err=True
             )
             raise typer.Exit(1)
-        if not is_animation and output.suffix.lower() != ".png":
-            typer.echo("Error: snapshot --output must be a .png file.", err=True)
+        if not is_animation and output.suffix.lower() not in {".png", ".svg"}:
+            typer.echo("Error: snapshot --output must be a .png or .svg file.", err=True)
             raise typer.Exit(1)
 
     period_dt: datetime | None = None
@@ -932,15 +950,41 @@ def hg_cmd(
             raise typer.Exit(1) from exc
 
     _at_ref: str | None = None
-    if "@" in repo_arg:
-        repo_path_str, _, _at_ref = repo_arg.partition("@")
-    else:
-        repo_path_str = repo_arg
-    repo = Path(repo_path_str).resolve()
+    _hg_tmpdir: tempfile.TemporaryDirectory[str] | None = None
+    repo: Path
 
-    if not (repo / ".hg").exists():
-        typer.echo(f"Error: not a Mercurial repository: {repo}", err=True)
-        raise typer.Exit(1)
+    _is_remote_url = repo_arg.startswith(("https://", "http://", "ssh://"))
+
+    if _is_remote_url:
+        if "@" in repo_arg:
+            _url, _, _at_ref = repo_arg.partition("@")
+        else:
+            _url = repo_arg
+        _repo_name = _url.rstrip("/").split("/")[-1] or "repo"
+        _hg_tmpdir = tempfile.TemporaryDirectory(prefix="dirplot-hg-")
+        _clone_dir = Path(_hg_tmpdir.name) / _repo_name
+        clone_cmd = ["hg", "clone"]
+        if _at_ref:
+            clone_cmd += ["--rev", _at_ref]
+        clone_cmd += [_url, str(_clone_dir)]
+        if not quiet:
+            typer.echo(f"Cloning {_url} ...", err=True)
+        try:
+            subprocess.run(clone_cmd, check=True, capture_output=True, text=True)
+        except subprocess.CalledProcessError as exc:
+            typer.echo(f"Error cloning repository: {exc.stderr.strip()}", err=True)
+            raise typer.Exit(1) from exc
+        repo = _clone_dir
+    else:
+        if "@" in repo_arg:
+            repo_path_str, _, _at_ref = repo_arg.partition("@")
+        else:
+            repo_path_str = repo_arg
+        repo = Path(repo_path_str).resolve()
+
+        if not (repo / ".hg").exists():
+            typer.echo(f"Error: not a Mercurial repository: {repo}", err=True)
+            raise typer.Exit(1)
 
     if canvas is not None:
         try:
@@ -1129,30 +1173,47 @@ def hg_cmd(
         if logscale > 1:
             apply_log_sizes(node_tree, logscale)
 
-        from dirplot.render_png import create_treemap
-
         hl_hg: dict[str, str] | None = None
         if highlight:
             abs_paths = [(repo / rel).as_posix() for rel in files]
             hl_hg = resolve_highlight_specs(highlight, abs_paths)
 
-        png_buf = create_treemap(
-            node_tree,
-            width_px,
-            height_px,
-            font_size,
-            colormap,
-            None,
-            cushion,
-            title_suffix=f"rev:{node_id[:8]}  {datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M')}",  # noqa: E501
-            dark=dark,
-            logscale=logscale,
-            highlights=hl_hg,
-        )
+        use_svg = output is not None and output.suffix.lower() == ".svg"
+        if use_svg:
+            from dirplot.svg_render import create_treemap_svg
+
+            out_buf = create_treemap_svg(
+                node_tree,
+                width_px,
+                height_px,
+                font_size,
+                colormap,
+                None,
+                cushion,
+                depth,
+                dark,
+                highlights=hl_hg,
+            )
+        else:
+            from dirplot.render_png import create_treemap
+
+            out_buf = create_treemap(
+                node_tree,
+                width_px,
+                height_px,
+                font_size,
+                colormap,
+                None,
+                cushion,
+                title_suffix=f"rev:{node_id[:8]}  {datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M')}",  # noqa: E501
+                dark=dark,
+                logscale=logscale,
+                highlights=hl_hg,
+            )
         if inline:
-            display_inline(png_buf, cols=inline_cols)
+            display_inline(out_buf, cols=inline_cols)
         else:
             assert output is not None
-            output.write_bytes(png_buf.read())
+            output.write_bytes(out_buf.read())
             if not quiet:
                 typer.echo(f"Wrote {output}", err=True)

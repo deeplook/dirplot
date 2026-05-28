@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **SVG snapshot output for `git` and `hg`** — both commands now accept `--output file.svg` for
+  single-frame snapshots, producing an interactive SVG (hover tooltips, CSS highlight) identical to
+  `map`'s SVG output. Animation output (APNG/MP4) is unchanged and still requires `.png`/`.mp4`/`.mov`.
+
+- **Remote URL support for `hg`** — `dirplot hg` now accepts `https://`, `http://`, and `ssh://`
+  URLs directly (e.g. `dirplot hg https://hg.reportlab.com/hg-public/reportlab --inline`). The
+  repository is cloned into a temporary directory automatically, mirroring the GitHub URL support
+  already available in `dirplot git`.
+
 ## [0.5.0] - 2026-05-20
 
 ### Documentation
