@@ -40,7 +40,6 @@ dependencies = [
     "click>=8.0",
     "typer>=0.9",
     "watchdog>=6.0.0",
-    "svglib==2.0b1",
 ]
 
 [project.scripts]
