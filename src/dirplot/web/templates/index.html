@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>dirplot — {{ root_name }}</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body data-allow-write="{{ 'true' if allow_write else 'false' }}">
+  <header id="toolbar">
+    <span id="app-name">dirplot</span>
+    <nav id="breadcrumb-trail" aria-label="breadcrumb"></nav>
+    <div id="search-wrap">
+      <input type="text" id="search-input" placeholder="Search files…" autocomplete="off" spellcheck="false">
+    </div>
+  </header>
+
+  <div id="main-area">
+    <main id="treemap-container">
+      <svg id="treemap" aria-label="Treemap"></svg>
+      <div id="loading">Loading…</div>
+    </main>
+
+    <aside id="sidebar" class="collapsed" aria-label="Settings">
+      <div id="sidebar-resizer"></div>
+      <button id="sidebar-toggle" title="Toggle settings" aria-expanded="false">
+        <span id="sidebar-chevron">&#x276F;</span>
+      </button>
+      <div id="sidebar-content">
+        <h2 class="sidebar-title">Settings</h2>
+
+        <section class="setting-group">
+          <label class="setting-label toggle-label">
+            <span>Dark mode</span>
+            <span class="toggle-wrap">
+              <input type="checkbox" id="s-dark-mode" class="toggle-input" checked>
+              <span class="toggle-track"></span>
+            </span>
+          </label>
+        </section>
+
+        <section class="setting-group">
+          <label class="setting-label" for="s-depth">Depth</label>
+          <div class="setting-row">
+            <input type="range" id="s-depth" min="1" max="12" value="6" class="slider">
+            <span id="s-depth-val" class="val-display">6</span>
+            <button id="s-depth-reset" class="reset-btn" title="Remove depth limit">∞</button>
+          </div>
+        </section>
+
+        <section class="setting-group">
+          <label class="setting-label" for="s-log-scale">Log scale <span class="hint">(1 = off)</span></label>
+          <div class="setting-row">
+            <input type="range" id="s-log-scale" min="1" max="10" value="4" class="slider">
+            <span id="s-log-scale-val" class="val-display">4</span>
+          </div>
+        </section>
+
+        <section class="setting-group">
+          <label class="setting-label" for="s-font-size">Font size</label>
+          <div class="setting-row">
+            <input type="range" id="s-font-size" min="6" max="28" value="12" class="slider">
+            <span id="s-font-size-val" class="val-display">12px</span>
+          </div>
+        </section>
+
+        <section class="setting-group">
+          <label class="setting-label" for="s-colormap">Colormap</label>
+          <select id="s-colormap" class="select-input">
+            <option value="tab20">tab20 (default)</option>
+          </select>
+        </section>
+
+        <section class="setting-group">
+          <label class="setting-label" for="s-canvas-w">Canvas size</label>
+          <div class="setting-row gap">
+            <label class="mini-label">
+              W <input type="number" id="s-canvas-w" min="200" max="9999" placeholder="auto" class="num-input">
+            </label>
+            <span class="dim-sep">×</span>
+            <label class="mini-label">
+              H <input type="number" id="s-canvas-h" min="200" max="9999" placeholder="auto" class="num-input">
+            </label>
+            <button id="s-canvas-reset" class="reset-btn" title="Reset to auto">↺</button>
+          </div>
+        </section>
+
+        <section class="setting-group">
+          <label class="setting-label" for="s-exclude">Exclude <span class="hint">(glob, one per line)</span></label>
+          <textarea id="s-exclude" class="textarea-input" rows="3" placeholder="__pycache__&#10;*.pyc&#10;node_modules"></textarea>
+        </section>
+
+        <section class="setting-group">
+          <label class="setting-label" for="s-include">Include <span class="hint">(subtrees, one per line)</span></label>
+          <textarea id="s-include" class="textarea-input" rows="3" placeholder="src&#10;tests"></textarea>
+        </section>
+
+        <section class="setting-group">
+          <label class="setting-label" for="s-highlight">Highlight <span class="hint">(glob@color, one per line)</span></label>
+          <textarea id="s-highlight" class="textarea-input" rows="3" placeholder="**/*.py@orange&#10;tests/**@cyan"></textarea>
+        </section>
+
+        <button id="s-apply" class="apply-btn">Apply</button>
+        <button id="s-reset-all" class="reset-all-btn">Reset all</button>
+      </div>
+    </aside>
+  </div>
+
+  <ul id="ctx-menu" class="ctx-menu hidden" role="menu">
+    <li data-action="info" role="menuitem">File info</li>
+    <li data-action="delete" class="write-only danger" role="menuitem">Delete</li>
+    <li data-action="move" class="write-only" role="menuitem">Move to…</li>
+    <li id="ctx-sel-divider" class="ctx-divider" style="display:none"></li>
+    <li data-action="delete-selected" class="write-only danger" role="menuitem" style="display:none">Delete selected</li>
+    <li data-action="copy-paths" role="menuitem" style="display:none">Copy paths</li>
+  </ul>
+
+  <div id="info-panel" class="hidden">
+    <button id="info-close" aria-label="Close">✕</button>
+    <h3 id="info-name"></h3>
+    <dl id="info-details"></dl>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
+  <script src="/static/treemap.js"></script>
+</body>
+</html>
