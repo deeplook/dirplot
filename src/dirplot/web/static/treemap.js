@@ -404,8 +404,19 @@ function renderTreemap(data) {
 
 // ── Zoom ──────────────────────────────────────────────────────────────────
 
+function pathChain(root, targetPath) {
+  if (root.path === targetPath) return [root];
+  for (const c of (root.children || [])) {
+    const r = pathChain(c, targetPath);
+    if (r) return [root, ...r];
+  }
+  return null;
+}
+
 function zoomInto(nodeData) {
-  _zoomStack.push(nodeData.path);
+  const chain = pathChain(_treeData, nodeData.path);
+  // chain = [root, ...ancestors, target] — exclude root (index 0)
+  _zoomStack = chain ? chain.slice(1).map(n => n.path) : [nodeData.path];
   const focused = findNode(_treeData, nodeData.path);
   if (focused) renderTreemap(focused);
 }

@@ -39,8 +39,9 @@ def node_to_dict(
 ) -> dict[str, object]:
     """Recursively convert a Node to a JSON-serialisable dict."""
     color = dir_color if node.is_dir else color_map.get(node.extension, "#888888")
+    name = node.name or node.path.resolve().name or node.path.as_posix()
     result: dict[str, object] = {
-        "name": node.name,
+        "name": name,
         "path": node.path.as_posix(),
         "size": node.size,
         "display_size": _fmt_size(node.size),
