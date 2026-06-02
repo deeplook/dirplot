@@ -128,8 +128,13 @@ def create_app(config: ServeConfig):  # type: ignore[no-untyped-def]
         import base64
         import mimetypes
 
-        target = Path(path).resolve()
-        if config.root_path is None or not target.is_relative_to(config.root_path):
+        if config.root_path is None:
+            return JSONResponse(
+                {"error": "Preview not available for remote sources."}, status_code=403
+            )
+        raw = Path(path)
+        target = (raw if raw.is_absolute() else config.root_path / raw).resolve()
+        if not target.is_relative_to(config.root_path):
             return JSONResponse({"error": "path outside root"}, status_code=403)
         if not target.is_file():
             return JSONResponse({"error": "not a file"}, status_code=404)

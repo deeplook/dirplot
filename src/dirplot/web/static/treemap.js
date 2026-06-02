@@ -756,6 +756,13 @@ function renderMetricsHTML(m) {
 // ── File preview ──────────────────────────────────────────────────────────
 
 async function previewFile(nodeData) {
+  // Expand sidebar if collapsed so preview is immediately visible
+  if (_sidebarCollapsed) {
+    _sidebarCollapsed = false;
+    sidebar.classList.remove("collapsed");
+    sidebarToggle.setAttribute("aria-expanded", "true");
+    setSidebarWidth(_sidebarW);
+  }
   switchTab("preview");
   const header = document.getElementById("preview-header");
   const content = document.getElementById("preview-content");
