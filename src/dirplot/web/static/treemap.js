@@ -805,8 +805,8 @@ async function previewFile(nodeData) {
 function syncHljsTheme() {
   const dark = settings.darkMode;
   document.getElementById("hljs-theme").href = dark
-    ? "https://cdn.jsdelivr.net/npm/highlight.js@11/styles/atom-one-dark.min.css"
-    : "https://cdn.jsdelivr.net/npm/highlight.js@11/styles/atom-one-light.min.css";
+    ? "https://cdn.jsdelivr.net/npm/@highlightjs/cdn-assets@11/styles/atom-one-dark.min.css"
+    : "https://cdn.jsdelivr.net/npm/@highlightjs/cdn-assets@11/styles/atom-one-light.min.css";
 }
 
 // ── Sidebar ───────────────────────────────────────────────────────────────
