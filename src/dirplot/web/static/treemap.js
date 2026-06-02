@@ -379,6 +379,7 @@ function renderTreemap(data) {
       } else {
         clearSelection();
         showInfoPanel(d.data);
+        previewFile(d.data);
       }
     })
     .on("contextmenu", (event, d) => { event.preventDefault(); showContextMenu(event.clientX, event.clientY, d.data); });
@@ -660,6 +661,147 @@ const _resizeObs = new ResizeObserver(() => {
 });
 _resizeObs.observe(document.getElementById("treemap-container"));
 
+// ── Sidebar tabs ──────────────────────────────────────────────────────────
+
+let _activeTab = "settings";
+let _metricsLoaded = false;
+
+document.querySelectorAll(".tab-btn").forEach(btn => {
+  btn.addEventListener("click", () => switchTab(btn.dataset.tab));
+});
+
+function switchTab(name) {
+  _activeTab = name;
+  document.querySelectorAll(".tab-btn").forEach(b => b.classList.toggle("active", b.dataset.tab === name));
+  document.querySelectorAll(".tab-panel").forEach(p => p.classList.toggle("hidden", p.id !== `tab-${name}`));
+  if (name === "metrics" && !_metricsLoaded) loadMetrics();
+}
+
+// ── Metrics ───────────────────────────────────────────────────────────────
+
+function fmtBytes(n) {
+  for (const [u, t] of [["TB", 1e12], ["GB", 1e9], ["MB", 1e6], ["KB", 1e3]]) {
+    if (n >= t) return (n / t).toFixed(1) + " " + u;
+  }
+  return n + " B";
+}
+
+async function loadMetrics() {
+  const el = document.getElementById("metrics-content");
+  el.innerHTML = '<span class="text-dim">Computing…</span>';
+  try {
+    const m = await fetch("/api/metrics").then(r => r.json());
+    _metricsLoaded = true;
+    el.innerHTML = renderMetricsHTML(m);
+  } catch (e) {
+    el.innerHTML = `<span class="text-dim">Error: ${e.message}</span>`;
+  }
+}
+
+function renderMetricsHTML(m) {
+  const kv = (k, v) => `<div class="metrics-kv"><span class="mk">${k}</span><span class="mv">${v}</span></div>`;
+  const n = v => Number(v).toLocaleString();
+
+  let html = `<div class="metrics-section">
+    ${kv("Files", n(m.files))}
+    ${kv("Dirs", n(m.dirs) + (m.empty_dirs ? ` <span style="opacity:.6">(${n(m.empty_dirs)} empty)</span>` : ""))}
+    ${kv("Total size", fmtBytes(m.total_size_bytes))}
+    ${kv("Depth", m.depth)}
+    ${kv("Scan time", m.scan_time_s.toFixed(2) + "s")}
+  </div>`;
+
+  if (m.top_extensions?.length) {
+    html += `<div class="metrics-section"><h3>Top extensions</h3>
+      <table class="metrics-table">`;
+    for (const e of m.top_extensions) {
+      html += `<tr>
+        <td>${e.ext || "(no ext)"}</td>
+        <td class="num">${n(e.count)}</td>
+        <td class="num">${fmtBytes(e.size_bytes)}</td>
+      </tr>`;
+    }
+    html += `</table></div>`;
+  }
+
+  if (m.largest_files?.length) {
+    html += `<div class="metrics-section"><h3>Largest files</h3>
+      <table class="metrics-table">`;
+    for (const f of m.largest_files) {
+      const name = f.path.split("/").pop();
+      html += `<tr>
+        <td class="num">${fmtBytes(f.size_bytes)}</td>
+        <td class="num" style="color:var(--text-dim)">${f.pct.toFixed(1)}%</td>
+        <td title="${f.path}">${name}</td>
+      </tr><tr><td colspan="3" class="mpath">${f.path}</td></tr>`;
+    }
+    html += `</table></div>`;
+  }
+
+  if (m.largest_dirs?.length) {
+    html += `<div class="metrics-section"><h3>Largest dirs</h3>
+      <table class="metrics-table">`;
+    for (const d of m.largest_dirs) {
+      html += `<tr>
+        <td class="num">${fmtBytes(d.size_bytes)}</td>
+        <td class="num" style="color:var(--text-dim)">${d.pct.toFixed(1)}%</td>
+        <td class="mpath">${d.path}</td>
+      </tr>`;
+    }
+    html += `</table></div>`;
+  }
+
+  return html;
+}
+
+// ── File preview ──────────────────────────────────────────────────────────
+
+async function previewFile(nodeData) {
+  switchTab("preview");
+  const header = document.getElementById("preview-header");
+  const content = document.getElementById("preview-content");
+  header.textContent = nodeData.path;
+  header.classList.remove("hidden");
+  content.innerHTML = '<span class="text-dim">Loading…</span>';
+
+  try {
+    const res = await fetch(`/api/file?path=${encodeURIComponent(nodeData.path)}`);
+    const data = await res.json();
+    if (data.error) {
+      content.innerHTML = `<span class="text-dim">${data.error}</span>`;
+    } else if (data.type === "image") {
+      content.innerHTML = `<img src="data:${data.mime};base64,${data.data}" alt="${nodeData.name}">`;
+    } else if (data.type === "text") {
+      const pre = document.createElement("pre");
+      const code = document.createElement("code");
+      code.textContent = data.content;
+      if (data.extension && typeof hljs !== "undefined") {
+        const lang = hljs.getLanguage(data.extension.slice(1));
+        if (lang) {
+          code.className = `language-${data.extension.slice(1)}`;
+          hljs.highlightElement(code);
+        } else {
+          hljs.highlightElement(code);
+        }
+      }
+      pre.appendChild(code);
+      content.innerHTML = "";
+      content.appendChild(pre);
+    } else {
+      content.innerHTML = '<span class="text-dim">Binary file — no preview available.</span>';
+    }
+  } catch (e) {
+    content.innerHTML = `<span class="text-dim">Error: ${e.message}</span>`;
+  }
+}
+
+// Update hljs theme when dark/light mode changes
+function syncHljsTheme() {
+  const dark = settings.darkMode;
+  document.getElementById("hljs-theme").href = dark
+    ? "https://cdn.jsdelivr.net/npm/highlight.js@11/styles/atom-one-dark.min.css"
+    : "https://cdn.jsdelivr.net/npm/highlight.js@11/styles/atom-one-light.min.css";
+}
+
 // ── Sidebar ───────────────────────────────────────────────────────────────
 
 const sidebar = document.getElementById("sidebar");
@@ -787,6 +929,7 @@ document.getElementById("s-canvas-reset").addEventListener("click", () => {
 document.getElementById("s-dark-mode").addEventListener("change", e => {
   settings.darkMode = e.target.checked;
   document.body.classList.toggle("light", !settings.darkMode);
+  syncHljsTheme();
   if (_treeData) {
     const focused = _zoomStack.length ? findNode(_treeData, _zoomStack[_zoomStack.length - 1]) : _treeData;
     renderTreemap(focused || _treeData);
@@ -832,7 +975,7 @@ document.getElementById("s-apply").addEventListener("click", async () => {
   settings.highlights = parseHighlights(document.getElementById("s-highlight").value);
 
   applyCanvasSize();
-  _zoomStack = []; // reset zoom on config change
+  _zoomStack = []; _metricsLoaded = false; // reset zoom + metrics cache on config change
   await refreshTree();
 });
 
@@ -867,7 +1010,7 @@ document.getElementById("s-reset-all").addEventListener("click", async () => {
   document.getElementById("s-highlight").value = "";
 
   applyCanvasSize();
-  _zoomStack = [];
+  _zoomStack = []; _metricsLoaded = false;
   await refreshTree();
 });
 

@@ -201,11 +201,87 @@ html, body {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 12px 14px 20px;
+  padding: 0;
   min-width: calc(var(--sidebar-w) - var(--sidebar-collapsed-w));
   scrollbar-width: thin;
   scrollbar-color: #2a2a40 transparent;
+  display: flex;
+  flex-direction: column;
 }
+
+/* ── Sidebar tabs ────────────────────────────────────────────────────── */
+#sidebar-tabs {
+  display: flex;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--sidebar-border);
+}
+.tab-btn {
+  flex: 1;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-dim);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 8px 4px;
+  cursor: pointer;
+  letter-spacing: 0.04em;
+  transition: color 0.15s, border-color 0.15s;
+  margin-bottom: -1px;
+}
+.tab-btn:hover { color: var(--text); }
+.tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+.tab-panel {
+  padding: 12px 14px 20px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  flex: 1;
+}
+.tab-panel.hidden { display: none; }
+
+/* ── Metrics panel ───────────────────────────────────────────────────── */
+.metrics-content { font-size: 12px; }
+.metrics-section { margin-bottom: 14px; }
+.metrics-section h3 {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-dim);
+  margin-bottom: 6px;
+}
+.metrics-kv { display: flex; justify-content: space-between; padding: 2px 0; }
+.metrics-kv .mk { color: var(--text-dim); }
+.metrics-kv .mv { color: var(--text); font-weight: 600; }
+.metrics-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+.metrics-table td { padding: 2px 4px; }
+.metrics-table td:first-child { color: var(--text-dim); }
+.metrics-table td.num { text-align: right; color: var(--text); }
+.metrics-table .mpath { color: var(--text-dim); font-size: 10px; word-break: break-all; }
+
+/* ── Preview panel ───────────────────────────────────────────────────── */
+.preview-header {
+  font-size: 11px;
+  color: var(--text-dim);
+  padding-bottom: 8px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--sidebar-border);
+  word-break: break-all;
+}
+.preview-header.hidden { display: none; }
+.preview-content { font-size: 12px; overflow-x: auto; }
+.preview-content img { max-width: 100%; border-radius: 4px; }
+.preview-content pre {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-all;
+  background: none !important;
+  padding: 0 !important;
+}
+.preview-content code.hljs { background: none !important; padding: 0 !important; font-size: 11px; }
+.text-dim { color: var(--text-dim); font-size: 12px; }
 
 /* ── Sidebar controls ────────────────────────────────────────────────── */
 .sidebar-title {

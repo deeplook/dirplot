@@ -106,6 +106,48 @@ def create_app(config: ServeConfig):  # type: ignore[no-untyped-def]
         )
         return JSONResponse(content=data)
 
+    @app.get("/api/metrics")
+    async def api_metrics() -> JSONResponse:
+        import time
+
+        from dirplot.scanner import tree_metrics_dict
+        from dirplot.sources import registry as source_registry
+
+        def _compute() -> dict[str, object]:
+            t0 = time.monotonic()
+            source = source_registry.find_source(config.root)
+            root_node = source.scan(config.root, exclude=config.exclude, depth=config.depth)
+            return dict(tree_metrics_dict(root_node, t_scan=time.monotonic() - t0))
+
+        loop = asyncio.get_event_loop()
+        data = await loop.run_in_executor(None, _compute)
+        return JSONResponse(content=data)
+
+    @app.get("/api/file")
+    async def api_file(path: str) -> JSONResponse:
+        import base64
+        import mimetypes
+
+        target = Path(path).resolve()
+        if config.root_path is None or not target.is_relative_to(config.root_path):
+            return JSONResponse({"error": "path outside root"}, status_code=403)
+        if not target.is_file():
+            return JSONResponse({"error": "not a file"}, status_code=404)
+
+        _IMAGE_EXTS = {".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp", ".bmp", ".ico"}
+        suffix = target.suffix.lower()
+
+        if suffix in _IMAGE_EXTS:
+            mime = mimetypes.types_map.get(suffix, "image/png")
+            data = base64.b64encode(target.read_bytes()).decode()
+            return JSONResponse({"type": "image", "mime": mime, "data": data})
+
+        try:
+            text = target.read_text(encoding="utf-8", errors="replace")
+            return JSONResponse({"type": "text", "content": text, "extension": suffix})
+        except Exception:
+            return JSONResponse({"type": "binary"})
+
     class OperationRequest(BaseModel):
         op: str  # "delete" or "move"
         path: str
