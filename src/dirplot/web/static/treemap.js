@@ -858,10 +858,16 @@ async function previewFile(nodeData) {
 }
 
 const _HLJS_THEMES = {
-  "atom-one": ["atom-one-dark", "atom-one-light"],
-  "github":   ["github-dark",   "github"],
-  "vs":       ["vs2015",        "vs"],
-  "default":  ["dark",          "default"],
+  "atom-one":   ["atom-one-dark",    "atom-one-light"],
+  "github":     ["github-dark",      "github"],
+  "vs":         ["vs2015",           "vs"],
+  "default":    ["dark",             "default"],
+  "stackoverflow": ["stackoverflow-dark", "stackoverflow-light"],
+  "tokyo-night": ["tokyo-night-dark", "tokyo-night-light"],
+  "panda":      ["panda-syntax-dark", "panda-syntax-light"],
+  "kimbie":     ["kimbie-dark",       "kimbie-light"],
+  "a11y":       ["a11y-dark",         "a11y-light"],
+  "rose-pine":  ["rose-pine",         "rose-pine-dawn"],
 };
 const _HLJS_CDN = "https://cdn.jsdelivr.net/npm/@highlightjs/cdn-assets@11/styles/";
 
