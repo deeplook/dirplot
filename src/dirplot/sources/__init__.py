@@ -180,6 +180,15 @@ with suppress(ImportError):
 with suppress(ImportError):
     from dirplot.sources import ssh as ssh  # noqa: F401
 
+with suppress(ImportError):
+    from dirplot.sources import docker as docker  # noqa: F401
+
+with suppress(ImportError):
+    from dirplot.sources import k8s as k8s  # noqa: F401
+
+with suppress(ImportError):
+    from dirplot.sources import s3 as s3  # noqa: F401
+
 from dirplot.sources import filesystem as filesystem  # noqa: E402
 
 __all__ = [
