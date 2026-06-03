@@ -755,6 +755,24 @@ function renderMetricsHTML(m) {
 
 // ── File preview ──────────────────────────────────────────────────────────
 
+function _buildMetaTable(meta) {
+  const table = document.createElement("table");
+  table.className = "preview-meta";
+  const order = ["Date", "Software", "Command", "Python", "OS", "URL"];
+  const keys = [...order.filter(k => k in meta), ...Object.keys(meta).filter(k => !order.includes(k))];
+  for (const key of keys) {
+    const tr = document.createElement("tr");
+    const th = document.createElement("th");
+    th.textContent = key;
+    const td = document.createElement("td");
+    td.textContent = meta[key];
+    tr.appendChild(th);
+    tr.appendChild(td);
+    table.appendChild(tr);
+  }
+  return table;
+}
+
 async function previewFile(nodeData) {
   // Expand sidebar if collapsed so preview is immediately visible
   if (_sidebarCollapsed) {
@@ -777,6 +795,14 @@ async function previewFile(nodeData) {
       content.innerHTML = `<span class="text-dim">${data.error}</span>`;
     } else if (data.type === "image") {
       content.innerHTML = `<img src="data:${data.mime};base64,${data.data}" alt="${nodeData.name}">`;
+      if (data.meta && Object.keys(data.meta).length > 0) content.appendChild(_buildMetaTable(data.meta));
+    } else if (data.type === "video") {
+      const vid = document.createElement("video");
+      vid.controls = true;
+      vid.src = `/api/file-stream?path=${encodeURIComponent(nodeData.path)}`;
+      content.innerHTML = "";
+      content.appendChild(vid);
+      if (data.meta && Object.keys(data.meta).length > 0) content.appendChild(_buildMetaTable(data.meta));
     } else if (data.type === "text") {
       const pre = document.createElement("pre");
       const code = document.createElement("code");

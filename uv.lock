@@ -636,11 +636,15 @@ dependencies = [
     { name = "click" },
     { name = "cmap" },
     { name = "drawsvg" },
+    { name = "fastapi" },
+    { name = "jinja2" },
     { name = "pillow" },
     { name = "py7zr" },
+    { name = "python-multipart" },
     { name = "rarfile" },
     { name = "squarify" },
     { name = "typer" },
+    { name = "uvicorn", extra = ["standard"] },
     { name = "watchdog" },
 ]
 
@@ -658,12 +662,6 @@ libarchive = [
 s3 = [
     { name = "boto3" },
 ]
-serve = [
-    { name = "fastapi" },
-    { name = "jinja2" },
-    { name = "python-multipart" },
-    { name = "uvicorn", extra = ["standard"] },
-]
 ssh = [
     { name = "paramiko" },
 ]
@@ -674,8 +672,8 @@ requires-dist = [
     { name = "click", specifier = ">=8.0" },
     { name = "cmap", specifier = ">=0.4" },
     { name = "drawsvg", specifier = ">=2.4.1" },
-    { name = "fastapi", marker = "extra == 'serve'", specifier = ">=0.111" },
-    { name = "jinja2", marker = "extra == 'serve'", specifier = ">=3.1" },
+    { name = "fastapi", specifier = ">=0.111" },
+    { name = "jinja2", specifier = ">=3.1" },
     { name = "libarchive-c", marker = "extra == 'libarchive'", specifier = ">=5.0" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.10" },
     { name = "paramiko", marker = "extra == 'ssh'", specifier = ">=3.0" },
@@ -684,15 +682,15 @@ requires-dist = [
     { name = "py7zr", specifier = ">=0.20" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=5.0" },
-    { name = "python-multipart", marker = "extra == 'serve'", specifier = ">=0.0.9" },
+    { name = "python-multipart", specifier = ">=0.0.9" },
     { name = "rarfile", specifier = ">=4.0" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.4" },
     { name = "squarify", specifier = ">=0.4" },
     { name = "typer", specifier = ">=0.9" },
-    { name = "uvicorn", extras = ["standard"], marker = "extra == 'serve'", specifier = ">=0.29" },
+    { name = "uvicorn", extras = ["standard"], specifier = ">=0.29" },
     { name = "watchdog", specifier = ">=6.0.0" },
 ]
-provides-extras = ["ssh", "s3", "dev", "libarchive", "serve"]
+provides-extras = ["ssh", "s3", "dev", "libarchive"]
 
 [[package]]
 name = "distlib"

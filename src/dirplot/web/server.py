@@ -25,7 +25,7 @@ class ServeConfig:
 def create_app(config: ServeConfig):  # type: ignore[no-untyped-def]
     import fastapi
     from fastapi import Request, WebSocket, WebSocketDisconnect
-    from fastapi.responses import HTMLResponse, JSONResponse
+    from fastapi.responses import HTMLResponse, JSONResponse, Response
     from fastapi.staticfiles import StaticFiles
     from fastapi.templating import Jinja2Templates
     from pydantic import BaseModel
@@ -140,18 +140,44 @@ def create_app(config: ServeConfig):  # type: ignore[no-untyped-def]
             return JSONResponse({"error": "not a file"}, status_code=404)
 
         _IMAGE_EXTS = {".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp", ".bmp", ".ico"}
+        _VIDEO_EXTS = {".mp4", ".mov", ".webm"}
+        _META_EXTS = {".png", ".svg", ".mp4", ".mov"}
         suffix = target.suffix.lower()
+
+        meta: dict[str, str] = {}
+        if suffix in _META_EXTS:
+            from dirplot.commands.misc import _read_meta_from_file
+
+            found, _ = await asyncio.to_thread(_read_meta_from_file, target)
+            meta = found or {}
 
         if suffix in _IMAGE_EXTS:
             mime = mimetypes.types_map.get(suffix, "image/png")
             data = base64.b64encode(target.read_bytes()).decode()
-            return JSONResponse({"type": "image", "mime": mime, "data": data})
+            return JSONResponse({"type": "image", "mime": mime, "data": data, "meta": meta})
+
+        if suffix in _VIDEO_EXTS:
+            return JSONResponse({"type": "video", "path": str(target), "meta": meta})
 
         try:
             text = target.read_text(encoding="utf-8", errors="replace")
             return JSONResponse({"type": "text", "content": text, "extension": suffix})
         except Exception:
             return JSONResponse({"type": "binary"})
+
+    @app.get("/api/file-stream")
+    async def api_file_stream(path: str) -> Response:
+        from fastapi.responses import FileResponse
+
+        if config.root_path is None:
+            return JSONResponse({"error": "not available for remote sources"}, status_code=403)
+        raw = Path(path)
+        target = (raw if raw.is_absolute() else config.root_path / raw).resolve()
+        if not target.is_relative_to(config.root_path):
+            return JSONResponse({"error": "path outside root"}, status_code=403)
+        if not target.is_file():
+            return JSONResponse({"error": "not a file"}, status_code=404)
+        return FileResponse(str(target))
 
     class OperationRequest(BaseModel):
         op: str  # "delete" or "move"
