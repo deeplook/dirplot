@@ -11,9 +11,32 @@ from dirplot.scanner import Node, build_tree_v2
 from dirplot.sources import register_source
 from dirplot.vpath import ArchiveRoot
 
+_MAX_DOWNLOAD_BYTES = 100 * 1024 * 1024  # 100 MB
+
 
 def _is_url(path: str) -> bool:
     return path.startswith("http://") or path.startswith("https://")
+
+
+def _download_url(url: str, dest: Path, max_bytes: int = _MAX_DOWNLOAD_BYTES) -> None:
+    """Download *url* to *dest*, raising ValueError if Content-Length or actual
+    bytes received exceed *max_bytes*."""
+    with urllib.request.urlopen(url) as resp:  # noqa: S310
+        length = resp.headers.get("Content-Length")
+        if length is not None and int(length) > max_bytes:
+            raise ValueError(
+                f"Remote archive too large: {int(length) // (1024 * 1024)} MB "
+                f"(limit {max_bytes // (1024 * 1024)} MB)"
+            )
+        received = 0
+        with dest.open("wb") as f:
+            while chunk := resp.read(65536):
+                received += len(chunk)
+                if received > max_bytes:
+                    raise ValueError(
+                        f"Remote archive exceeds {max_bytes // (1024 * 1024)} MB limit"
+                    )
+                f.write(chunk)
 
 
 class ArchiveSource:
@@ -52,7 +75,7 @@ class ArchiveSource:
             with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
                 tmp_path = Path(tmp.name)
             try:
-                urllib.request.urlretrieve(path, tmp_path)
+                _download_url(path, tmp_path)
                 with ArchiveRoot(tmp_path) as root:
                     return build_tree_v2(root, exclude=exclude, depth=depth)
             finally:
