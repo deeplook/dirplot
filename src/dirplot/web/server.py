@@ -163,7 +163,20 @@ def create_app(config: ServeConfig):  # type: ignore[no-untyped-def]
             text = target.read_text(encoding="utf-8", errors="replace")
             return JSONResponse({"type": "text", "content": text, "extension": suffix})
         except Exception:
-            return JSONResponse({"type": "binary"})
+            raw_bytes = target.read_bytes()[:1000]
+            lines = []
+            for i in range(0, len(raw_bytes), 16):
+                chunk = raw_bytes[i : i + 16]
+                hex_pairs = " ".join(f"{b:02x}" for b in chunk)
+                ascii_part = "".join(chr(b) if 0x20 <= b < 0x7F else "." for b in chunk)
+                lines.append(f"{i:08x}:  {hex_pairs:<47}  {ascii_part}")
+            return JSONResponse(
+                {
+                    "type": "binary",
+                    "preview": "\n".join(lines),
+                    "truncated": target.stat().st_size > 1000,
+                }
+            )
 
     @app.get("/api/file-stream")
     async def api_file_stream(path: str) -> Response:

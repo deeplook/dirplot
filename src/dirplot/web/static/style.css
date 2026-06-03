@@ -301,6 +301,8 @@ html, body {
   padding-right: 10px;
 }
 .preview-meta td { word-break: break-all; }
+.binary-hex { font-size: 10px; line-height: 1.5; margin: 0; white-space: pre; overflow-x: auto; }
+.binary-truncated { margin-bottom: 6px; }
 .text-dim { color: var(--text-dim); font-size: 12px; }
 
 /* ── Sidebar controls ────────────────────────────────────────────────── */

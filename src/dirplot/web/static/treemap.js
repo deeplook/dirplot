@@ -819,6 +819,18 @@ async function previewFile(nodeData) {
       pre.appendChild(code);
       content.innerHTML = "";
       content.appendChild(pre);
+    } else if (data.type === "binary" && data.preview) {
+      const pre = document.createElement("pre");
+      pre.className = "binary-hex";
+      pre.textContent = data.preview;
+      content.innerHTML = "";
+      if (data.truncated) {
+        const note = document.createElement("div");
+        note.className = "text-dim binary-truncated";
+        note.textContent = "Showing first 1000 bytes.";
+        content.appendChild(note);
+      }
+      content.appendChild(pre);
     } else {
       content.innerHTML = '<span class="text-dim">Binary file — no preview available.</span>';
     }
