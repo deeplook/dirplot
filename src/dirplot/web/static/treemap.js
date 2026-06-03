@@ -783,11 +783,20 @@ function fmtBytes(n) {
   return n + " B";
 }
 
+function buildMetricsUrl() {
+  const p = new URLSearchParams();
+  if (settings.depth !== null) p.set("depth", settings.depth);
+  for (const e of settings.exclude) if (e.trim()) p.append("exclude", e.trim());
+  if (_currentRoot) p.set("root", _currentRoot);
+  const qs = p.toString();
+  return "/api/metrics" + (qs ? "?" + qs : "");
+}
+
 async function loadMetrics() {
   const el = document.getElementById("metrics-content");
   el.innerHTML = '<span class="text-dim">Computing…</span>';
   try {
-    const m = await fetch("/api/metrics").then(r => r.json());
+    const m = await fetch(buildMetricsUrl()).then(r => r.json());
     _metricsLoaded = true;
     el.innerHTML = renderMetricsHTML(m);
   } catch (e) {

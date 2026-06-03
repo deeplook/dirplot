@@ -111,7 +111,11 @@ def create_app(config: ServeConfig):  # type: ignore[no-untyped-def]
         return JSONResponse(content=data)
 
     @app.get("/api/metrics")
-    async def api_metrics() -> JSONResponse:
+    async def api_metrics(
+        depth: int | None = None,
+        exclude: list[str] = fastapi.Query(default=[]),
+        root: str = "",
+    ) -> JSONResponse:
         import time
 
         from dirplot.scanner import tree_metrics_dict
@@ -119,8 +123,13 @@ def create_app(config: ServeConfig):  # type: ignore[no-untyped-def]
 
         def _compute() -> dict[str, object]:
             t0 = time.monotonic()
-            source = source_registry.find_source(config.root)
-            root_node = source.scan(config.root, exclude=config.exclude, depth=config.depth)
+            effective_root = root if root else config.root
+            effective_exclude = frozenset(exclude) if exclude else config.exclude
+            effective_depth = depth if depth is not None else config.depth
+            source = source_registry.find_source(effective_root)
+            root_node = source.scan(
+                effective_root, exclude=effective_exclude, depth=effective_depth
+            )
             return dict(tree_metrics_dict(root_node, t_scan=time.monotonic() - t0))
 
         loop = asyncio.get_event_loop()
