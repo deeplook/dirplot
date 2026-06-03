@@ -10,4 +10,5 @@
 - [ ] Open website (now --serve) also for diff mode, showing diffs in preview.
 - [x] Make dependencies for serve core, not optional.
 - [x] Show meta data in image/video previews.
+- [ ] When creating PDF files, embed dirplot metadata (Date, Software, URL, Python, OS, Command) via PDF info dict / XMP; read it back in `_read_meta_from_file` using `pypdf`.
 - [ ]
