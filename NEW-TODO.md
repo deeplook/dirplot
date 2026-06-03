@@ -2,7 +2,7 @@
 
 - [ ] Add top left text field to enter data source (local, git, ...).
 - [ ] Place breadcrumps right to new data source text field.
-- [ ] Make search more useful (REGEX checkbox?).
+- [x] Make search more useful (REGEX checkbox?).
 - [x] Add search icon (lense) next to search text field..
 - [x] Show only first 1000 bytes of binary files in preview.
 - [x] When clicking on a file rectangle show preview only when preview tab is already open. Do not switch to the preview tab only when a rectangle is clicked.

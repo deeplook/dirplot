@@ -101,6 +101,25 @@ html, body {
   outline: none;
 }
 #search-input:focus { border-color: var(--accent); }
+#search-input.search-invalid { border-color: #e05; }
+#search-regex-label {
+  display: flex;
+  align-items: center;
+  margin-left: 6px;
+  cursor: pointer;
+  user-select: none;
+}
+#search-regex-label span {
+  font-size: 12px;
+  font-family: monospace;
+  color: var(--text-dim);
+  padding: 2px 5px;
+  border: 1px solid var(--input-border);
+  border-radius: 3px;
+  transition: color 0.15s, border-color 0.15s;
+}
+#search-regex { display: none; }
+#search-regex:checked + span { color: var(--accent); border-color: var(--accent); }
 
 /* ── Main area (treemap + sidebar) ───────────────────────────────────── */
 #main-area {

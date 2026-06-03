@@ -461,16 +461,35 @@ function updateBreadcrumb() {
 
 // ── Search ────────────────────────────────────────────────────────────────
 
-document.getElementById("search-input").addEventListener("input", e => {
-  filterNodes(e.target.value.trim().toLowerCase());
-});
-
-function filterNodes(query) {
+function runSearch() {
+  const raw = document.getElementById("search-input").value.trim();
+  const useRegex = document.getElementById("search-regex").checked;
+  const input = document.getElementById("search-input");
+  let test;
+  if (!raw) {
+    test = () => true;
+    input.classList.remove("search-invalid");
+  } else if (useRegex) {
+    try {
+      const re = new RegExp(raw, "i");
+      test = path => re.test(path);
+      input.classList.remove("search-invalid");
+    } catch {
+      input.classList.add("search-invalid");
+      return;
+    }
+  } else {
+    const q = raw.toLowerCase();
+    test = path => path.toLowerCase().includes(q);
+    input.classList.remove("search-invalid");
+  }
   document.querySelectorAll("g.node").forEach(n => {
-    const matches = !query || (n.dataset.path || "").toLowerCase().includes(query);
-    n.classList.toggle("dimmed", !matches);
+    n.classList.toggle("dimmed", !test(n.dataset.path || ""));
   });
 }
+
+document.getElementById("search-input").addEventListener("input", runSearch);
+document.getElementById("search-regex").addEventListener("change", runSearch);
 
 // ── Context menu ──────────────────────────────────────────────────────────
 
