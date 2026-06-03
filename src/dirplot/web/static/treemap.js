@@ -803,6 +803,12 @@ async function previewFile(nodeData) {
       content.innerHTML = "";
       content.appendChild(vid);
       if (data.meta && Object.keys(data.meta).length > 0) content.appendChild(_buildMetaTable(data.meta));
+    } else if (data.type === "pdf") {
+      const iframe = document.createElement("iframe");
+      iframe.src = `/api/file-stream?path=${encodeURIComponent(nodeData.path)}`;
+      iframe.className = "preview-pdf";
+      content.innerHTML = "";
+      content.appendChild(iframe);
     } else if (data.type === "text") {
       const pre = document.createElement("pre");
       const code = document.createElement("code");

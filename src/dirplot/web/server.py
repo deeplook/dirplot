@@ -159,6 +159,9 @@ def create_app(config: ServeConfig):  # type: ignore[no-untyped-def]
         if suffix in _VIDEO_EXTS:
             return JSONResponse({"type": "video", "path": str(target), "meta": meta})
 
+        if suffix == ".pdf":
+            return JSONResponse({"type": "pdf", "path": str(target)})
+
         try:
             text = target.read_text(encoding="utf-8", errors="replace")
             return JSONResponse({"type": "text", "content": text, "extension": suffix})
