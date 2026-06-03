@@ -22,6 +22,43 @@ class ServeConfig:
     allow_write: bool
 
 
+def _heic_to_jpeg(path: Path) -> bytes | None:
+    """Convert a HEIC/HEIF file to JPEG bytes. Returns None if no converter is available."""
+    import io
+    import shutil
+    import subprocess
+    import tempfile
+
+    # Try pillow-heif (cross-platform, optional dependency)
+    try:
+        import pillow_heif  # noqa: PLC0415
+        from PIL import Image as _Image
+
+        pillow_heif.register_heif_opener()
+        buf = io.BytesIO()
+        with _Image.open(path) as im:
+            im.convert("RGB").save(buf, format="JPEG", quality=92)
+        return buf.getvalue()
+    except ImportError:
+        pass
+
+    # Fall back to sips (macOS built-in)
+    if shutil.which("sips"):
+        with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp:
+            tmp_path = Path(tmp.name)
+        try:
+            result = subprocess.run(
+                ["sips", "-s", "format", "jpeg", str(path), "--out", str(tmp_path)],
+                capture_output=True,
+            )
+            if result.returncode == 0:
+                return tmp_path.read_bytes()
+        finally:
+            tmp_path.unlink(missing_ok=True)
+
+    return None
+
+
 def create_app(config: ServeConfig):  # type: ignore[no-untyped-def]
     import fastapi
     from fastapi import Request, WebSocket, WebSocketDisconnect
@@ -137,30 +174,110 @@ def create_app(config: ServeConfig):  # type: ignore[no-untyped-def]
         return JSONResponse(content=data)
 
     @app.get("/api/file")
-    async def api_file(path: str) -> JSONResponse:
+    async def api_file(path: str, root: str = "") -> JSONResponse:
         import base64
         import mimetypes
 
-        if config.root_path is None:
+        _IMAGE_EXTS = {".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp", ".bmp", ".ico"}
+        _VIDEO_EXTS = {".mp4", ".mov", ".webm"}
+        _AUDIO_EXTS = {".mp3", ".wav", ".ogg", ".flac", ".aac", ".m4a", ".opus", ".weba"}
+        _AUDIO_MIME: dict[str, str] = {
+            ".mp3": "audio/mpeg",
+            ".wav": "audio/wav",
+            ".ogg": "audio/ogg",
+            ".flac": "audio/flac",
+            ".aac": "audio/aac",
+            ".m4a": "audio/mp4",
+            ".opus": "audio/ogg; codecs=opus",
+            ".weba": "audio/webm",
+        }
+        _META_EXTS = {".png", ".svg", ".mp4", ".mov"}
+        suffix = Path(path).suffix.lower()
+
+        def _hex_dump(data: bytes, full_size: int) -> JSONResponse:
+            raw = data[:1000]
+            lines = []
+            for i in range(0, len(raw), 16):
+                chunk = raw[i : i + 16]
+                hex_pairs = " ".join(f"{b:02x}" for b in chunk)
+                ascii_part = "".join(chr(b) if 0x20 <= b < 0x7F else "." for b in chunk)
+                lines.append(f"{i:08x}:  {hex_pairs:<47}  {ascii_part}")
+            return JSONResponse(
+                {"type": "binary", "preview": "\n".join(lines), "truncated": full_size > 1000}
+            )
+
+        # Remote source: use source.read_file() when a root is provided
+        if root:
+            from dirplot.sources import registry as source_registry
+
+            source = source_registry.find_source(root)
+            if not hasattr(source, "read_file"):
+                return JSONResponse(
+                    {"error": f"File preview not available for {source.name} sources."},
+                    status_code=403,
+                )
+            try:
+                file_bytes: bytes = await asyncio.to_thread(source.read_file, root, path)
+            except FileNotFoundError:
+                return JSONResponse({"error": "File not found."}, status_code=404)
+            except PermissionError as exc:
+                return JSONResponse({"error": str(exc)}, status_code=403)
+            except Exception as exc:
+                return JSONResponse({"error": str(exc)}, status_code=500)
+
+            if suffix in _IMAGE_EXTS:
+                mime = mimetypes.types_map.get(suffix, "image/png")
+                return JSONResponse(
+                    {
+                        "type": "image",
+                        "mime": mime,
+                        "data": base64.b64encode(file_bytes).decode(),
+                        "meta": {},
+                    }
+                )
+            if suffix in _VIDEO_EXTS or suffix == ".pdf":
+                return JSONResponse(
+                    {"error": "Video/PDF preview not available for remote sources."},
+                    status_code=415,
+                )
+            try:
+                text = file_bytes.decode("utf-8", errors="strict")
+                return JSONResponse({"type": "text", "content": text, "extension": suffix})
+            except UnicodeDecodeError:
+                return _hex_dump(file_bytes, len(file_bytes))
+
+        # Local filesystem reading
+        raw = Path(path)
+        if raw.is_absolute():
+            target = raw.resolve()
+        elif config.root_path is not None:
+            target = (config.root_path / raw).resolve()
+        else:
             return JSONResponse(
                 {"error": "Preview not available for remote sources."}, status_code=403
             )
-        raw = Path(path)
-        target = (raw if raw.is_absolute() else config.root_path / raw).resolve()
         if not target.is_file():
             return JSONResponse({"error": "not a file"}, status_code=404)
 
-        _IMAGE_EXTS = {".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp", ".bmp", ".ico"}
-        _VIDEO_EXTS = {".mp4", ".mov", ".webm"}
-        _META_EXTS = {".png", ".svg", ".mp4", ".mov"}
-        suffix = target.suffix.lower()
-
         meta: dict[str, str] = {}
         if suffix in _META_EXTS:
-            from dirplot.commands.misc import _read_meta_from_file
+            try:
+                from dirplot.commands.misc import _read_meta_from_file
 
-            found, _ = await asyncio.to_thread(_read_meta_from_file, target)
-            meta = found or {}
+                found, _ = await asyncio.to_thread(_read_meta_from_file, target)
+                meta = found or {}
+            except Exception:
+                pass
+
+        if suffix in {".heic", ".heif"}:
+            jpeg_bytes = await asyncio.to_thread(_heic_to_jpeg, target)
+            if jpeg_bytes is None:
+                return JSONResponse(
+                    {"error": "HEIC preview requires pillow-heif or macOS sips."},
+                    status_code=415,
+                )
+            data = base64.b64encode(jpeg_bytes).decode()
+            return JSONResponse({"type": "image", "mime": "image/jpeg", "data": data, "meta": {}})
 
         if suffix in _IMAGE_EXTS:
             mime = mimetypes.types_map.get(suffix, "image/png")
@@ -168,13 +285,18 @@ def create_app(config: ServeConfig):  # type: ignore[no-untyped-def]
             return JSONResponse({"type": "image", "mime": mime, "data": data, "meta": meta})
 
         if suffix in _VIDEO_EXTS:
-            return JSONResponse({"type": "video", "path": str(target), "meta": meta})
+            mime = "video/mp4" if suffix in {".mp4", ".mov"} else "video/webm"
+            return JSONResponse({"type": "video", "mime": mime, "path": str(target), "meta": meta})
+
+        if suffix in _AUDIO_EXTS:
+            mime = _AUDIO_MIME.get(suffix, "audio/mpeg")
+            return JSONResponse({"type": "audio", "mime": mime, "path": str(target)})
 
         if suffix == ".pdf":
             return JSONResponse({"type": "pdf", "path": str(target)})
 
         try:
-            text = target.read_text(encoding="utf-8", errors="replace")
+            text = target.read_text(encoding="utf-8", errors="strict")
             return JSONResponse({"type": "text", "content": text, "extension": suffix})
         except Exception:
             raw_bytes = target.read_bytes()[:1000]
@@ -196,13 +318,19 @@ def create_app(config: ServeConfig):  # type: ignore[no-untyped-def]
     async def api_file_stream(path: str) -> Response:
         from fastapi.responses import FileResponse
 
-        if config.root_path is None:
-            return JSONResponse({"error": "not available for remote sources"}, status_code=403)
         raw = Path(path)
-        target = (raw if raw.is_absolute() else config.root_path / raw).resolve()
+        if raw.is_absolute():
+            target = raw.resolve()
+        elif config.root_path is not None:
+            target = (config.root_path / raw).resolve()
+        else:
+            return JSONResponse({"error": "not available for remote sources"}, status_code=403)
         if not target.is_file():
             return JSONResponse({"error": "not a file"}, status_code=404)
-        return FileResponse(str(target))
+        # .mov uses video/quicktime which Chrome/Firefox reject; serve as video/mp4
+        # since modern .mov files (H.264/AAC) share the same codec as MP4.
+        media_type = "video/mp4" if target.suffix.lower() == ".mov" else None
+        return FileResponse(str(target), media_type=media_type)
 
     class OperationRequest(BaseModel):
         op: str  # "delete" or "move"

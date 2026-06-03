@@ -10,7 +10,11 @@
 <body data-allow-write="{{ 'true' if allow_write else 'false' }}">
   <header id="toolbar">
     <span id="app-name">dirplot</span>
-    <input id="source-input" type="text" autocomplete="off" spellcheck="false" title="Data source — press Enter to rescan">
+    <div id="source-wrap">
+      <input id="source-input" type="text" autocomplete="off" spellcheck="false" title="Data source — press Enter to rescan">
+      <button id="source-history-btn" tabindex="-1" title="Recent sources" aria-label="Recent sources">▾</button>
+      <ul id="source-history-list" class="hidden" role="listbox" aria-label="Recent sources"></ul>
+    </div>
     <nav id="breadcrumb-trail" aria-label="breadcrumb"></nav>
     <div id="search-wrap">
       <svg id="search-icon" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -22,6 +26,13 @@
         <input type="checkbox" id="search-regex">
         <span>.*</span>
       </label>
+    </div>
+    <div id="export-wrap">
+      <button id="export-btn" title="Export treemap">Export ▾</button>
+      <div id="export-menu" class="hidden">
+        <button data-fmt="svg">Download SVG</button>
+        <button data-fmt="png">Download PNG</button>
+      </div>
     </div>
   </header>
 

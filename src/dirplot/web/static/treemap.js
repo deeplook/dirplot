@@ -509,16 +509,199 @@ function runSearch() {
 document.getElementById("search-input").addEventListener("input", runSearch);
 document.getElementById("search-regex").addEventListener("change", runSearch);
 
+// ── Source history (localStorage) ────────────────────────────────────────
+
+const _SRC_HISTORY_KEY = "dirplot_source_history";
+const _SRC_HISTORY_MAX = 20;
+
+function _loadSourceHistory() {
+  try { return JSON.parse(localStorage.getItem(_SRC_HISTORY_KEY) || "[]"); }
+  catch { return []; }
+}
+
+function _saveToHistory(val) {
+  if (!val) return;
+  let hist = _loadSourceHistory().filter(v => v !== val);
+  hist.unshift(val);
+  if (hist.length > _SRC_HISTORY_MAX) hist = hist.slice(0, _SRC_HISTORY_MAX);
+  localStorage.setItem(_SRC_HISTORY_KEY, JSON.stringify(hist));
+}
+
+function _removeFromHistory(val) {
+  const hist = _loadSourceHistory().filter(v => v !== val);
+  localStorage.setItem(_SRC_HISTORY_KEY, JSON.stringify(hist));
+}
+
+function _renderHistoryList() {
+  const list = document.getElementById("source-history-list");
+  const hist = _loadSourceHistory();
+  list.innerHTML = "";
+  if (hist.length === 0) {
+    const empty = document.createElement("li");
+    empty.style.color = "var(--text-dim)";
+    empty.style.cursor = "default";
+    empty.textContent = "No history yet";
+    list.appendChild(empty);
+    return;
+  }
+  for (const val of hist) {
+    const li = document.createElement("li");
+    const label = document.createElement("span");
+    label.textContent = val;
+    label.style.overflow = "hidden";
+    label.style.textOverflow = "ellipsis";
+    const del = document.createElement("span");
+    del.className = "src-del";
+    del.textContent = "✕";
+    del.title = "Remove from history";
+    del.addEventListener("click", e => {
+      e.stopPropagation();
+      _removeFromHistory(val);
+      _renderHistoryList();
+      if (_loadSourceHistory().length === 0) _closeHistoryList();
+    });
+    li.appendChild(label);
+    li.appendChild(del);
+    li.addEventListener("click", async () => {
+      _closeHistoryList();
+      const input = document.getElementById("source-input");
+      input.value = val;
+      _currentRoot = val;
+      _zoomStack = []; _metricsLoaded = false;
+      await refreshTree();
+    });
+    list.appendChild(li);
+  }
+}
+
+function _openHistoryList() {
+  _renderHistoryList();
+  document.getElementById("source-history-list").classList.remove("hidden");
+}
+
+function _closeHistoryList() {
+  document.getElementById("source-history-list").classList.add("hidden");
+}
+
 // ── Source input ──────────────────────────────────────────────────────────
 
 document.getElementById("source-input").addEventListener("keydown", async e => {
+  if (e.key === "Escape") { _closeHistoryList(); e.target.blur(); return; }
   if (e.key !== "Enter") return;
   const val = e.target.value.trim();
   if (!val) return;
+  _closeHistoryList();
+  _saveToHistory(val);
   _currentRoot = val;
   _zoomStack = []; _metricsLoaded = false;
   e.target.blur();
   await refreshTree();
+});
+
+document.getElementById("source-history-btn").addEventListener("click", e => {
+  e.stopPropagation();
+  const list = document.getElementById("source-history-list");
+  if (list.classList.contains("hidden")) _openHistoryList();
+  else _closeHistoryList();
+});
+
+document.addEventListener("click", e => {
+  if (!document.getElementById("source-wrap").contains(e.target)) _closeHistoryList();
+}, true);
+
+// ── Export ────────────────────────────────────────────────────────────────
+
+function _exportFilename(ext) {
+  const root = document.getElementById("source-input").value.trim();
+  const base = root ? root.replace(/[^a-zA-Z0-9._-]/g, "_").replace(/_+/g, "_").replace(/^_|_$/g, "") : "treemap";
+  return `${base}.${ext}`;
+}
+
+async function _exportCSS() {
+  const variants = [
+    { weight: 400, url: "/static/fonts/JetBrainsMono-Regular.ttf" },
+    { weight: 700, url: "/static/fonts/JetBrainsMono-Bold.ttf" },
+  ];
+  const parts = await Promise.all(variants.map(async ({ weight, url }) => {
+    const buf = await fetch(url).then(r => r.arrayBuffer());
+    const bytes = new Uint8Array(buf);
+    let bin = "";
+    for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+    const b64 = btoa(bin);
+    return `@font-face{font-family:"JetBrains Mono";font-weight:${weight};src:url(data:font/truetype;base64,${b64}) format("truetype");}`;
+  }));
+  // XMLSerializer serialises DOM attributes only — computed styles from the
+  // external stylesheet are lost.  Resolve and embed the rules that matter.
+  const cs = getComputedStyle(document.documentElement);
+  const dirBorder = cs.getPropertyValue("--dir-border").trim() || "rgba(255,255,255,0.75)";
+  parts.push(
+    `text,tspan{font-family:"JetBrains Mono",monospace;}`,
+    `.node.file>rect.tile-bg{stroke:#000;stroke-width:1;}`,
+    `.node.dir>rect.tile-bg{fill:none;stroke:${dirBorder};stroke-width:1;}`,
+  );
+  return parts.join("");
+}
+
+function _svgWithEmbeddedFonts(svgEl, fontCSS) {
+  const serializer = new XMLSerializer();
+  let src = serializer.serializeToString(svgEl);
+  if (!src.includes('xmlns=')) src = src.replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"');
+  const defs = `<defs><style>${fontCSS}</style></defs>`;
+  return src.replace(/(<svg[^>]*>)/, `$1${defs}`);
+}
+
+async function exportSVG() {
+  const svgEl = document.getElementById("treemap");
+  const fontCSS = await _exportCSS();
+  const src = _svgWithEmbeddedFonts(svgEl, fontCSS);
+  const blob = new Blob([src], { type: "image/svg+xml;charset=utf-8" });
+  _triggerDownload(URL.createObjectURL(blob), _exportFilename("svg"));
+}
+
+async function exportPNG() {
+  await document.fonts.ready;
+  const svgEl = document.getElementById("treemap");
+  const w = +svgEl.getAttribute("width") || svgEl.clientWidth;
+  const h = +svgEl.getAttribute("height") || svgEl.clientHeight;
+  const fontCSS = await _exportCSS();
+  const src = _svgWithEmbeddedFonts(svgEl, fontCSS);
+  const blob = new Blob([src], { type: "image/svg+xml;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const img = new Image();
+  img.onload = () => {
+    // requestAnimationFrame gives the browser a frame to parse embedded @font-face
+    // before rasterising — without this the canvas may draw with a fallback font.
+    requestAnimationFrame(() => {
+      const canvas = document.createElement("canvas");
+      canvas.width = w; canvas.height = h;
+      canvas.getContext("2d").drawImage(img, 0, 0);
+      URL.revokeObjectURL(url);
+      canvas.toBlob(b => _triggerDownload(URL.createObjectURL(b), _exportFilename("png")), "image/png");
+    });
+  };
+  img.src = url;
+}
+
+function _triggerDownload(url, filename) {
+  const a = document.createElement("a");
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+const _exportBtn = document.getElementById("export-btn");
+const _exportMenu = document.getElementById("export-menu");
+_exportBtn.addEventListener("click", e => {
+  e.stopPropagation();
+  _exportMenu.classList.toggle("hidden");
+});
+document.addEventListener("click", () => _exportMenu.classList.add("hidden"));
+_exportMenu.addEventListener("click", e => {
+  const fmt = e.target.dataset.fmt;
+  if (fmt === "svg") exportSVG();
+  else if (fmt === "png") exportPNG();
+  _exportMenu.classList.add("hidden");
 });
 
 // ── Context menu ──────────────────────────────────────────────────────────
@@ -926,15 +1109,12 @@ async function previewFile(nodeData) {
   header.textContent = nodeData.path;
   header.classList.remove("hidden");
 
-  if (_isRemoteRoot(_currentRoot)) {
-    content.innerHTML = '<span class="text-dim">Preview not available for remote sources.</span>';
-    return;
-  }
-
   content.innerHTML = '<span class="text-dim">Loading…</span>';
 
   try {
-    const res = await fetch(`/api/file?path=${encodeURIComponent(nodeData.path)}`);
+    let fileUrl = `/api/file?path=${encodeURIComponent(nodeData.path)}`;
+    if (_isRemoteRoot(_currentRoot)) fileUrl += `&root=${encodeURIComponent(_currentRoot)}`;
+    const res = await fetch(fileUrl);
     const data = await res.json();
     if (data.error) {
       content.innerHTML = `<span class="text-dim">${data.error}</span>`;
@@ -944,10 +1124,22 @@ async function previewFile(nodeData) {
     } else if (data.type === "video") {
       const vid = document.createElement("video");
       vid.controls = true;
-      vid.src = `/api/file-stream?path=${encodeURIComponent(nodeData.path)}`;
+      const src = document.createElement("source");
+      src.src = `/api/file-stream?path=${encodeURIComponent(nodeData.path)}`;
+      if (data.mime) src.type = data.mime;
+      vid.appendChild(src);
       content.innerHTML = "";
       content.appendChild(vid);
       if (data.meta && Object.keys(data.meta).length > 0) content.appendChild(_buildMetaTable(data.meta));
+    } else if (data.type === "audio") {
+      const aud = document.createElement("audio");
+      aud.controls = true;
+      const src = document.createElement("source");
+      src.src = `/api/file-stream?path=${encodeURIComponent(nodeData.path)}`;
+      if (data.mime) src.type = data.mime;
+      aud.appendChild(src);
+      content.innerHTML = "";
+      content.appendChild(aud);
     } else if (data.type === "pdf") {
       const iframe = document.createElement("iframe");
       iframe.src = `/api/file-stream?path=${encodeURIComponent(nodeData.path)}`;
@@ -1256,8 +1448,10 @@ async function initSidebar(cfg) {
     sel.appendChild(opt);
   }
 
-  // Seed source input
+  // Seed source input and history
   document.getElementById("source-input").value = cfg.root || "";
+  if (_isRemoteRoot(cfg.root)) _currentRoot = cfg.root;
+  if (cfg.root) _saveToHistory(cfg.root);
 
   // Seed settings from config
   settings.depth = cfg.depth;

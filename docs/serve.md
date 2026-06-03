@@ -62,6 +62,14 @@ Type to highlight matching files. The `.*` pill to the right of the input toggle
 
 The main canvas renders the directory tree as a nested squarify treemap. Tile area is proportional to file size (or log-scaled size when log-scale > 1).
 
+### Layout vs. static output
+
+The web view and `dirplot map` both use the squarified treemap algorithm (Bruls et al. 2000) and both reserve the same header height for directory labels before running the layout. They still produce different tile arrangements because:
+
+- **Different squarify implementations.** D3's `treemapSquarify` and the Python `squarify` package implement the same algorithm but differ in floating-point arithmetic and edge-case handling. A single borderline split near the root propagates to a completely different arrangement below it.
+- **Slightly different padding amounts.** The exact pixel amounts subtracted for borders and inner gaps differ between the two renderers, changing the aspect ratio of the rectangle squarify receives at each level.
+- **Rounding at different points.** D3 rounds tile coordinates after computing the full hierarchy; the Python code rounds after each recursive call and passes the rounded bounds to the next level, accumulating error differently.
+
 ### Interaction
 
 | Action | Result |
