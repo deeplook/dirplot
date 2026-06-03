@@ -914,6 +914,17 @@ document.addEventListener("mouseup", () => {
   document.body.style.cursor = "";
 });
 
+function debounce(fn, ms) {
+  let t;
+  return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
+}
+
+async function _serverRefresh() {
+  _zoomStack = []; _metricsLoaded = false;
+  await refreshTree();
+}
+const _scheduleRefresh = debounce(_serverRefresh, 600);
+
 // Slider live display
 function bindSlider(id, valId, suffix, onChange) {
   const slider = document.getElementById(id);
@@ -926,10 +937,10 @@ function bindSlider(id, valId, suffix, onChange) {
 
 bindSlider("s-depth", "s-depth-val", "", v => {
   settings.depth = v;
+  _scheduleRefresh();
 });
 bindSlider("s-font-size", "s-font-size-val", "px", v => {
   settings.fontSize = v;
-  // client-side only — re-render without refetch
   if (_treeData) {
     const focused = _zoomStack.length ? findNode(_treeData, _zoomStack[_zoomStack.length - 1]) : _treeData;
     renderTreemap(focused || _treeData);
@@ -937,9 +948,10 @@ bindSlider("s-font-size", "s-font-size-val", "px", v => {
 });
 
 // Depth "unlimited" button
-document.getElementById("s-depth-reset").addEventListener("click", () => {
+document.getElementById("s-depth-reset").addEventListener("click", async () => {
   settings.depth = null;
   document.getElementById("s-depth-val").textContent = "∞";
+  await _serverRefresh();
 });
 
 // Canvas reset
@@ -979,15 +991,18 @@ document.getElementById("s-dark-mode").addEventListener("change", e => {
   }
 });
 
-// Log scale slider — live value display only; re-fetch happens on Apply
+// Log scale slider — re-fetch on change
 document.getElementById("s-log-scale").addEventListener("input", e => {
   const v = Number(e.target.value);
+  settings.logScale = v;
   document.getElementById("s-log-scale-val").textContent = v === 1 ? "off" : String(v);
+  _scheduleRefresh();
 });
 
-// Colormap — update settings; apply = re-fetch
+// Colormap — re-fetch immediately on change
 document.getElementById("s-colormap").addEventListener("change", e => {
   settings.colormap = e.target.value;
+  _serverRefresh();
 });
 
 // Parse highlight lines  e.g. "**/*.py@orange"
@@ -1001,25 +1016,18 @@ function parseHighlights(text) {
     });
 }
 
-// Apply button — re-fetch tree with server params; re-render with client params
-document.getElementById("s-apply").addEventListener("click", async () => {
-  settings.depth = (() => {
-    const v = document.getElementById("s-depth").value;
-    const n = Number(v);
-    return (isNaN(n) || n <= 0) ? null : n;
-  })();
-  settings.logScale = Number(document.getElementById("s-log-scale").value);
-  settings.colormap = document.getElementById("s-colormap").value;
-  settings.fontSize = Number(document.getElementById("s-font-size").value);
-  settings.canvasW = Number(document.getElementById("s-canvas-w").value) || null;
-  settings.canvasH = Number(document.getElementById("s-canvas-h").value) || null;
+// Textareas — debounced re-fetch
+document.getElementById("s-exclude").addEventListener("input", () => {
   settings.exclude = document.getElementById("s-exclude").value.split("\n").map(l => l.trim()).filter(Boolean);
+  _scheduleRefresh();
+});
+document.getElementById("s-include").addEventListener("input", () => {
   settings.include = document.getElementById("s-include").value.split("\n").map(l => l.trim()).filter(Boolean);
+  _scheduleRefresh();
+});
+document.getElementById("s-highlight").addEventListener("input", () => {
   settings.highlights = parseHighlights(document.getElementById("s-highlight").value);
-
-  applyCanvasSize();
-  _zoomStack = []; _metricsLoaded = false; // reset zoom + metrics cache on config change
-  await refreshTree();
+  _scheduleRefresh();
 });
 
 // Reset all

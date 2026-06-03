@@ -464,23 +464,7 @@ html, body {
   background: #fff;
 }
 
-/* ── Apply / Reset buttons ───────────────────────────────────────────── */
-.apply-btn {
-  width: 100%;
-  margin-top: 4px;
-  padding: 9px 0;
-  background: var(--accent);
-  color: #fff;
-  border: none;
-  border-radius: 5px;
-  font-family: inherit;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: opacity 0.15s;
-}
-.apply-btn:hover { opacity: 0.85; }
-
+/* ── Reset button ────────────────────────────────────────────────────── */
 .reset-all-btn {
   width: 100%;
   margin-top: 8px;
