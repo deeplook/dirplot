@@ -711,8 +711,12 @@ function syncDepthSlider(data) {
   slider.max = _knownMaxDepth;
 }
 
+let _lastScanMs = 0;
+
 async function fetchTree() {
+  const t0 = performance.now();
   const resp = await fetch(buildTreeUrl());
+  _lastScanMs = performance.now() - t0;
   return resp.json();
 }
 
@@ -783,25 +787,57 @@ function fmtBytes(n) {
   return n + " B";
 }
 
-function buildMetricsUrl() {
-  const p = new URLSearchParams();
-  if (settings.depth !== null) p.set("depth", settings.depth);
-  for (const e of settings.exclude) if (e.trim()) p.append("exclude", e.trim());
-  if (_currentRoot) p.set("root", _currentRoot);
-  const qs = p.toString();
-  return "/api/metrics" + (qs ? "?" + qs : "");
+function _computeMetrics(root) {
+  let files = 0, dirs = 0, empty_dirs = 0;
+  const ext_map = {};
+  const file_list = [];
+  const dir_list = [];
+
+  function walk(n) {
+    if (n.is_dir) {
+      dirs++;
+      if (!n.children || n.children.length === 0) empty_dirs++;
+      if (n.path !== root.path) dir_list.push({path: n.path, size_bytes: n.size || 0});
+      for (const c of (n.children || [])) walk(c);
+    } else {
+      files++;
+      const sz = n.size || 0;
+      const ext = n.extension || "";
+      if (!ext_map[ext]) ext_map[ext] = {count: 0, size_bytes: 0};
+      ext_map[ext].count++;
+      ext_map[ext].size_bytes += sz;
+      file_list.push({path: n.path, size_bytes: sz});
+    }
+  }
+  walk(root);
+
+  const total = root.size || 0;
+  const pct = sz => total > 0 ? sz / total * 100 : 0;
+
+  file_list.sort((a, b) => b.size_bytes - a.size_bytes);
+  dir_list.sort((a, b) => b.size_bytes - a.size_bytes);
+
+  return {
+    files,
+    dirs,
+    empty_dirs,
+    total_size_bytes: total,
+    depth: _knownMaxDepth,
+    scan_time_s: _lastScanMs / 1000,
+    top_extensions: Object.entries(ext_map)
+      .map(([ext, v]) => ({ext, ...v}))
+      .sort((a, b) => b.size_bytes - a.size_bytes)
+      .slice(0, 10),
+    largest_files: file_list.slice(0, 10).map(f => ({...f, pct: pct(f.size_bytes)})),
+    largest_dirs: dir_list.slice(0, 10).map(d => ({...d, pct: pct(d.size_bytes)})),
+  };
 }
 
-async function loadMetrics() {
+function loadMetrics() {
   const el = document.getElementById("metrics-content");
-  el.innerHTML = '<span class="text-dim">Computing…</span>';
-  try {
-    const m = await fetch(buildMetricsUrl()).then(r => r.json());
-    _metricsLoaded = true;
-    el.innerHTML = renderMetricsHTML(m);
-  } catch (e) {
-    el.innerHTML = `<span class="text-dim">Error: ${e.message}</span>`;
-  }
+  if (!_treeData) { el.innerHTML = '<span class="text-dim">No data.</span>'; return; }
+  _metricsLoaded = true;
+  el.innerHTML = renderMetricsHTML(_computeMetrics(_treeData));
 }
 
 function renderMetricsHTML(m) {
@@ -879,11 +915,22 @@ function _buildMetaTable(meta) {
   return table;
 }
 
+function _isRemoteRoot(root) {
+  if (!root) return false;
+  return root.includes("://") || /^[^@:/]+@[^@:/]+:/.test(root);
+}
+
 async function previewFile(nodeData) {
   const header = document.getElementById("preview-header");
   const content = document.getElementById("preview-content");
   header.textContent = nodeData.path;
   header.classList.remove("hidden");
+
+  if (_isRemoteRoot(_currentRoot)) {
+    content.innerHTML = '<span class="text-dim">Preview not available for remote sources.</span>';
+    return;
+  }
+
   content.innerHTML = '<span class="text-dim">Loading…</span>';
 
   try {
