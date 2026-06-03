@@ -728,6 +728,7 @@ async function refreshTree() {
     }
     const focused = _zoomStack.length ? findNode(_treeData, _zoomStack[_zoomStack.length - 1]) : _treeData;
     renderTreemap(focused || _treeData);
+    if (_activeTab === "metrics") loadMetrics();
   } finally {
     document.getElementById("loading").classList.add("hidden");
   }
