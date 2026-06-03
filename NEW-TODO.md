@@ -3,9 +3,9 @@
 - [ ] Add top left text field to enter data source (local, git, ...).
 - [ ] Place breadcrumps right to new data source text field.
 - [ ] Make search more useful (REGEX checkbox?).
-- [ ] Add search icon (lense) next to search text field..
+- [x] Add search icon (lense) next to search text field..
 - [x] Show only first 1000 bytes of binary files in preview.
-- [ ] When clicking on a file rectangle show preview only when preview tab is already open. Do not switch to the preview tab only when a rectangle is clicked.
+- [x] When clicking on a file rectangle show preview only when preview tab is already open. Do not switch to the preview tab only when a rectangle is clicked.
 - [ ] Try to get rid of the "Apply" button, and apply all changes instantly.
 - [ ] Open website (now --serve) also for diff mode, showing diffs in preview.
 - [x] Make dependencies for serve core, not optional.

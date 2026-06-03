@@ -80,13 +80,21 @@ html, body {
 #breadcrumb-trail span:hover { color: var(--text); text-decoration: underline; }
 #breadcrumb-trail .sep { margin: 0 4px; color: #555; cursor: default; }
 
-#search-wrap { flex-shrink: 0; }
+#search-wrap { flex-shrink: 0; position: relative; display: flex; align-items: center; }
+#search-icon {
+  position: absolute;
+  left: 7px;
+  width: 13px;
+  height: 13px;
+  color: var(--text-dim);
+  pointer-events: none;
+}
 #search-input {
   background: #12122a;
   border: 1px solid #2a2a50;
   color: var(--text);
   border-radius: 4px;
-  padding: 4px 8px;
+  padding: 4px 8px 4px 24px;
   font-size: 12px;
   font-family: inherit;
   width: 180px;

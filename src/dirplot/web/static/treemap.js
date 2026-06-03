@@ -379,7 +379,7 @@ function renderTreemap(data) {
       } else {
         clearSelection();
         showInfoPanel(d.data);
-        previewFile(d.data);
+        if (_activeTab === "preview") previewFile(d.data);
       }
     })
     .on("contextmenu", (event, d) => { event.preventDefault(); showContextMenu(event.clientX, event.clientY, d.data); });
@@ -774,14 +774,6 @@ function _buildMetaTable(meta) {
 }
 
 async function previewFile(nodeData) {
-  // Expand sidebar if collapsed so preview is immediately visible
-  if (_sidebarCollapsed) {
-    _sidebarCollapsed = false;
-    sidebar.classList.remove("collapsed");
-    sidebarToggle.setAttribute("aria-expanded", "true");
-    setSidebarWidth(_sidebarW);
-  }
-  switchTab("preview");
   const header = document.getElementById("preview-header");
   const content = document.getElementById("preview-content");
   header.textContent = nodeData.path;
