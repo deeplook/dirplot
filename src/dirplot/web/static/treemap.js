@@ -402,6 +402,23 @@ function renderTreemap(data) {
 
   updateBreadcrumb();
   updateSelectionOverlays();
+  if (_keyFocus) setKeyFocus(_keyFocus);
+}
+
+// ── Keyboard focus ────────────────────────────────────────────────────────
+
+let _keyFocus = null;
+
+function setKeyFocus(path) {
+  document.querySelectorAll("g.node.keyboard-focus").forEach(n => n.classList.remove("keyboard-focus"));
+  _keyFocus = path;
+  if (!path) return;
+  const el = document.querySelector(`g.node[data-path="${CSS.escape(path)}"]`);
+  if (el) el.classList.add("keyboard-focus");
+}
+
+function _visibleNodes() {
+  return Array.from(document.querySelectorAll("g.node"));
 }
 
 // ── Zoom ──────────────────────────────────────────────────────────────────
@@ -550,9 +567,53 @@ function hideContextMenu() { ctxMenu.classList.add("hidden"); _ctxTarget = null;
 
 document.addEventListener("click", () => hideContextMenu());
 document.addEventListener("keydown", e => {
-  if (e.key === "Escape") { hideContextMenu(); hideInfoPanel(); clearSelection(); }
-  if (e.key === "Backspace" && _zoomStack.length > 0 && document.activeElement === document.body) {
-    e.preventDefault(); zoomOut();
+  const active = document.activeElement;
+  const inInput = active && (active.tagName === "INPUT" || active.tagName === "TEXTAREA" || active.tagName === "SELECT");
+
+  if (e.key === "Escape") {
+    hideContextMenu(); hideInfoPanel(); clearSelection(); setKeyFocus(null);
+    if (inInput) active.blur();
+    return;
+  }
+
+  // Focus search with "/"
+  if (e.key === "/" && !inInput) {
+    e.preventDefault();
+    document.getElementById("search-input").focus();
+    return;
+  }
+
+  if (inInput) return;
+
+  if (e.key === "Backspace" && _zoomStack.length > 0) {
+    e.preventDefault(); setKeyFocus(null); zoomOut(); return;
+  }
+
+  const nodes = _visibleNodes();
+  if (!nodes.length) return;
+
+  if (e.key === "j" || e.key === "k") {
+    e.preventDefault();
+    const idx = nodes.findIndex(n => n.dataset.path === _keyFocus);
+    const next = e.key === "j"
+      ? nodes[idx < 0 ? 0 : Math.min(idx + 1, nodes.length - 1)]
+      : nodes[idx < 0 ? nodes.length - 1 : Math.max(idx - 1, 0)];
+    setKeyFocus(next.dataset.path);
+    const nd = findNode(_treeData, next.dataset.path);
+    if (nd) showInfoPanel(nd);
+    return;
+  }
+
+  if (e.key === "Enter" && _keyFocus) {
+    e.preventDefault();
+    const nd = findNode(_treeData, _keyFocus);
+    if (!nd) return;
+    if (nd.children && nd.children.length > 0) {
+      setKeyFocus(null); zoomInto(nd);
+    } else if (_activeTab === "preview") {
+      previewFile(nd);
+    }
+    return;
   }
 });
 

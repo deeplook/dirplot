@@ -182,6 +182,9 @@ html, body {
 .node.dimmed rect.tile-header { opacity: 0.12; }
 .node.dimmed text { opacity: 0.1; }
 
+.node.keyboard-focus rect.tile-bg { outline: 2px solid var(--accent); outline-offset: -2px; }
+.node.keyboard-focus text { opacity: 1 !important; }
+
 /* ── Per-extension CSS effects ───────────────────────────────────────── */
 [data-ext=".py"]   .tile-bg { filter: saturate(1.2); }
 [data-ext=".js"]   .tile-bg { filter: hue-rotate(5deg) saturate(1.1); }
