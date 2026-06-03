@@ -28,6 +28,7 @@ const settings = {
   exclude: [],
   include: [],
   highlights: [],     // [{glob, color}]
+  hljsTheme: "atom-one",
 };
 
 // Colours that mirror render_png / svg_render dark/light logic
@@ -856,12 +857,17 @@ async function previewFile(nodeData) {
   }
 }
 
-// Update hljs theme when dark/light mode changes
+const _HLJS_THEMES = {
+  "atom-one": ["atom-one-dark", "atom-one-light"],
+  "github":   ["github-dark",   "github"],
+  "vs":       ["vs2015",        "vs"],
+  "default":  ["dark",          "default"],
+};
+const _HLJS_CDN = "https://cdn.jsdelivr.net/npm/@highlightjs/cdn-assets@11/styles/";
+
 function syncHljsTheme() {
-  const dark = settings.darkMode;
-  document.getElementById("hljs-theme").href = dark
-    ? "https://cdn.jsdelivr.net/npm/@highlightjs/cdn-assets@11/styles/atom-one-dark.min.css"
-    : "https://cdn.jsdelivr.net/npm/@highlightjs/cdn-assets@11/styles/atom-one-light.min.css";
+  const [dark, light] = _HLJS_THEMES[settings.hljsTheme] || _HLJS_THEMES["atom-one"];
+  document.getElementById("hljs-theme").href = `${_HLJS_CDN}${settings.darkMode ? dark : light}.min.css`;
 }
 
 // ── Sidebar ───────────────────────────────────────────────────────────────
@@ -1024,6 +1030,12 @@ document.getElementById("s-colormap").addEventListener("change", e => {
   _serverRefresh();
 });
 
+// Code theme — client-side only
+document.getElementById("s-hljs-theme").addEventListener("change", e => {
+  settings.hljsTheme = e.target.value;
+  syncHljsTheme();
+});
+
 // Parse highlight lines  e.g. "**/*.py@orange"
 function parseHighlights(text) {
   return text.split("\n")
@@ -1061,6 +1073,7 @@ document.getElementById("s-reset-all").addEventListener("click", async () => {
   settings.exclude = [];
   settings.include = [];
   settings.highlights = [];
+  settings.hljsTheme = "atom-one";
 
   // Reset form
   const depthVal = settings.depth || 6;
@@ -1073,12 +1086,14 @@ document.getElementById("s-reset-all").addEventListener("click", async () => {
   document.getElementById("s-font-size").value = 12;
   document.getElementById("s-font-size-val").textContent = "12px";
   document.getElementById("s-colormap").value = _initialConfig.colormap;
+  document.getElementById("s-hljs-theme").value = "atom-one";
   document.getElementById("s-canvas-w").value = "";
   document.getElementById("s-canvas-h").value = "";
   document.getElementById("s-exclude").value = _initialConfig.exclude.join("\n");
   document.getElementById("s-include").value = "";
   document.getElementById("s-highlight").value = "";
 
+  syncHljsTheme();
   applyCanvasSize();
   _zoomStack = []; _metricsLoaded = false;
   await refreshTree();
