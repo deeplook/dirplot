@@ -1,7 +1,7 @@
 # TODO, Website
 
-- [ ] Add top left text field to enter data source (local, git, ...).
-- [ ] Place breadcrumps right to new data source text field.
+- [x] Add top left text field to enter data source (local, git, ...).
+- [x] Place breadcrumps right to new data source text field.
 - [x] Make search more useful (REGEX checkbox?).
 - [x] Add search icon (lense) next to search text field..
 - [x] Show only first 1000 bytes of binary files in preview.

@@ -40,14 +40,16 @@ def create_app(config: ServeConfig):  # type: ignore[no-untyped-def]
         colormap: str,
         exclude: list[str],
         include: list[str],
+        root: str = "",
     ) -> dict[str, object]:
         from dirplot.scanner import apply_breadcrumbs, apply_log_sizes, prune_to_subtrees
         from dirplot.sources import registry as source_registry
         from dirplot.tree_json import build_color_map, node_to_dict
 
+        effective_root = root if root else config.root
         effective_exclude = frozenset(exclude) if exclude else config.exclude
-        source = source_registry.find_source(config.root)
-        root_node = source.scan(config.root, exclude=effective_exclude, depth=depth)
+        source = source_registry.find_source(effective_root)
+        root_node = source.scan(effective_root, exclude=effective_exclude, depth=depth)
         if include:
             root_node = prune_to_subtrees(root_node, set(include))
         if log_scale > 1:
@@ -91,6 +93,7 @@ def create_app(config: ServeConfig):  # type: ignore[no-untyped-def]
         colormap: str | None = None,
         exclude: list[str] = fastapi.Query(default=[]),
         include: list[str] = fastapi.Query(default=[]),
+        root: str = "",
     ) -> JSONResponse:
         effective_depth = depth if depth is not None else config.depth
         effective_colormap = colormap if colormap else config.colormap
@@ -103,6 +106,7 @@ def create_app(config: ServeConfig):  # type: ignore[no-untyped-def]
             effective_colormap,
             exclude,
             include,
+            root,
         )
         return JSONResponse(content=data)
 
@@ -134,8 +138,6 @@ def create_app(config: ServeConfig):  # type: ignore[no-untyped-def]
             )
         raw = Path(path)
         target = (raw if raw.is_absolute() else config.root_path / raw).resolve()
-        if not target.is_relative_to(config.root_path):
-            return JSONResponse({"error": "path outside root"}, status_code=403)
         if not target.is_file():
             return JSONResponse({"error": "not a file"}, status_code=404)
 
@@ -189,8 +191,6 @@ def create_app(config: ServeConfig):  # type: ignore[no-untyped-def]
             return JSONResponse({"error": "not available for remote sources"}, status_code=403)
         raw = Path(path)
         target = (raw if raw.is_absolute() else config.root_path / raw).resolve()
-        if not target.is_relative_to(config.root_path):
-            return JSONResponse({"error": "path outside root"}, status_code=403)
         if not target.is_file():
             return JSONResponse({"error": "not a file"}, status_code=404)
         return FileResponse(str(target))

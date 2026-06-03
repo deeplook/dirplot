@@ -68,6 +68,22 @@ html, body {
   flex-shrink: 0;
 }
 
+#source-input {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text);
+  border-radius: 4px;
+  padding: 3px 7px;
+  font-size: 12px;
+  font-family: monospace;
+  width: 220px;
+  outline: none;
+  flex-shrink: 0;
+  transition: border-color 0.15s, background 0.15s;
+}
+#source-input:hover { border-color: var(--input-border); }
+#source-input:focus { border-color: var(--accent); background: var(--input-bg); }
+
 #breadcrumb-trail {
   flex: 1;
   font-size: 11px;

@@ -492,6 +492,18 @@ function runSearch() {
 document.getElementById("search-input").addEventListener("input", runSearch);
 document.getElementById("search-regex").addEventListener("change", runSearch);
 
+// ── Source input ──────────────────────────────────────────────────────────
+
+document.getElementById("source-input").addEventListener("keydown", async e => {
+  if (e.key !== "Enter") return;
+  const val = e.target.value.trim();
+  if (!val) return;
+  _currentRoot = val;
+  _zoomStack = []; _metricsLoaded = false;
+  e.target.blur();
+  await refreshTree();
+});
+
 // ── Context menu ──────────────────────────────────────────────────────────
 
 const ctxMenu = document.getElementById("ctx-menu");
@@ -611,6 +623,8 @@ function hideInfoPanel() { infoPanel.classList.add("hidden"); }
 
 // ── Data fetching ─────────────────────────────────────────────────────────
 
+let _currentRoot = "";  // empty = server default
+
 function buildTreeUrl() {
   const p = new URLSearchParams();
   if (settings.depth !== null) p.set("depth", settings.depth);
@@ -618,6 +632,7 @@ function buildTreeUrl() {
   if (settings.colormap !== "tab20") p.set("colormap", settings.colormap);
   for (const e of settings.exclude) if (e.trim()) p.append("exclude", e.trim());
   for (const i of settings.include) if (i.trim()) p.append("include", i.trim());
+  if (_currentRoot) p.set("root", _currentRoot);
   const qs = p.toString();
   return "/api/tree" + (qs ? "?" + qs : "");
 }
@@ -1122,6 +1137,9 @@ async function initSidebar(cfg) {
     if (cm === cfg.colormap) opt.selected = true;
     sel.appendChild(opt);
   }
+
+  // Seed source input
+  document.getElementById("source-input").value = cfg.root || "";
 
   // Seed settings from config
   settings.depth = cfg.depth;
