@@ -234,10 +234,10 @@ def _apply_cushion_inplace(
 def draw_node(
     draw: ImageDraw.ImageDraw,
     node: Node,
-    x: int,
-    y: int,
-    w: int,
-    h: int,
+    x: float,
+    y: float,
+    w: float,
+    h: float,
     color_map: dict[str, RGBAColor],
     font: ImageFont.FreeTypeFont,
     font_size: int = DEFAULT_FONT_SIZE,
@@ -253,8 +253,8 @@ def draw_node(
     Args:
         draw: PIL ImageDraw to draw into.
         node: Current tree node.
-        x, y: Top-left corner in pixels.
-        w, h: Width and height in pixels.
+        x, y: Top-left corner (float; rounded to pixels only at draw calls).
+        w, h: Width and height (float; kept precise for child layout).
         color_map: Extension → RGBA colour mapping.
         font: Font for directory name labels.
         root_label: When set, overrides the directory header label for this
@@ -265,26 +265,33 @@ def draw_node(
     if w < 2 or h < 2:
         return
 
+    # Pixel-aligned bounds for PIL draw calls. Float coordinates are preserved
+    # for inner-area computation so squarify at each level sees full precision.
+    px = round(x)
+    py = round(y)
+    pw = round(x + w) - px
+    ph = round(y + h) - py
+
     if not node.is_dir:
         if rect_map is not None:
-            rect_map[node.path.as_posix()] = (x, y, w, h)
+            rect_map[node.path.as_posix()] = (px, py, pw, ph)
         rgba = color_map.get(node.extension, (0.5, 0.5, 0.5, 1.0))
         rgb = (int(rgba[0] * 255), int(rgba[1] * 255), int(rgba[2] * 255))
-        draw.rectangle([x, y, x + w - 1, y + h - 1], fill=rgb)
+        draw.rectangle([px, py, px + pw - 1, py + ph - 1], fill=rgb)
         if cushion and img is not None:
-            _apply_cushion(img, x, y, w, h)
+            _apply_cushion(img, px, py, pw, ph)
         # 1-px border so adjacent same-colored tiles always have a visible boundary
-        if w >= 3 and h >= 3:
+        if pw >= 3 and ph >= 3:
             border = (max(0, rgb[0] - 60), max(0, rgb[1] - 60), max(0, rgb[2] - 60))
-            draw.rectangle([x, y, x + w - 1, y + h - 1], outline=border)
+            draw.rectangle([px, py, px + pw - 1, py + ph - 1], outline=border)
         # Adaptive label: largest font that fits the tile without overflow
-        if w > 20 and h > 10:
+        if pw > 20 and ph > 10:
             # Try horizontal first
-            ffont_h, label_h = _fit_font(node.name, draw, font_size + 2, w - 4, h - 4)
+            ffont_h, label_h = _fit_font(node.name, draw, font_size + 2, pw - 4, ph - 4)
             # For tall narrow tiles, also try vertical; prefer whichever wraps less
             use_vertical = False
-            if h >= w * 2 and img is not None:
-                ffont_v, label_v = _fit_font(node.name, draw, font_size + 2, h - 4, w - 4)
+            if ph >= pw * 2 and img is not None:
+                ffont_v, label_v = _fit_font(node.name, draw, font_size + 2, ph - 4, pw - 4)
                 if label_v:
                     h_lines = label_h.count("\n") + 1 if label_h else 999
                     v_lines = label_v.count("\n") + 1
@@ -292,9 +299,9 @@ def draw_node(
                         use_vertical = True
             if use_vertical:
                 # Tall, narrow tile — rotate label 90° CCW so it runs along the height
-                tmp = Image.new("RGBA", (h, w), (0, 0, 0, 0))
+                tmp = Image.new("RGBA", (ph, pw), (0, 0, 0, 0))
                 ImageDraw.Draw(tmp).text(
-                    (h // 2, w // 2),
+                    (ph // 2, pw // 2),
                     label_v,
                     fill=_label_color(rgb),
                     font=ffont_v,
@@ -304,11 +311,11 @@ def draw_node(
                 )
                 rotated = tmp.rotate(90, expand=True)
                 assert img is not None
-                img.paste(rotated, (x, y), mask=rotated)
+                img.paste(rotated, (px, py), mask=rotated)
             else:
-                # Horizontal label: available text-run = w-4, constraining dim = h-4
+                # Horizontal label: available text-run = pw-4, constraining dim = ph-4
                 draw.text(
-                    (x + w // 2, y + h // 2),
+                    (px + pw // 2, py + ph // 2),
                     label_h,
                     fill=_label_color(rgb),
                     font=ffont_h,
@@ -319,24 +326,24 @@ def draw_node(
         return
 
     if dir_rect_map is not None:
-        dir_rect_map[node.path.as_posix()] = (x, y, w, h)
+        dir_rect_map[node.path.as_posix()] = (px, py, pw, ph)
 
     # Directory: 1-px outer border + 1-px inner border (colours swap in light mode)
     outer_col = (255, 255, 255) if dark else (0, 0, 0)
     inner_col = (0, 0, 0) if dark else (255, 255, 255)
-    draw.rectangle([x, y, x + w - 1, y + h - 1], outline=outer_col, width=1)
-    if w >= 4 and h >= 4:
-        draw.rectangle([x + 1, y + 1, x + w - 2, y + h - 2], outline=inner_col, width=1)
+    draw.rectangle([px, py, px + pw - 1, py + ph - 1], outline=outer_col, width=1)
+    if pw >= 4 and ph >= 4:
+        draw.rectangle([px + 1, py + 1, px + pw - 2, py + ph - 2], outline=inner_col, width=1)
 
     # Header label — height driven by the font size
     header_h = font.size + 4
     if h > 2 + header_h:
         label = _truncate_breadcrumb(
-            root_label if root_label is not None else node.name, draw, font, w - 8
+            root_label if root_label is not None else node.name, draw, font, pw - 8
         )
         header_text_col = (224, 224, 224) if dark else (32, 32, 32)
         draw.text(
-            (x + w // 2, y + 2 + header_h // 2),
+            (px + pw // 2, py + 2 + header_h // 2),
             label,
             fill=header_text_col,
             font=font,
@@ -344,9 +351,8 @@ def draw_node(
             align="center",
         )
 
-    # Inner content area: starts just inside the 2-px border, ends ON the
-    # right/bottom inner-border pixel so the pre-fill and the inner border
-    # share that pixel rather than stacking two black pixels there.
+    # Inner content area computed from float coordinates so squarify receives
+    # the true available space rather than a rounded approximation.
     ix = x + 2
     iy = y + 2 + header_h
     iw = w - 3
@@ -365,20 +371,17 @@ def draw_node(
 
     # Background provides the 1-px separator between adjacent children
     sep_col = (0, 0, 0) if dark else (255, 255, 255)
-    draw.rectangle([ix, iy, ix + iw - 1, iy + ih - 1], fill=sep_col)
+    six, siy = round(ix), round(iy)
+    draw.rectangle([six, siy, round(ix + iw) - 1, round(iy + ih) - 1], fill=sep_col)
 
     for rect, child in zip(rects, positive_children, strict=False):
-        rx = round(rect["x"])
-        ry = round(rect["y"])
-        rw = round(rect["x"] + rect["dx"]) - rx
-        rh = round(rect["y"] + rect["dy"]) - ry
         draw_node(
             draw,
             child,
-            rx,
-            ry,
-            rw - 1,
-            rh - 1,
+            rect["x"],
+            rect["y"],
+            rect["dx"] - 1,
+            rect["dy"] - 1,
             color_map,
             font,
             font_size,

@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>dirplot — {{ root_name }}</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <link id="hljs-theme" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@highlightjs/cdn-assets@11/styles/atom-one-dark.min.css">
+</head>
+<body data-allow-write="{{ 'true' if allow_write else 'false' }}">
+  <header id="toolbar">
+    <span id="app-name">dirplot</span>
+    <div id="source-wrap">
+      <input id="source-input" type="text" autocomplete="off" spellcheck="false" title="Data source — press Enter to rescan">
+      <button id="source-history-btn" tabindex="-1" title="Recent sources" aria-label="Recent sources">▾</button>
+      <ul id="source-history-list" class="hidden" role="listbox" aria-label="Recent sources"></ul>
+    </div>
+    <nav id="breadcrumb-trail" aria-label="breadcrumb"></nav>
+    <div id="search-wrap">
+      <svg id="search-icon" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <circle cx="6.5" cy="6.5" r="4" stroke="currentColor" stroke-width="1.5"/>
+        <line x1="9.7" y1="9.7" x2="13.5" y2="13.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <input type="text" id="search-input" placeholder="Search files…" autocomplete="off" spellcheck="false">
+      <label id="search-regex-label" title="Use regular expression">
+        <input type="checkbox" id="search-regex">
+        <span>.*</span>
+      </label>
+    </div>
+    <div id="export-wrap">
+      <button id="export-btn" title="Export treemap">Export ▾</button>
+      <div id="export-menu" class="hidden">
+        <button data-fmt="svg">Download SVG</button>
+        <button data-fmt="png">Download PNG</button>
+      </div>
+    </div>
+  </header>
+
+  <div id="main-area">
+    <main id="treemap-container">
+      <svg id="treemap" aria-label="Treemap"></svg>
+      <div id="loading">Loading…</div>
+    </main>
+
+    <aside id="sidebar" class="collapsed" aria-label="Settings">
+      <div id="sidebar-resizer"></div>
+      <button id="sidebar-toggle" title="Toggle sidebar" aria-expanded="false">
+        <span id="sidebar-chevron">&#x276F;</span>
+      </button>
+      <div id="sidebar-content">
+
+        <div id="sidebar-tabs">
+          <button class="tab-btn active" data-tab="settings">Settings</button>
+          <button class="tab-btn" data-tab="metrics">Metrics</button>
+          <button class="tab-btn" data-tab="preview">Preview</button>
+        </div>
+
+        <!-- ── Settings panel ─────────────────────────────────────── -->
+        <div id="tab-settings" class="tab-panel">
+
+          <section class="setting-group">
+            <label class="setting-label toggle-label">
+              <span>Dark mode</span>
+              <span class="toggle-wrap">
+                <input type="checkbox" id="s-dark-mode" class="toggle-input" checked>
+                <span class="toggle-track"></span>
+              </span>
+            </label>
+          </section>
+
+          <section class="setting-group">
+            <label class="setting-label" for="s-depth">Depth</label>
+            <div class="setting-row">
+              <input type="range" id="s-depth" min="1" max="12" value="6" class="slider">
+              <span id="s-depth-val" class="val-display">6</span>
+              <button id="s-depth-reset" class="reset-btn" title="Remove depth limit">∞</button>
+            </div>
+          </section>
+
+          <section class="setting-group">
+            <label class="setting-label" for="s-log-scale">Log scale <span class="hint">(1 = off)</span></label>
+            <div class="setting-row">
+              <input type="range" id="s-log-scale" min="1" max="10" value="4" class="slider">
+              <span id="s-log-scale-val" class="val-display">4</span>
+            </div>
+          </section>
+
+          <section class="setting-group">
+            <label class="setting-label" for="s-font-size">Font size</label>
+            <div class="setting-row">
+              <input type="range" id="s-font-size" min="6" max="28" value="12" class="slider">
+              <span id="s-font-size-val" class="val-display">12px</span>
+            </div>
+          </section>
+
+          <section class="setting-group">
+            <label class="setting-label" for="s-colormap">Colormap</label>
+            <select id="s-colormap" class="select-input">
+              <option value="tab20">tab20 (default)</option>
+            </select>
+          </section>
+
+          <section class="setting-group">
+            <label class="setting-label" for="s-hljs-theme">Code theme</label>
+            <select id="s-hljs-theme" class="select-input">
+              <option value="atom-one">Atom One (default)</option>
+              <option value="github">GitHub</option>
+              <option value="vs">VS</option>
+              <option value="default">Default</option>
+              <option value="stackoverflow">Stack Overflow</option>
+              <option value="tokyo-night">Tokyo Night</option>
+              <option value="panda">Panda Syntax</option>
+              <option value="kimbie">Kimbie</option>
+              <option value="a11y">A11y</option>
+              <option value="rose-pine">Rose Piné</option>
+            </select>
+          </section>
+
+          <section class="setting-group">
+            <label class="setting-label" for="s-canvas-w">Canvas size</label>
+            <div class="setting-row gap">
+              <label class="mini-label">
+                W <input type="number" id="s-canvas-w" min="200" max="9999" placeholder="auto" class="num-input">
+              </label>
+              <span class="dim-sep">×</span>
+              <label class="mini-label">
+                H <input type="number" id="s-canvas-h" min="200" max="9999" placeholder="auto" class="num-input">
+              </label>
+              <button id="s-canvas-reset" class="reset-btn" title="Reset to auto">↺</button>
+            </div>
+          </section>
+
+          <section class="setting-group">
+            <label class="setting-label" for="s-exclude">Exclude <span class="hint">(glob, one per line)</span></label>
+            <textarea id="s-exclude" class="textarea-input" rows="3" placeholder="__pycache__&#10;*.pyc&#10;node_modules"></textarea>
+          </section>
+
+          <section class="setting-group">
+            <label class="setting-label" for="s-include">Include <span class="hint">(subtrees, one per line)</span></label>
+            <textarea id="s-include" class="textarea-input" rows="3" placeholder="src&#10;tests"></textarea>
+          </section>
+
+          <section class="setting-group">
+            <label class="setting-label" for="s-highlight">Highlight <span class="hint">(glob@color, one per line)</span></label>
+            <textarea id="s-highlight" class="textarea-input" rows="3" placeholder="**/*.py@orange&#10;tests/**@cyan"></textarea>
+          </section>
+
+          <button id="s-reset-all" class="reset-all-btn">Reset all</button>
+        </div>
+
+        <!-- ── Metrics panel ──────────────────────────────────────── -->
+        <div id="tab-metrics" class="tab-panel hidden">
+          <div id="metrics-content" class="metrics-content">
+            <span class="text-dim">Click "Metrics" to load…</span>
+          </div>
+        </div>
+
+        <!-- ── Preview panel ──────────────────────────────────────── -->
+        <div id="tab-preview" class="tab-panel hidden">
+          <div id="preview-header" class="preview-header hidden"></div>
+          <div id="preview-content" class="preview-content">
+            <span class="text-dim">Click a file to preview it here.</span>
+          </div>
+        </div>
+
+      </div><!-- /sidebar-content -->
+    </aside>
+  </div>
+
+  <ul id="ctx-menu" class="ctx-menu hidden" role="menu">
+    <li data-action="info" role="menuitem">File info</li>
+    <li data-action="delete" class="write-only danger" role="menuitem">Delete</li>
+    <li data-action="move" class="write-only" role="menuitem">Move to…</li>
+    <li id="ctx-sel-divider" class="ctx-divider" style="display:none"></li>
+    <li data-action="delete-selected" class="write-only danger" role="menuitem" style="display:none">Delete selected</li>
+    <li data-action="copy-paths" role="menuitem" style="display:none">Copy paths</li>
+  </ul>
+
+  <div id="info-panel" class="hidden">
+    <button id="info-close" aria-label="Close">✕</button>
+    <h3 id="info-name"></h3>
+    <dl id="info-details"></dl>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@highlightjs/cdn-assets@11/highlight.min.js"></script>
+  <script src="/static/treemap.js"></script>
+</body>
+</html>

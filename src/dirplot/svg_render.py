@@ -454,17 +454,13 @@ def _draw_node_svg(
     d.append(drawsvg.Rectangle(ix, iy, iw, ih, fill=sep_fill))
 
     for rect, child in zip(rects, positive_children, strict=False):
-        rx = round(rect["x"])
-        ry = round(rect["y"])
-        rw = round(rect["x"] + rect["dx"]) - rx - 1
-        rh = round(rect["y"] + rect["dy"]) - ry - 1
         _draw_node_svg(
             d,
             child,
-            rx,
-            ry,
-            rw,
-            rh,
+            rect["x"],
+            rect["y"],
+            rect["dx"] - 1,
+            rect["dy"] - 1,
             color_map,
             font_size,
             cushion_grad,

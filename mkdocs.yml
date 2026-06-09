@@ -32,6 +32,7 @@ nav:
   - Home: index.md
   - Installation: installation.md
   - Examples: examples.md
+  - Web Interface: serve.md
   - Remote Sources: remote-sources.md
   - Archive Formats: archives.md
   - CLI Reference: cli.md
