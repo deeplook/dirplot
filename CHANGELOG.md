@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2026-06-09
+
+### Added
+
+- **`dirplot serve` — interactive web treemap (experimental, undocumented)** — new command that
+  starts a local FastAPI server and opens a D3.js treemap in the browser. This feature is still
+  under active development; the interface and API are subject to change in future releases, and
+  full documentation is forthcoming. Features include: zoomable tiles, breadcrumb navigation,
+  keyword and regex search, keyboard navigation (j/k, Enter, /, Esc), a sidebar with Settings,
+  Metrics, and Preview tabs, and instant (no Apply button) settings changes.
+
+- **File preview in `serve`** — the Preview tab renders syntax-highlighted source files (10 paired
+  dark/light code themes), PDF documents via iframe, a hex dump for binary files, and image/video
+  previews with embedded dirplot metadata. HEIC images are supported via `pillow-heif` or the
+  macOS `sips` fallback.
+
+- **Source input and history in `serve`** — a toolbar text field accepts any source supported by
+  `dirplot` (local path, archive, GitHub URL, Docker, K8s, S3). Previous sources are tracked in a
+  history dropdown.
+
+- **HTTP(S) URL archive sources** — `dirplot` now accepts `https://` and `http://` URLs pointing
+  to archive files (zip, tar, etc.) as a source in any command. Downloads are capped at 100 MB.
+
+- **Docker, Kubernetes, and S3 as first-class sources** — `docker://`, `k8s://`, and `s3://`
+  schemes are now registered in the global source registry, making them available wherever a
+  source path is accepted.
+
 ## [0.5.1] - 2026-05-28
 
 ### Fixed

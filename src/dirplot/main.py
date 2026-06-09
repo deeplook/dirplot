@@ -6,6 +6,7 @@ import dirplot.commands.diff
 import dirplot.commands.metrics
 import dirplot.commands.misc
 import dirplot.commands.replay
+import dirplot.commands.serve
 import dirplot.commands.treemap
 import dirplot.commands.vcs
 import dirplot.commands.watch
@@ -21,6 +22,7 @@ _CMD_ORDER = [
     "git",
     "hg",
     "watch",
+    "serve",
     "replay",
     "metrics",
     "meta",
