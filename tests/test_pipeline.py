@@ -286,3 +286,53 @@ class TestPipelineLogging:
 
         assert len(logs) > 0
         assert any("Scanning" in log for log in logs)
+
+
+class TestRenderingPipelineMultiArchive:
+    """Test multi-archive-root support in RenderingPipeline.scan()."""
+
+    def _make_zip(self, path: object, name: str, files: list[tuple[str, bytes]]) -> object:
+        import io
+        import zipfile
+        from pathlib import Path
+
+        buf = io.BytesIO()
+        with zipfile.ZipFile(buf, "w") as zf:
+            for n, data in files:
+                zf.writestr(n, data)
+        p = Path(path) / name  # type: ignore[arg-type]
+        p.write_bytes(buf.getvalue())
+        return p
+
+    def test_scan_two_archive_roots(self, tmp_path):
+        """Two zip archives produce a combined synthetic root with two children."""
+        zip_a = self._make_zip(tmp_path, "a.zip", [("file_a.txt", b"x" * 100)])
+        zip_b = self._make_zip(tmp_path, "b.zip", [("file_b.txt", b"x" * 200)])
+
+        config = PipelineConfig(roots=[str(zip_a), str(zip_b)])
+        tree = RenderingPipeline(config).scan()
+
+        assert tree.is_dir is True
+        assert len(tree.children) == 2
+        assert tree.size == 300
+        # build_tree_archive names the root node by stem, not filename
+        child_names = {c.name for c in tree.children}
+        assert child_names == {"a", "b"}
+
+    def test_scan_archive_nonexistent_raises(self, tmp_path):
+        """A nonexistent archive in a multi-root list raises FileNotFoundError."""
+        real = self._make_zip(tmp_path, "real.zip", [("f.txt", b"hi")])
+
+        config = PipelineConfig(roots=[str(real), str(tmp_path / "ghost.zip")])
+        with pytest.raises(FileNotFoundError, match="does not exist"):
+            RenderingPipeline(config).scan()
+
+    def test_scan_archive_wrong_password_raises(self, encrypted_archives):
+        """A wrong password on a header-encrypted archive raises ValueError."""
+        if ".rar" not in encrypted_archives:
+            pytest.skip("encrypted rar fixture unavailable (rar CLI not found)")
+
+        rar = encrypted_archives[".rar"]
+        config = PipelineConfig(roots=[str(rar), str(rar)], password="wrong")
+        with pytest.raises(ValueError, match="requires a password"):
+            RenderingPipeline(config).scan()

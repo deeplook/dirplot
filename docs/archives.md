@@ -14,6 +14,17 @@ dirplot map backup.7z --exclude node_modules
 dirplot map secret.zip --password-file ~/pwd.txt   # password-protected
 ```
 
+## Multiple archives
+
+Pass two or more archive files as positional arguments to visualise them side by side.
+Each archive is scanned independently and the results are combined under a synthetic
+common-parent node — the same behaviour as passing multiple local directories.
+
+```bash
+dirplot map v1.0.zip v2.0.zip
+dirplot map before.tar.gz after.tar.gz --depth 2
+```
+
 ## Supported formats
 
 ### Standard library (no extra install)

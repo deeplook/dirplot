@@ -132,29 +132,73 @@ def scan_tree(
                     is_gdrive_path,
                     is_s3_path,
                     is_ssh_path,
-                    is_archive_path,
                     is_git_ref_path,
                 )
             ):
                 typer.echo(
-                    f"Multiple roots are only supported for local paths, got: {r}",
+                    f"Multiple roots are only supported for local paths and archives, got: {r}",
                     err=True,
                 )
                 raise typer.Exit(1)
-        root_paths = []
-        for r in roots:
-            rp = Path(r)
-            if not rp.exists():
-                typer.echo(f"Path does not exist: {r}", err=True)
-                raise typer.Exit(1)
-            if not rp.is_dir() and not rp.is_file():
-                typer.echo(f"Not a file or directory: {r}", err=True)
-                raise typer.Exit(1)
-            root_paths.append(rp.resolve())
         excluded = frozenset(exclude)
-        common_str = os.path.commonpath([str(p) for p in root_paths])
-        _emit(f"Scanning {len(roots)} paths under {_tilde(common_str)} ...")
-        root_node = build_tree_multi(root_paths, excluded, depth)
+        archive_roots = [r for r in roots if is_archive_path(r)]
+        local_roots = [r for r in roots if not is_archive_path(r)]
+        if archive_roots and not local_roots:
+            sub_nodes: list[Node] = []
+            for r in archive_roots:
+                ap = Path(r)
+                if not ap.exists():
+                    typer.echo(f"Path does not exist: {r}", err=True)
+                    raise typer.Exit(1)
+                _emit(f"Reading archive {r} ...")
+                try:
+                    sub_nodes.append(
+                        build_tree_archive(ap, exclude=excluded, depth=depth, password=password)
+                    )
+                except PasswordRequired as exc:
+                    if password is not None:
+                        typer.echo("Error: incorrect password.", err=True)
+                        raise typer.Exit(1) from exc
+                    if no_input:
+                        typer.echo(
+                            "Error: archive requires a password."
+                            " Pass --password or --password-file.",
+                            err=True,
+                        )
+                        raise typer.Exit(1) from exc
+                    pw = typer.prompt("Password", hide_input=True)
+                    try:
+                        sub_nodes.append(
+                            build_tree_archive(ap, exclude=excluded, depth=depth, password=pw)
+                        )
+                    except PasswordRequired as exc2:
+                        typer.echo("Error: incorrect password.", err=True)
+                        raise typer.Exit(1) from exc2
+                except (ImportError, OSError, RuntimeError) as exc:
+                    typer.echo(f"Error: {exc}", err=True)
+                    raise typer.Exit(1) from exc
+            common_str = os.path.commonpath([str(Path(r).resolve()) for r in archive_roots])
+            root_node = Node(
+                name=Path(common_str).name or common_str,
+                path=Path(common_str),
+                size=sum(n.size for n in sub_nodes),
+                is_dir=True,
+                children=sub_nodes,
+            )
+        else:
+            root_paths = []
+            for r in local_roots:
+                rp = Path(r)
+                if not rp.exists():
+                    typer.echo(f"Path does not exist: {r}", err=True)
+                    raise typer.Exit(1)
+                if not rp.is_dir() and not rp.is_file():
+                    typer.echo(f"Not a file or directory: {r}", err=True)
+                    raise typer.Exit(1)
+                root_paths.append(rp.resolve())
+            common_str = os.path.commonpath([str(p) for p in root_paths])
+            _emit(f"Scanning {len(roots)} paths under {_tilde(common_str)} ...")
+            root_node = build_tree_multi(root_paths, excluded, depth)
     elif is_gdrive_path(root):
         gdrive_folder_id = parse_gdrive_path(root)
         label = f"gdrive://{gdrive_folder_id}" if gdrive_folder_id else "gdrive://"

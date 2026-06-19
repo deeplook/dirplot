@@ -44,6 +44,10 @@ dirplot map . --include src/dirplot/fonts
 dirplot map src tests
 dirplot map src/main.py src/util.py
 
+# Multiple archive roots — each archive scanned independently, combined under a synthetic parent
+dirplot map v1.0.zip v2.0.zip
+dirplot map before.tar.gz after.tar.gz --depth 2
+
 # Pipe tree or find output (format auto-detected)
 tree src/           | dirplot map
 tree -s src/        | dirplot map

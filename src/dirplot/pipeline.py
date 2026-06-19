@@ -115,6 +115,9 @@ class PipelineConfig:
     show: bool = True
     inline: bool = False
 
+    # Archive options
+    password: str | None = None
+
     # Progress/logging
     log_callback: Callable[[str], None] | None = None
     console: ConsoleSession | None = None  # Injected or auto-detected
@@ -176,19 +179,52 @@ class RenderingPipeline:
                 depth=self.config.depth,
             )
         else:
-            # Multiple roots - build tree under common parent
-            from dirplot.scanner import build_tree_multi
-
-            root_paths = [Path(r) for r in roots]
+            # Multiple roots — split into archives and local paths
             import os
 
-            common = os.path.commonpath([str(p) for p in root_paths])
-            self._log(f"Scanning {len(roots)} paths under {common} ...")
-            tree = build_tree_multi(
-                root_paths,
-                exclude=self.config.exclude,
-                depth=self.config.depth,
-            )
+            from dirplot.archives import PasswordRequired, build_tree_archive, is_archive_path
+            from dirplot.scanner import Node, build_tree_multi
+
+            archive_roots = [r for r in roots if is_archive_path(r)]
+            local_roots = [r for r in roots if not is_archive_path(r)]
+
+            if archive_roots and not local_roots:
+                sub_nodes: list[Node] = []
+                for r in archive_roots:
+                    ap = Path(r)
+                    if not ap.exists():
+                        raise FileNotFoundError(f"Path does not exist: {r}")
+                    self._log(f"Reading archive {r} ...")
+                    try:
+                        sub_nodes.append(
+                            build_tree_archive(
+                                ap,
+                                exclude=self.config.exclude,
+                                depth=self.config.depth,
+                                password=self.config.password,
+                            )
+                        )
+                    except PasswordRequired as exc:
+                        raise ValueError(f"Archive requires a password: {r}") from exc
+                    except (ImportError, OSError, RuntimeError) as exc:
+                        raise RuntimeError(f"Failed to read archive {r}: {exc}") from exc
+                common = os.path.commonpath([str(Path(r).resolve()) for r in archive_roots])
+                tree = Node(
+                    name=Path(common).name or common,
+                    path=Path(common),
+                    size=sum(n.size for n in sub_nodes),
+                    is_dir=True,
+                    children=sub_nodes,
+                )
+            else:
+                root_paths = [Path(r) for r in local_roots]
+                common = os.path.commonpath([str(p) for p in root_paths])
+                self._log(f"Scanning {len(local_roots)} paths under {common} ...")
+                tree = build_tree_multi(
+                    root_paths,
+                    exclude=self.config.exclude,
+                    depth=self.config.depth,
+                )
 
         t_scan = time.monotonic() - t_start
         self._log(f"Scan complete in {t_scan:.1f}s")
