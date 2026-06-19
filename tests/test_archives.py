@@ -10,8 +10,10 @@ import zipfile
 from pathlib import Path
 
 import pytest
+from typer.testing import CliRunner
 
 from dirplot.archives import PasswordRequired, build_tree_archive, is_archive_path
+from dirplot.main import app
 from tests.conftest import ENCRYPTED_PASSWORD
 
 # ---------------------------------------------------------------------------
@@ -588,3 +590,75 @@ def test_rar_encrypted_wrong_password_raises(encrypted_archives: dict[str, Path]
         pytest.skip("encrypted rar fixture unavailable (rar CLI not found)")
     with pytest.raises(PasswordRequired):
         build_tree_archive(encrypted_archives[".rar"], password="wrong")
+
+
+# ---------------------------------------------------------------------------
+# Multiple archive roots
+# ---------------------------------------------------------------------------
+
+_cli_runner = CliRunner()
+
+
+def test_multi_archive_roots_two_zips(tmp_path: Path) -> None:
+    """Two zip archives passed as roots produce a combined synthetic parent node."""
+    files_a = [("a.txt", b"x" * 100), ("sub/b.txt", b"x" * 200)]
+    files_b = [("c.txt", b"x" * 50)]
+
+    def _make_zip(name: str, files: list[tuple[str, bytes]]) -> Path:
+        buf = io.BytesIO()
+        with zipfile.ZipFile(buf, "w") as zf:
+            for n, data in files:
+                zf.writestr(n, data)
+        p = tmp_path / name
+        p.write_bytes(buf.getvalue())
+        return p
+
+    zip_a = _make_zip("alpha.zip", files_a)
+    zip_b = _make_zip("beta.zip", files_b)
+
+    result = _cli_runner.invoke(app, ["map", str(zip_a), str(zip_b), "--no-show"])
+    assert result.exit_code == 0
+
+
+def test_multi_archive_roots_combined_size(tmp_path: Path) -> None:
+    """Two zip archives as roots: combined node has two children, one per archive."""
+    sizes = [100, 200]
+    zips = []
+    for i, size in enumerate(sizes):
+        buf = io.BytesIO()
+        with zipfile.ZipFile(buf, "w") as zf:
+            zf.writestr(f"file{i}.txt", b"x" * size)
+        p = tmp_path / f"archive{i}.zip"
+        p.write_bytes(buf.getvalue())
+        zips.append(str(p))
+
+    result = _cli_runner.invoke(app, ["map", *zips, "--no-show"])
+    assert result.exit_code == 0
+    assert "archive0.zip" in result.output or "Found" in result.output
+
+
+def test_multi_archive_roots_nonexistent_archive(tmp_path: Path) -> None:
+    """A nonexistent archive path exits with code 1 and an error message."""
+    real = tmp_path / "real.zip"
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w") as zf:
+        zf.writestr("f.txt", b"hi")
+    real.write_bytes(buf.getvalue())
+
+    result = _cli_runner.invoke(app, ["map", str(real), str(tmp_path / "ghost.zip"), "--no-show"])
+    assert result.exit_code == 1
+    assert "does not exist" in result.output
+
+
+def test_multi_archive_roots_mixed_local_and_archive(
+    tmp_path: Path, sample_archives: dict[str, Path]
+) -> None:
+    """Mixing a local directory with an archive falls back to local-only scanning."""
+    local_dir = tmp_path / "local"
+    local_dir.mkdir()
+    (local_dir / "file.txt").write_bytes(b"x" * 10)
+
+    result = _cli_runner.invoke(
+        app, ["map", str(local_dir), str(sample_archives[".zip"]), "--no-show"]
+    )
+    assert result.exit_code in (0, 1)

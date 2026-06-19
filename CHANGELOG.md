@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **Multiple archive roots for `map`, `diff`, and other commands** — passing two or more archive
+  files (zip, tar, 7z, etc.) as positional arguments now works, e.g.
+  `dirplot map foo.zip bar.zip`. Each archive is scanned independently and the results are combined
+  under a synthetic common-parent node, matching the behaviour already supported for multiple local
+  directory/file arguments.
+
 ## [0.6.0] - 2026-06-09
 
 ### Added
