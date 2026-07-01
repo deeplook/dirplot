@@ -214,6 +214,28 @@ html, body {
 #search-regex { display: none; }
 #search-regex:checked + span { color: var(--accent); border-color: var(--accent); }
 
+#reload-btn {
+  flex-shrink: 0;
+  margin-left: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: none;
+  border: 1px solid var(--input-border);
+  color: var(--text-dim);
+  border-radius: 4px;
+  padding: 3px 8px;
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+}
+#reload-btn:hover { color: var(--text); border-color: var(--accent); }
+#reload-btn svg { width: 13px; height: 13px; }
+#reload-btn.spinning svg { animation: reload-spin 0.6s linear infinite; }
+#reload-btn[disabled] { opacity: 0.6; cursor: default; }
+@keyframes reload-spin { to { transform: rotate(360deg); } }
+
 #export-wrap { flex-shrink: 0; position: relative; margin-left: 6px; }
 #export-btn {
   background: none;

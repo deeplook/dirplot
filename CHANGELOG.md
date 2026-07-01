@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Manual reload and auto-reload controls in `serve`** — the web UI gained a toolbar **Reload**
+  button that rescans the source and updates the treemap in place (preserving the current zoom and
+  without touching the sidebar). A new **Auto-reload** toggle in the Settings tab connects or
+  disconnects the live-update WebSocket at runtime, and a `--watch/--no-watch` flag sets its initial
+  state (default: on). Auto-reload works for local sources; remote/read-only sources fall back to
+  the manual Reload button.
+
 - **Multiple archive roots for `map`, `diff`, and other commands** — passing two or more archive
   files (zip, tar, 7z, etc.) as positional arguments now works, e.g.
   `dirplot map foo.zip bar.zip`. Each archive is scanned independently and the results are combined

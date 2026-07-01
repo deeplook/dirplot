@@ -21,6 +21,7 @@ class ServeConfig:
     exclude: frozenset[str]
     breadcrumbs: bool
     allow_write: bool
+    watch: bool = True
 
 
 def _heic_to_jpeg(path: Path) -> bytes | None:
@@ -121,6 +122,8 @@ def create_app(config: ServeConfig):  # type: ignore[no-untyped-def]
                 "colormap": config.colormap,
                 "exclude": sorted(config.exclude),
                 "allow_write": config.allow_write,
+                "can_watch": config.root_path is not None,
+                "watch": config.watch and config.root_path is not None,
                 "colormaps": colormaps,
             }
         )
@@ -384,6 +387,9 @@ def create_app(config: ServeConfig):  # type: ignore[no-untyped-def]
     @app.websocket("/ws")
     async def websocket_endpoint(ws: WebSocket) -> None:
         await ws.accept()
+        # Watching is a per-connection capability of local sources; the
+        # ``--no-watch`` flag only changes the initial UI default, so the
+        # client may still opt in at runtime.
         if config.root_path is None:
             await ws.close()
             return

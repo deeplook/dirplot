@@ -27,6 +27,13 @@
         <span>.*</span>
       </label>
     </div>
+    <button id="reload-btn" title="Reload directory structure" aria-label="Reload directory structure">
+      <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M13.5 8a5.5 5.5 0 1 1-1.6-3.9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        <path d="M13.5 2.5V5H11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span>Reload</span>
+    </button>
     <div id="export-wrap">
       <button id="export-btn" title="Export treemap">Export ▾</button>
       <div id="export-menu" class="hidden">
@@ -63,6 +70,16 @@
               <span>Dark mode</span>
               <span class="toggle-wrap">
                 <input type="checkbox" id="s-dark-mode" class="toggle-input" checked>
+                <span class="toggle-track"></span>
+              </span>
+            </label>
+          </section>
+
+          <section class="setting-group">
+            <label class="setting-label toggle-label" title="Reload automatically when files change on disk">
+              <span>Auto-reload</span>
+              <span class="toggle-wrap">
+                <input type="checkbox" id="s-auto-reload" class="toggle-input">
                 <span class="toggle-track"></span>
               </span>
             </label>

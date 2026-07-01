@@ -921,19 +921,49 @@ async function refreshTree() {
   }
 }
 
+// ── Reload button ─────────────────────────────────────────────────────────
+
+const _reloadBtn = document.getElementById("reload-btn");
+_reloadBtn.addEventListener("click", async () => {
+  if (_reloadBtn.disabled) return;
+  _reloadBtn.disabled = true;
+  _reloadBtn.classList.add("spinning");
+  try {
+    await refreshTree();
+  } finally {
+    _reloadBtn.classList.remove("spinning");
+    _reloadBtn.disabled = false;
+  }
+});
+
 // ── WebSocket live updates ────────────────────────────────────────────────
 
+let _ws = null;          // active WebSocket, if any
+let _wsWanted = false;    // whether auto-reload should stay connected
+
 function setupWebSocket() {
+  _wsWanted = true;
   const wsUrl = `ws://${location.host}/ws`;
   let retryDelay = 1000;
 
   function connect() {
+    if (!_wsWanted) return;
     const ws = new WebSocket(wsUrl);
+    _ws = ws;
     ws.onopen = () => { retryDelay = 1000; };
     ws.onmessage = async () => { await refreshTree(); };
-    ws.onclose = () => { setTimeout(() => { retryDelay = Math.min(retryDelay * 2, 10000); connect(); }, retryDelay); };
+    ws.onclose = () => {
+      if (_ws === ws) _ws = null;
+      if (!_wsWanted) return;
+      setTimeout(() => { retryDelay = Math.min(retryDelay * 2, 10000); connect(); }, retryDelay);
+    };
   }
   connect();
+}
+
+function teardownWebSocket() {
+  _wsWanted = false;
+  if (_ws) { _ws.close(); _ws = null; }
 }
 
 // ── Resize ────────────────────────────────────────────────────────────────
@@ -1347,6 +1377,12 @@ document.getElementById("s-dark-mode").addEventListener("change", e => {
   }
 });
 
+// Auto-reload toggle — connects/disconnects the live-update WebSocket
+document.getElementById("s-auto-reload").addEventListener("change", e => {
+  if (e.target.checked) setupWebSocket();
+  else teardownWebSocket();
+});
+
 // Log scale slider — re-fetch on change
 document.getElementById("s-log-scale").addEventListener("input", e => {
   const v = Number(e.target.value);
@@ -1476,7 +1512,18 @@ async function initSidebar(cfg) {
     syncDepthSlider(data);
     document.getElementById("loading").classList.add("hidden");
     renderTreemap(_treeData);
-    setupWebSocket();
+    const autoReloadEl = document.getElementById("s-auto-reload");
+    if (!cfg.can_watch) {
+      // Remote / read-only source: watching isn't possible at all.
+      autoReloadEl.checked = false;
+      autoReloadEl.disabled = true;
+      autoReloadEl.closest(".setting-group").title =
+        "Not available for this source — use the Reload button instead";
+    } else {
+      // Local source: --no-watch only sets the initial state; still toggleable.
+      autoReloadEl.checked = cfg.watch;
+      if (cfg.watch) setupWebSocket();
+    }
   } catch (err) {
     document.getElementById("loading").textContent = `Error: ${err.message}`;
   }

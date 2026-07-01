@@ -79,6 +79,11 @@ def serve_cmd(
         "--breadcrumbs/--no-breadcrumbs",
         help="Collapse single-subdirectory chains into breadcrumb labels.",
     ),
+    watch: bool = typer.Option(
+        True,
+        "--watch/--no-watch",
+        help="Auto-reload the treemap when files change on disk (local sources only).",
+    ),
     quiet: bool = typer.Option(False, "--quiet", "-q", help="Suppress uvicorn access logs."),
 ) -> None:
     """Launch an interactive treemap in the browser.
@@ -105,6 +110,7 @@ def serve_cmd(
         exclude=frozenset(exclude) if exclude else frozenset(_DEFAULT_EXCLUDES),
         breadcrumbs=breadcrumbs,
         allow_write=allow_write,
+        watch=watch,
     )
 
     fastapi_app = create_app(config)
