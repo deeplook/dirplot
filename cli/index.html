@@ -1,0 +1,2814 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Nested treemap visualizations for directory trees and archives">
+      
+      
+      
+        <link rel="canonical" href="https://deeplook.github.io/dirplot/cli/">
+      
+      
+        <link rel="prev" href="../archives/">
+      
+      
+        <link rel="next" href="../api/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>CLI Reference - dirplot</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#cli-reference" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="dirplot" class="md-header__button md-logo" aria-label="dirplot" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            dirplot
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              CLI Reference
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/deeplook/dirplot" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    deeplook/dirplot
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../installation/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Installation
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../examples/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Examples
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../serve/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Web Interface
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../remote-sources/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Remote Sources
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../archives/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Archive Formats
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    <li class="md-tabs__item md-tabs__item--active">
+      <a href="./" class="md-tabs__link">
+        
+  
+  
+    
+  
+  CLI Reference
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../api/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Python API
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../guides/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Guides
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../troubleshooting/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Troubleshooting
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="dirplot" class="md-nav__button md-logo" aria-label="dirplot" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    dirplot
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/deeplook/dirplot" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    deeplook/dirplot
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../serve/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Web Interface
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../remote-sources/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Remote Sources
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../archives/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Archive Formats
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI Reference
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#dirplot-map-treemap-for-any-directory-tree" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        dirplot map — treemap for any directory tree
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="dirplot map — treemap for any directory tree">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#options" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Options
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dirplot-diff-compare-two-directory-trees" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        dirplot diff — compare two directory trees
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="dirplot diff — compare two directory trees">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#options_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Options
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dirplot-git-git-history-treemap" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        dirplot git — git history treemap
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="dirplot git — git history treemap">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#options_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Options
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dirplot-hg-mercurial-history-treemap" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        dirplot hg — Mercurial history treemap
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="dirplot hg — Mercurial history treemap">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#options_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Options
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dirplot-watch-live-watch-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        dirplot watch — live watch mode
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="dirplot watch — live watch mode">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#options_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Options
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dirplot-replay-event-log-replay" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        dirplot replay — event log replay
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="dirplot replay — event log replay">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#options_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Options
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dirplot-metrics-directory-metrics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        dirplot metrics — directory metrics
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="dirplot metrics — directory metrics">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#output-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Output fields
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#options_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Options
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dirplot-meta-read-embedded-metadata" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        dirplot meta — read embedded metadata
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="dirplot meta — read embedded metadata">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#options_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Options
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dirplot-demo-run-example-commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        dirplot demo — run example commands
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="dirplot demo — run example commands">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#options_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Options
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dirplot-overview-command-overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        dirplot overview — command overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dirplot-termsize-terminal-size" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        dirplot termsize — terminal size
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Python API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guides
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#dirplot-map-treemap-for-any-directory-tree" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        dirplot map — treemap for any directory tree
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="dirplot map — treemap for any directory tree">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#options" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Options
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dirplot-diff-compare-two-directory-trees" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        dirplot diff — compare two directory trees
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="dirplot diff — compare two directory trees">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#options_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Options
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dirplot-git-git-history-treemap" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        dirplot git — git history treemap
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="dirplot git — git history treemap">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#options_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Options
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dirplot-hg-mercurial-history-treemap" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        dirplot hg — Mercurial history treemap
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="dirplot hg — Mercurial history treemap">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#options_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Options
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dirplot-watch-live-watch-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        dirplot watch — live watch mode
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="dirplot watch — live watch mode">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#options_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Options
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dirplot-replay-event-log-replay" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        dirplot replay — event log replay
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="dirplot replay — event log replay">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#options_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Options
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dirplot-metrics-directory-metrics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        dirplot metrics — directory metrics
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="dirplot metrics — directory metrics">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#output-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Output fields
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#options_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Options
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dirplot-meta-read-embedded-metadata" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        dirplot meta — read embedded metadata
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="dirplot meta — read embedded metadata">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#options_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Options
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dirplot-demo-run-example-commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        dirplot demo — run example commands
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="dirplot demo — run example commands">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#options_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Options
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dirplot-overview-command-overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        dirplot overview — command overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dirplot-termsize-terminal-size" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        dirplot termsize — terminal size
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="cli-reference">CLI Reference<a class="headerlink" href="#cli-reference" title="Permanent link">&para;</a></h1>
+<p>← <a href="../">Home</a></p>
+<ul>
+<li><a href="#dirplot-map-treemap-for-any-directory-tree">dirplot map</a></li>
+<li><a href="#dirplot-diff-compare-two-directory-trees">dirplot diff</a></li>
+<li><a href="#dirplot-git-git-history-treemap">dirplot git</a></li>
+<li><a href="#dirplot-hg-mercurial-history-treemap">dirplot hg</a></li>
+<li><a href="#dirplot-watch-live-watch-mode">dirplot watch</a></li>
+<li><a href="#dirplot-replay-event-log-replay">dirplot replay</a></li>
+<li><a href="#dirplot-metrics-directory-metrics">dirplot metrics</a></li>
+<li><a href="#dirplot-meta-read-embedded-metadata">dirplot meta</a></li>
+<li><a href="#dirplot-demo-run-example-commands">dirplot demo</a></li>
+<li><a href="#dirplot-overview-command-overview">dirplot overview</a></li>
+<li><a href="#dirplot-termsize-terminal-size">dirplot termsize</a></li>
+</ul>
+<hr />
+<h2 id="dirplot-map-treemap-for-any-directory-tree"><code>dirplot map</code> — treemap for any directory tree<a class="headerlink" href="#dirplot-map-treemap-for-any-directory-tree" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># Use without installing</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>uvx<span class="w"> </span>dirplot<span class="w"> </span>--help
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="c1"># Current directory in system viewer</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>dirplot<span class="w"> </span>map<span class="w"> </span>.
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="c1"># Display inline in terminal (iTerm2 / Kitty / WezTerm, auto-detected)</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>dirplot<span class="w"> </span>map<span class="w"> </span>.<span class="w"> </span>--inline
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="c1"># Save to file without displaying</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>dirplot<span class="w"> </span>map<span class="w"> </span>.<span class="w"> </span>--output<span class="w"> </span>treemap.png<span class="w"> </span>--no-show
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="c1"># Exclude paths — plain names, globs, or relative paths</span>
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>dirplot<span class="w"> </span>map<span class="w"> </span>.<span class="w"> </span>--exclude<span class="w"> </span>.venv<span class="w"> </span>--exclude<span class="w"> </span>.git
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>dirplot<span class="w"> </span>map<span class="w"> </span>.<span class="w"> </span>--exclude<span class="w"> </span><span class="s2">&quot;*.egg-info&quot;</span><span class="w"> </span>--exclude<span class="w"> </span><span class="s2">&quot;**/__pycache__&quot;</span>
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>dirplot<span class="w"> </span>map<span class="w"> </span>.<span class="w"> </span>--exclude<span class="w"> </span>src/vendor
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>
+<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="c1"># Focus on named subtrees (keeps only these paths; repeatable)</span>
+<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>dirplot<span class="w"> </span>map<span class="w"> </span>.<span class="w"> </span>--include<span class="w"> </span>src<span class="w"> </span>--include<span class="w"> </span>tests
+<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>dirplot<span class="w"> </span>map<span class="w"> </span>.<span class="w"> </span>--include<span class="w"> </span>src/dirplot/fonts
+<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>
+<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a><span class="c1"># Multiple roots shown under their common parent</span>
+<a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>dirplot<span class="w"> </span>map<span class="w"> </span>src<span class="w"> </span>tests
+<a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>dirplot<span class="w"> </span>map<span class="w"> </span>src/main.py<span class="w"> </span>src/util.py
+<a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a>
+<a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a><span class="c1"># Multiple archive roots — each archive scanned independently, combined under a synthetic parent</span>
+<a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a>dirplot<span class="w"> </span>map<span class="w"> </span>v1.0.zip<span class="w"> </span>v2.0.zip
+<a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a>dirplot<span class="w"> </span>map<span class="w"> </span>before.tar.gz<span class="w"> </span>after.tar.gz<span class="w"> </span>--depth<span class="w"> </span><span class="m">2</span>
+<a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a>
+<a id="__codelineno-0-30" name="__codelineno-0-30" href="#__codelineno-0-30"></a><span class="c1"># Pipe tree or find output (format auto-detected)</span>
+<a id="__codelineno-0-31" name="__codelineno-0-31" href="#__codelineno-0-31"></a>tree<span class="w"> </span>src/<span class="w">           </span><span class="p">|</span><span class="w"> </span>dirplot<span class="w"> </span>map
+<a id="__codelineno-0-32" name="__codelineno-0-32" href="#__codelineno-0-32"></a>tree<span class="w"> </span>-s<span class="w"> </span>src/<span class="w">        </span><span class="p">|</span><span class="w"> </span>dirplot<span class="w"> </span>map
+<a id="__codelineno-0-33" name="__codelineno-0-33" href="#__codelineno-0-33"></a>find<span class="w"> </span>.<span class="w"> </span>-name<span class="w"> </span><span class="s2">&quot;*.py&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>dirplot<span class="w"> </span>map
+<a id="__codelineno-0-34" name="__codelineno-0-34" href="#__codelineno-0-34"></a>find<span class="w"> </span>.<span class="w"> </span>-type<span class="w"> </span>d<span class="w">      </span><span class="p">|</span><span class="w"> </span>dirplot<span class="w"> </span>map
+<a id="__codelineno-0-35" name="__codelineno-0-35" href="#__codelineno-0-35"></a>
+<a id="__codelineno-0-36" name="__codelineno-0-36" href="#__codelineno-0-36"></a><span class="c1"># Read a saved path list from a file</span>
+<a id="__codelineno-0-37" name="__codelineno-0-37" href="#__codelineno-0-37"></a>tree<span class="w"> </span>src/<span class="w"> </span>&gt;<span class="w"> </span>paths.txt<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>dirplot<span class="w"> </span>map<span class="w"> </span>--paths-from<span class="w"> </span>paths.txt
+<a id="__codelineno-0-38" name="__codelineno-0-38" href="#__codelineno-0-38"></a>
+<a id="__codelineno-0-39" name="__codelineno-0-39" href="#__codelineno-0-39"></a><span class="c1"># Custom canvas size, colormap, font</span>
+<a id="__codelineno-0-40" name="__codelineno-0-40" href="#__codelineno-0-40"></a>dirplot<span class="w"> </span>map<span class="w"> </span>.<span class="w"> </span>--canvas<span class="w"> </span>1920x1080<span class="w"> </span>--output<span class="w"> </span>treemap.png<span class="w"> </span>--no-show
+<a id="__codelineno-0-41" name="__codelineno-0-41" href="#__codelineno-0-41"></a>dirplot<span class="w"> </span>map<span class="w"> </span>.<span class="w"> </span>--colormap<span class="w"> </span>Set2<span class="w"> </span>--font-size<span class="w"> </span><span class="m">18</span>
+<a id="__codelineno-0-42" name="__codelineno-0-42" href="#__codelineno-0-42"></a>
+<a id="__codelineno-0-43" name="__codelineno-0-43" href="#__codelineno-0-43"></a><span class="c1"># Filter by file size — only show files in a given size range</span>
+<a id="__codelineno-0-44" name="__codelineno-0-44" href="#__codelineno-0-44"></a>dirplot<span class="w"> </span>map<span class="w"> </span>.<span class="w"> </span>--size<span class="w"> </span>10K..1M<span class="w">           </span><span class="c1"># between 10 KiB and 1 MiB</span>
+<a id="__codelineno-0-45" name="__codelineno-0-45" href="#__codelineno-0-45"></a>dirplot<span class="w"> </span>map<span class="w"> </span>.<span class="w"> </span>--size<span class="w"> </span>500K..<span class="w">            </span><span class="c1"># 500 KiB or larger</span>
+<a id="__codelineno-0-46" name="__codelineno-0-46" href="#__codelineno-0-46"></a>dirplot<span class="w"> </span>map<span class="w"> </span>.<span class="w"> </span>--size<span class="w"> </span>..100K<span class="w">            </span><span class="c1"># 100 KiB or smaller</span>
+<a id="__codelineno-0-47" name="__codelineno-0-47" href="#__codelineno-0-47"></a>dirplot<span class="w"> </span>map<span class="w"> </span>.<span class="w"> </span>--size<span class="w"> </span>1M<span class="w"> </span>--size<span class="w"> </span>..1K<span class="w">    </span><span class="c1"># exactly 1 MiB or under 1 KiB (OR logic)</span>
+<a id="__codelineno-0-48" name="__codelineno-0-48" href="#__codelineno-0-48"></a>
+<a id="__codelineno-0-49" name="__codelineno-0-49" href="#__codelineno-0-49"></a><span class="c1"># Log scale — use when one large file dominates and squashes everything else</span>
+<a id="__codelineno-0-50" name="__codelineno-0-50" href="#__codelineno-0-50"></a>dirplot<span class="w"> </span>map<span class="w"> </span>.<span class="w"> </span>--log-scale<span class="w"> </span><span class="m">4</span>
+<a id="__codelineno-0-51" name="__codelineno-0-51" href="#__codelineno-0-51"></a>
+<a id="__codelineno-0-52" name="__codelineno-0-52" href="#__codelineno-0-52"></a><span class="c1"># Highlight specific files or folders with coloured borders</span>
+<a id="__codelineno-0-53" name="__codelineno-0-53" href="#__codelineno-0-53"></a>dirplot<span class="w"> </span>map<span class="w"> </span>.<span class="w"> </span>--highlight<span class="w"> </span><span class="s2">&quot;src/main.py&quot;</span><span class="w">                   </span><span class="c1"># single file, red (default)</span>
+<a id="__codelineno-0-54" name="__codelineno-0-54" href="#__codelineno-0-54"></a>dirplot<span class="w"> </span>map<span class="w"> </span>.<span class="w"> </span>--highlight<span class="w"> </span><span class="s2">&quot;**/*.py@orange&quot;</span><span class="w">                </span><span class="c1"># all Python files in orange</span>
+<a id="__codelineno-0-55" name="__codelineno-0-55" href="#__codelineno-0-55"></a>dirplot<span class="w"> </span>map<span class="w"> </span>.<span class="w"> </span>--highlight<span class="w"> </span><span class="s2">&quot;src@orange&quot;</span><span class="w"> </span>--highlight<span class="w"> </span><span class="s2">&quot;**/*.md@cyan&quot;</span><span class="w">  </span><span class="c1"># folder + glob</span>
+<a id="__codelineno-0-56" name="__codelineno-0-56" href="#__codelineno-0-56"></a>
+<a id="__codelineno-0-57" name="__codelineno-0-57" href="#__codelineno-0-57"></a><span class="c1"># Interactive SVG output (hover highlight + floating tooltip)</span>
+<a id="__codelineno-0-58" name="__codelineno-0-58" href="#__codelineno-0-58"></a>dirplot<span class="w"> </span>map<span class="w"> </span>.<span class="w"> </span>--output<span class="w"> </span>treemap.svg
+<a id="__codelineno-0-59" name="__codelineno-0-59" href="#__codelineno-0-59"></a>
+<a id="__codelineno-0-60" name="__codelineno-0-60" href="#__codelineno-0-60"></a><span class="c1"># Pipe PNG bytes to stdout</span>
+<a id="__codelineno-0-61" name="__codelineno-0-61" href="#__codelineno-0-61"></a>dirplot<span class="w"> </span>map<span class="w"> </span>.<span class="w"> </span>--output<span class="w"> </span>-<span class="w"> </span><span class="p">|</span><span class="w"> </span>convert<span class="w"> </span>-<span class="w"> </span>-resize<span class="w"> </span><span class="m">50</span>%<span class="w"> </span>small.png
+<a id="__codelineno-0-62" name="__codelineno-0-62" href="#__codelineno-0-62"></a>dirplot<span class="w"> </span>map<span class="w"> </span>.<span class="w"> </span>--output<span class="w"> </span>-<span class="w"> </span>--format<span class="w"> </span>svg<span class="w"> </span>&gt;<span class="w"> </span>treemap.svg
+<a id="__codelineno-0-63" name="__codelineno-0-63" href="#__codelineno-0-63"></a>
+<a id="__codelineno-0-64" name="__codelineno-0-64" href="#__codelineno-0-64"></a><span class="c1"># Archive files — no unpacking needed</span>
+<a id="__codelineno-0-65" name="__codelineno-0-65" href="#__codelineno-0-65"></a>dirplot<span class="w"> </span>map<span class="w"> </span>project.zip
+<a id="__codelineno-0-66" name="__codelineno-0-66" href="#__codelineno-0-66"></a>dirplot<span class="w"> </span>map<span class="w"> </span>release.tar.gz<span class="w"> </span>--depth<span class="w"> </span><span class="m">2</span>
+<a id="__codelineno-0-67" name="__codelineno-0-67" href="#__codelineno-0-67"></a>
+<a id="__codelineno-0-68" name="__codelineno-0-68" href="#__codelineno-0-68"></a><span class="c1"># Remote sources</span>
+<a id="__codelineno-0-69" name="__codelineno-0-69" href="#__codelineno-0-69"></a>dirplot<span class="w"> </span>map<span class="w"> </span>ssh://alice@prod.example.com/var/www
+<a id="__codelineno-0-70" name="__codelineno-0-70" href="#__codelineno-0-70"></a>dirplot<span class="w"> </span>map<span class="w"> </span>s3://noaa-ghcn-pds<span class="w"> </span>--no-sign
+<a id="__codelineno-0-71" name="__codelineno-0-71" href="#__codelineno-0-71"></a>dirplot<span class="w"> </span>map<span class="w"> </span>github://pallets/flask
+<a id="__codelineno-0-72" name="__codelineno-0-72" href="#__codelineno-0-72"></a>dirplot<span class="w"> </span>map<span class="w"> </span>github://torvalds/linux@v6.12/Documentation
+<a id="__codelineno-0-73" name="__codelineno-0-73" href="#__codelineno-0-73"></a>dirplot<span class="w"> </span>map<span class="w"> </span>gdrive://<span class="w">                           </span><span class="c1"># Google Drive root (requires gog)</span>
+<a id="__codelineno-0-74" name="__codelineno-0-74" href="#__codelineno-0-74"></a>dirplot<span class="w"> </span>map<span class="w"> </span>gdrive://FOLDER_ID<span class="w">                  </span><span class="c1"># specific Drive folder</span>
+<a id="__codelineno-0-75" name="__codelineno-0-75" href="#__codelineno-0-75"></a>dirplot<span class="w"> </span>map<span class="w"> </span>docker://my-container:/app
+<a id="__codelineno-0-76" name="__codelineno-0-76" href="#__codelineno-0-76"></a>dirplot<span class="w"> </span>map<span class="w"> </span>pod://my-pod:/app
+</code></pre></div>
+<p>See <a href="../examples/">EXAMPLES.md</a> for detailed examples of each remote backend and git history animation.</p>
+<h3 id="options">Options<a class="headerlink" href="#options" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Short</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--paths-from</code></td>
+<td></td>
+<td>—</td>
+<td>File with path list (<code>tree</code>/<code>find</code> output); <code>-</code> for stdin</td>
+</tr>
+<tr>
+<td><code>--output</code></td>
+<td><code>-o</code></td>
+<td>—</td>
+<td>Save to this path (PNG or SVG); <code>-</code> for stdout</td>
+</tr>
+<tr>
+<td><code>--format</code></td>
+<td><code>-f</code></td>
+<td>auto</td>
+<td>Output format: <code>png</code> or <code>svg</code></td>
+</tr>
+<tr>
+<td><code>--show/--no-show</code></td>
+<td></td>
+<td><code>--show</code></td>
+<td>Display the image after rendering; SVG saved with <code>-o</code> defaults to <code>--no-show</code> (<code>--output -</code> also implies <code>--no-show</code>)</td>
+</tr>
+<tr>
+<td><code>--inline</code></td>
+<td></td>
+<td>off</td>
+<td>Display in terminal (auto-detected protocol; PNG only) — see <a href="../guides/#inline-terminal-display">Inline terminal display</a></td>
+</tr>
+<tr>
+<td><code>--legend [N]</code></td>
+<td></td>
+<td>off</td>
+<td>File-count legend; <code>N</code> = max entries (default: 20)</td>
+</tr>
+<tr>
+<td><code>--font-size</code></td>
+<td></td>
+<td><code>12</code></td>
+<td>Directory label font size in pixels</td>
+</tr>
+<tr>
+<td><code>--colormap</code></td>
+<td></td>
+<td><code>tab20</code></td>
+<td>Matplotlib colormap for unknown extensions</td>
+</tr>
+<tr>
+<td><code>--exclude</code></td>
+<td><code>-e</code></td>
+<td>—</td>
+<td>Pattern to exclude (repeatable): plain name, glob (<code>*.egg-info</code>), <code>**</code> glob, or relative path</td>
+</tr>
+<tr>
+<td><code>--include</code></td>
+<td></td>
+<td>—</td>
+<td>Keep only these subtrees (repeatable, supports nested paths); the inverse of <code>--exclude</code></td>
+</tr>
+<tr>
+<td><code>--highlight</code></td>
+<td><code>-H</code></td>
+<td>—</td>
+<td>Draw a coloured border around matching paths (repeatable). Accepts exact paths or globs including <code>**</code>. Append <code>@color</code> to set the colour (e.g. <code>**/*.py@orange</code>); defaults to red. Works for files and directories</td>
+</tr>
+<tr>
+<td><code>--depth</code></td>
+<td></td>
+<td>unlimited</td>
+<td>Maximum recursion depth</td>
+</tr>
+<tr>
+<td><code>--size</code></td>
+<td><code>-S</code></td>
+<td>—</td>
+<td>Filter files by size range (e.g. <code>10M..500M</code>, <code>100M..</code>, <code>..50K</code>, <code>1G</code>). Repeatable — multiple values combine with OR logic. Units: <code>B K KB M MB G GB T TB</code> (powers of 1024, case-insensitive)</td>
+</tr>
+<tr>
+<td><code>--keep-empty-dirs</code></td>
+<td></td>
+<td>off</td>
+<td>Retain directories that become empty after <code>--size</code> filtering</td>
+</tr>
+<tr>
+<td><code>--canvas</code></td>
+<td></td>
+<td>terminal size</td>
+<td>Output dimensions as <code>WIDTHxHEIGHT</code> (e.g. <code>1920x1080</code>)</td>
+</tr>
+<tr>
+<td><code>--header/--no-header</code></td>
+<td></td>
+<td><code>--header</code></td>
+<td>Print info lines before rendering</td>
+</tr>
+<tr>
+<td><code>--cushion/--no-cushion</code></td>
+<td></td>
+<td><code>--cushion</code></td>
+<td>Van Wijk cushion shading for a raised 3-D look</td>
+</tr>
+<tr>
+<td><code>--log-scale</code></td>
+<td></td>
+<td><code>0</code> (off)</td>
+<td>Log-scale compression ratio; any value &gt; 1 enables it (e.g. <code>4</code> = largest tile is at most 4× the smallest)</td>
+</tr>
+<tr>
+<td><code>--breadcrumbs/--no-breadcrumbs</code></td>
+<td></td>
+<td><code>--breadcrumbs</code></td>
+<td>Collapse single-child chains into <code>foo / bar / baz</code> labels</td>
+</tr>
+<tr>
+<td><code>--metrics/--no-metrics</code></td>
+<td></td>
+<td>off</td>
+<td>Print detailed metrics after scanning (same output as <code>dirplot metrics</code>)</td>
+</tr>
+<tr>
+<td><code>--password-file</code></td>
+<td></td>
+<td>—</td>
+<td>File containing archive password; prompted interactively if not supplied</td>
+</tr>
+<tr>
+<td><code>--github-token-file</code></td>
+<td></td>
+<td><code>$GITHUB_TOKEN</code></td>
+<td>File containing GitHub personal access token</td>
+</tr>
+<tr>
+<td><code>--ssh-key</code></td>
+<td></td>
+<td>—</td>
+<td>SSH private key path</td>
+</tr>
+<tr>
+<td><code>--ssh-password-file</code></td>
+<td></td>
+<td>—</td>
+<td>File containing SSH password</td>
+</tr>
+<tr>
+<td><code>--aws-profile</code></td>
+<td></td>
+<td><code>$AWS_PROFILE</code></td>
+<td>Named AWS profile</td>
+</tr>
+<tr>
+<td><code>--no-sign</code></td>
+<td></td>
+<td>off</td>
+<td>Anonymous access for public S3 buckets</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="dirplot-diff-compare-two-directory-trees"><code>dirplot diff</code> — compare two directory trees<a class="headerlink" href="#dirplot-diff-compare-two-directory-trees" title="Permanent link">&para;</a></h2>
+<p>Compares two directory trees A and B as a treemap. Tiles are sized by B (the new tree). Colour-coded borders indicate the diff status of each file: <strong>green</strong> = added (present in B, absent in A), <strong>red</strong> = removed (present in A, absent in B), <strong>blue</strong> = changed (present in both, but content differs). Unchanged files have no border. By default, unchanged files are included as context (<code>--context</code>); pass <code>--changed-only</code> to show only changed, added, and removed files.</p>
+<p>A and B can be <strong>any source supported by <code>dirplot map</code></strong> — local directories, GitHub repos, archives, S3 paths, SSH hosts, Docker containers, or Kubernetes pods.</p>
+<p><strong>When a source is a local git or hg repository</strong>, only tracked files are scanned (equivalent to <code>git diff</code> / <code>hg diff</code> semantics — untracked files are ignored). Change detection uses blob hash comparison, not file size, so edits that don't change file size are caught correctly. Git LFS files are handled transparently.</p>
+<p><strong>Single-argument shorthand</strong> — pass only one argument to diff the working tree against HEAD (git) or tip (hg):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>dirplot<span class="w"> </span>diff<span class="w"> </span>.<span class="w">                  </span><span class="c1"># uncommitted changes in current repo</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>dirplot<span class="w"> </span>diff<span class="w"> </span>/path/to/repo<span class="w">      </span><span class="c1"># uncommitted changes in that repo</span>
+</code></pre></div>
+<p><strong><code>@ref</code> syntax</strong> — append <code>@&lt;ref&gt;</code> to any local path or GitHub URL to pin it to a specific commit, tag, or branch:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>dirplot<span class="w"> </span>diff<span class="w"> </span>.@HEAD~5<span class="w"> </span>.@HEAD<span class="w">           </span><span class="c1"># last 5 commits</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>dirplot<span class="w"> </span>diff<span class="w"> </span>.@abc1234<span class="w"> </span>.@def5678<span class="w">       </span><span class="c1"># two specific SHAs</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>dirplot<span class="w"> </span>diff<span class="w"> </span>.@v1.0<span class="w"> </span>.@v2.0<span class="w">             </span><span class="c1"># two tags</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>dirplot<span class="w"> </span>diff<span class="w"> </span>github://owner/repo@v1.0<span class="w"> </span>github://owner/repo@v2.0<span class="w">   </span><span class="c1"># GitHub tags</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># Basic comparison — open in system viewer</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>dirplot<span class="w"> </span>diff<span class="w"> </span>old/<span class="w"> </span>new/
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="c1"># Uncommitted changes, only show changed files</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>dirplot<span class="w"> </span>diff<span class="w"> </span>.<span class="w"> </span>--changed-only
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="c1"># Compare an S3 prefix against a local directory</span>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>dirplot<span class="w"> </span>diff<span class="w"> </span>s3://my-bucket/v1<span class="w"> </span>./v2
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>
+<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="c1"># Save to file</span>
+<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>dirplot<span class="w"> </span>diff<span class="w"> </span>old/<span class="w"> </span>new/<span class="w"> </span>--output<span class="w"> </span>diff.png<span class="w"> </span>--no-show
+<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>
+<a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="c1"># Light mode, SVG output</span>
+<a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a>dirplot<span class="w"> </span>diff<span class="w"> </span>old/<span class="w"> </span>new/<span class="w"> </span>--light<span class="w"> </span>--output<span class="w"> </span>diff.svg
+</code></pre></div>
+<h3 id="options_1">Options<a class="headerlink" href="#options_1" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Short</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--output</code></td>
+<td><code>-o</code></td>
+<td>—</td>
+<td>Save to this path (PNG or SVG); <code>-</code> for stdout</td>
+</tr>
+<tr>
+<td><code>--format</code></td>
+<td><code>-f</code></td>
+<td>auto</td>
+<td>Output format: <code>png</code> or <code>svg</code></td>
+</tr>
+<tr>
+<td><code>--show/--no-show</code></td>
+<td></td>
+<td><code>--show</code></td>
+<td>Display the image after rendering; SVG saved with <code>-o</code> defaults to <code>--no-show</code> (<code>--output -</code> also implies <code>--no-show</code>)</td>
+</tr>
+<tr>
+<td><code>--inline</code></td>
+<td></td>
+<td>off</td>
+<td>Display in terminal (auto-detected protocol; PNG only)</td>
+</tr>
+<tr>
+<td><code>--context/--changed-only</code></td>
+<td></td>
+<td><code>--context</code></td>
+<td>Include unchanged files in the treemap</td>
+</tr>
+<tr>
+<td><code>--font-size</code></td>
+<td></td>
+<td><code>12</code></td>
+<td>Directory label font size in pixels</td>
+</tr>
+<tr>
+<td><code>--colormap</code></td>
+<td></td>
+<td><code>tab20</code></td>
+<td>Colormap for unknown extensions</td>
+</tr>
+<tr>
+<td><code>--exclude</code></td>
+<td><code>-e</code></td>
+<td>—</td>
+<td>Pattern to exclude (repeatable): plain name, glob (<code>*.egg-info</code>), <code>**</code> glob, or relative path</td>
+</tr>
+<tr>
+<td><code>--include</code></td>
+<td></td>
+<td>—</td>
+<td>Keep only these subtrees (repeatable); the inverse of <code>--exclude</code>. The added/removed/changed summary counts in the header are scoped to the included paths</td>
+</tr>
+<tr>
+<td><code>--highlight</code></td>
+<td><code>-H</code></td>
+<td>—</td>
+<td>Draw a coloured border on top of diff borders (repeatable). Same <code>pattern[@color]</code> syntax as <code>dirplot map --highlight</code></td>
+</tr>
+<tr>
+<td><code>--depth</code></td>
+<td></td>
+<td>unlimited</td>
+<td>Maximum recursion depth</td>
+</tr>
+<tr>
+<td><code>--size</code></td>
+<td><code>-S</code></td>
+<td>—</td>
+<td>Filter files by size range (e.g. <code>10M..500M</code>, <code>100M..</code>, <code>..50K</code>, <code>1G</code>). Repeatable — multiple values combine with OR logic</td>
+</tr>
+<tr>
+<td><code>--keep-empty-dirs</code></td>
+<td></td>
+<td>off</td>
+<td>Retain directories that become empty after <code>--size</code> filtering</td>
+</tr>
+<tr>
+<td><code>--canvas</code></td>
+<td></td>
+<td>terminal size</td>
+<td>Output dimensions as <code>WIDTHxHEIGHT</code> (e.g. <code>1920x1080</code>)</td>
+</tr>
+<tr>
+<td><code>--cushion/--no-cushion</code></td>
+<td></td>
+<td><code>--cushion</code></td>
+<td>Van Wijk cushion shading for a raised 3-D look</td>
+</tr>
+<tr>
+<td><code>--dark/--light</code></td>
+<td></td>
+<td><code>--dark</code></td>
+<td>Canvas and label colour scheme</td>
+</tr>
+<tr>
+<td><code>--log-scale</code></td>
+<td></td>
+<td><code>0</code> (off)</td>
+<td>Log-scale compression ratio; any value &gt; 1 enables it</td>
+</tr>
+<tr>
+<td><code>--header/--no-header</code></td>
+<td></td>
+<td><code>--header</code></td>
+<td>Print info lines before rendering</td>
+</tr>
+<tr>
+<td><code>--quiet</code></td>
+<td></td>
+<td>off</td>
+<td>Suppress all status output</td>
+</tr>
+<tr>
+<td><code>--ssh-key</code></td>
+<td></td>
+<td>—</td>
+<td>SSH private key file</td>
+</tr>
+<tr>
+<td><code>--ssh-password-file</code></td>
+<td></td>
+<td>—</td>
+<td>File containing SSH password</td>
+</tr>
+<tr>
+<td><code>--aws-profile</code></td>
+<td></td>
+<td><code>$AWS_PROFILE</code></td>
+<td>Named AWS profile for S3 access</td>
+</tr>
+<tr>
+<td><code>--no-sign</code></td>
+<td></td>
+<td>off</td>
+<td>Anonymous access for public S3 buckets</td>
+</tr>
+<tr>
+<td><code>--github-token-file</code></td>
+<td></td>
+<td><code>$GITHUB_TOKEN</code></td>
+<td>File containing GitHub personal access token</td>
+</tr>
+<tr>
+<td><code>--k8s-namespace</code></td>
+<td></td>
+<td>—</td>
+<td>Kubernetes namespace</td>
+</tr>
+<tr>
+<td><code>--k8s-container</code></td>
+<td></td>
+<td>—</td>
+<td>Container name for multi-container pods</td>
+</tr>
+<tr>
+<td><code>--password-file</code></td>
+<td></td>
+<td>—</td>
+<td>File containing archive password</td>
+</tr>
+<tr>
+<td><code>--no-input</code></td>
+<td></td>
+<td>off</td>
+<td>Fail instead of prompting for passwords</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="dirplot-git-git-history-treemap"><code>dirplot git</code> — git history treemap<a class="headerlink" href="#dirplot-git-git-history-treemap" title="Permanent link">&para;</a></h2>
+<p>Renders a single commit or an animated history of a git repository as a treemap. Without <code>--range</code> or <code>--period</code>, a single PNG of the last commit (HEAD or the given ref) is produced. With <code>--range</code> or <code>--period</code>, an animated APNG or MP4 is produced — one frame per commit.</p>
+<blockquote>
+<p><strong>Requires</strong> <code>git</code> on <code>PATH</code>. <code>ffmpeg</code> is also required for MP4 output.</p>
+</blockquote>
+<p>The <code>repo</code> argument accepts:</p>
+<table>
+<thead>
+<tr>
+<th>Form</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Local path</td>
+<td><code>.</code>, <code>/path/to/repo</code></td>
+</tr>
+<tr>
+<td>Local path with ref</td>
+<td><code>.@my-branch</code>, <code>.@v1.0</code>, <code>.@abc1234</code></td>
+</tr>
+<tr>
+<td><code>github://</code> URL</td>
+<td><code>github://owner/repo</code>, <code>github://owner/repo@branch</code></td>
+</tr>
+<tr>
+<td>HTTPS GitHub URL</td>
+<td><code>https://github.com/owner/repo</code>, <code>https://github.com/owner/repo@v1.0</code></td>
+</tr>
+<tr>
+<td>HTTPS GitHub tree URL</td>
+<td><code>https://github.com/owner/repo/tree/branch</code></td>
+</tr>
+</tbody>
+</table>
+<p>For GitHub URLs, dirplot clones into a temporary directory (shallow when possible) and removes it on exit.</p>
+<p><strong>Single frame</strong> (no <code>--range</code> or <code>--period</code>):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># Snapshot of HEAD</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>dirplot<span class="w"> </span>git<span class="w"> </span>.<span class="w"> </span>--output<span class="w"> </span>snapshot.png
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="c1"># Specific local branch or tag</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>dirplot<span class="w"> </span>git<span class="w"> </span>.@my-branch<span class="w"> </span>--output<span class="w"> </span>branch.png
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>dirplot<span class="w"> </span>git<span class="w"> </span>.@v1.0<span class="w"> </span>--output<span class="w"> </span>v1.png<span class="w"> </span>--inline
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="c1"># GitHub repo at a specific tag — display inline</span>
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>dirplot<span class="w"> </span>git<span class="w"> </span>https://github.com/owner/repo@v1.0<span class="w"> </span>--inline
+<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>dirplot<span class="w"> </span>git<span class="w"> </span>github://owner/repo@v1.0<span class="w"> </span>--inline
+</code></pre></div>
+<p><strong>Animation</strong> (<code>--range</code> or <code>--period</code> triggers multi-frame output):</p>
+<p>A bare branch or tag name (<code>--range main</code>) animates <strong>all</strong> commits on that branch.
+The <code>A..B</code> syntax animates only commits reachable from B but not from A (standard git range).</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># All commits on main → animated PNG</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>dirplot<span class="w"> </span>git<span class="w"> </span>.<span class="w"> </span>--range<span class="w"> </span>main<span class="w"> </span>--output<span class="w"> </span>history.png
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="c1"># All commits on main, time-proportional frame durations</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>dirplot<span class="w"> </span>git<span class="w"> </span>.<span class="w"> </span>--range<span class="w"> </span>main<span class="w"> </span>--total-duration<span class="w"> </span><span class="m">30</span><span class="w"> </span>--output<span class="w"> </span>history.png
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="c1"># Only the last 50 commits on main</span>
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>dirplot<span class="w"> </span>git<span class="w"> </span>.<span class="w"> </span>--range<span class="w"> </span>main<span class="w"> </span>--last<span class="w"> </span><span class="m">50</span><span class="w"> </span>--output<span class="w"> </span>history.png
+<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>
+<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="c1"># Specific revision range → animated PNG</span>
+<a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a>dirplot<span class="w"> </span>git<span class="w"> </span>.<span class="w"> </span>--range<span class="w"> </span>main~50..main<span class="w"> </span>--output<span class="w"> </span>history.png
+<a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a>
+<a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a><span class="c1"># Tagged release range</span>
+<a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a>dirplot<span class="w"> </span>git<span class="w"> </span>.<span class="w"> </span>--range<span class="w"> </span>v1.0..v2.0<span class="w"> </span>--output<span class="w"> </span>release.mp4
+<a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a>
+<a id="__codelineno-5-16" name="__codelineno-5-16" href="#__codelineno-5-16"></a><span class="c1"># First 10 commits of a range</span>
+<a id="__codelineno-5-17" name="__codelineno-5-17" href="#__codelineno-5-17"></a>dirplot<span class="w"> </span>git<span class="w"> </span>github://owner/repo<span class="w"> </span>--range<span class="w"> </span>v1.0..v2.0<span class="w"> </span>--first<span class="w"> </span><span class="m">10</span><span class="w"> </span>--output<span class="w"> </span>history.png
+<a id="__codelineno-5-18" name="__codelineno-5-18" href="#__codelineno-5-18"></a>
+<a id="__codelineno-5-19" name="__codelineno-5-19" href="#__codelineno-5-19"></a><span class="c1"># Last 10 commits of a range</span>
+<a id="__codelineno-5-20" name="__codelineno-5-20" href="#__codelineno-5-20"></a>dirplot<span class="w"> </span>git<span class="w"> </span>github://owner/repo<span class="w"> </span>--range<span class="w"> </span>v1.0..v2.0<span class="w"> </span>--last<span class="w"> </span><span class="m">10</span><span class="w"> </span>--output<span class="w"> </span>history.png
+<a id="__codelineno-5-21" name="__codelineno-5-21" href="#__codelineno-5-21"></a>
+<a id="__codelineno-5-22" name="__codelineno-5-22" href="#__codelineno-5-22"></a><span class="c1"># All commits in the last 30 days</span>
+<a id="__codelineno-5-23" name="__codelineno-5-23" href="#__codelineno-5-23"></a>dirplot<span class="w"> </span>git<span class="w"> </span>.<span class="w"> </span>--period<span class="w"> </span>30d<span class="w"> </span>--output<span class="w"> </span>history.mp4
+<a id="__codelineno-5-24" name="__codelineno-5-24" href="#__codelineno-5-24"></a>
+<a id="__codelineno-5-25" name="__codelineno-5-25" href="#__codelineno-5-25"></a><span class="c1"># Commits in a branch that fall within the last 3 days of that branch&#39;s history</span>
+<a id="__codelineno-5-26" name="__codelineno-5-26" href="#__codelineno-5-26"></a>dirplot<span class="w"> </span>git<span class="w"> </span>github://owner/repo<span class="w"> </span>--range<span class="w"> </span>main<span class="w"> </span>--period<span class="w"> </span>3d<span class="w"> </span>--output<span class="w"> </span>history.png
+<a id="__codelineno-5-27" name="__codelineno-5-27" href="#__codelineno-5-27"></a>
+<a id="__codelineno-5-28" name="__codelineno-5-28" href="#__codelineno-5-28"></a><span class="c1"># Fade out to black at the end</span>
+<a id="__codelineno-5-29" name="__codelineno-5-29" href="#__codelineno-5-29"></a>dirplot<span class="w"> </span>git<span class="w"> </span>.<span class="w"> </span>--period<span class="w"> </span>7d<span class="w"> </span>--total-duration<span class="w"> </span><span class="m">20</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-5-30" name="__codelineno-5-30" href="#__codelineno-5-30"></a><span class="w">  </span>--fade-out<span class="w"> </span>--fade-out-duration<span class="w"> </span><span class="m">2</span>.0<span class="w"> </span>--output<span class="w"> </span>history.mp4
+</code></pre></div>
+<p>See <a href="../examples/#git-history-animation">EXAMPLES.md — Git History Animation</a> for more examples including video output.</p>
+<h3 id="options_2">Options<a class="headerlink" href="#options_2" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--output</code> / <code>-o</code></td>
+<td>—</td>
+<td>Output file: <code>.png</code> (static or animated APNG) or <code>.mp4</code> / <code>.mov</code>. Required unless <code>--inline</code> is given</td>
+</tr>
+<tr>
+<td><code>--inline</code></td>
+<td>off</td>
+<td>Render and display the image directly in the terminal (single-frame mode only; not compatible with <code>--range</code> or <code>--period</code>)</td>
+</tr>
+<tr>
+<td><code>--range</code></td>
+<td>—</td>
+<td>Git revision range. A bare branch/tag name (e.g. <code>main</code>) animates all commits on it; <code>A..B</code> animates commits in B but not A. Triggers animation mode</td>
+</tr>
+<tr>
+<td><code>--period</code></td>
+<td>—</td>
+<td>Relative time filter: <code>30d</code>, <code>24h</code>, <code>2w</code>, <code>1mo</code>, <code>30m</code>. Triggers animation mode. Without <code>--range</code>, filters from now; with <code>--range</code>, filters relative to the range end</td>
+</tr>
+<tr>
+<td><code>--first</code> / <code>--last</code></td>
+<td>—</td>
+<td>After applying <code>--range</code> / <code>--period</code>, keep only the first or last N commits</td>
+</tr>
+<tr>
+<td><code>--frame-duration</code></td>
+<td><code>1000</code></td>
+<td>Frame display time in ms (when <code>--total-duration</code> is not set)</td>
+</tr>
+<tr>
+<td><code>--total-duration</code></td>
+<td>—</td>
+<td>Target total animation length in seconds; frames scale proportionally to real time gaps between commits</td>
+</tr>
+<tr>
+<td><code>--fade-out</code> / <code>--no-fade-out</code></td>
+<td>off</td>
+<td>Append a fade-out sequence at the end (animation mode only)</td>
+</tr>
+<tr>
+<td><code>--fade-out-duration</code></td>
+<td><code>1.0</code></td>
+<td>Duration of the fade-out in seconds</td>
+</tr>
+<tr>
+<td><code>--fade-out-frames</code></td>
+<td>4 × duration</td>
+<td>Number of fade frames; defaults to 4 per second</td>
+</tr>
+<tr>
+<td><code>--fade-out-color</code></td>
+<td><code>auto</code></td>
+<td>Fade target: <code>auto</code> (black/white per mode), <code>transparent</code> (PNG/APNG only), CSS name, or hex</td>
+</tr>
+<tr>
+<td><code>--crf</code></td>
+<td><code>23</code></td>
+<td>MP4 quality: 0 = lossless, 51 = worst. Ignored for APNG</td>
+</tr>
+<tr>
+<td><code>--codec</code></td>
+<td><code>libx264</code></td>
+<td>MP4 codec: <code>libx264</code> (H.264) or <code>libx265</code> (~40% smaller at same quality)</td>
+</tr>
+<tr>
+<td><code>--workers</code></td>
+<td>all CPU cores</td>
+<td>Parallel render workers; must be a positive integer. 4–8 is typically optimal</td>
+</tr>
+<tr>
+<td><code>--log-scale</code></td>
+<td><code>0</code> (off)</td>
+<td>Log-scale compression ratio; any value &gt; 1 enables it</td>
+</tr>
+<tr>
+<td><code>--canvas</code></td>
+<td>terminal size</td>
+<td>Output dimensions as <code>WIDTHxHEIGHT</code></td>
+</tr>
+<tr>
+<td><code>--depth</code></td>
+<td>—</td>
+<td>Maximum directory depth</td>
+</tr>
+<tr>
+<td><code>--exclude</code> / <code>-e</code></td>
+<td>—</td>
+<td>Pattern to exclude (repeatable): plain name, glob (<code>*.egg-info</code>), <code>**</code> glob, or relative path</td>
+</tr>
+<tr>
+<td><code>--highlight</code> / <code>-H</code></td>
+<td>—</td>
+<td>Draw a coloured border on matching paths in every frame (repeatable). Same <code>pattern[@color]</code> syntax as <code>dirplot map --highlight</code></td>
+</tr>
+<tr>
+<td><code>--colormap</code></td>
+<td><code>tab20</code></td>
+<td>Matplotlib colormap</td>
+</tr>
+<tr>
+<td><code>--font-size</code></td>
+<td><code>12</code></td>
+<td>Directory label font size in pixels</td>
+</tr>
+<tr>
+<td><code>--cushion/--no-cushion</code></td>
+<td><code>--cushion</code></td>
+<td>Van Wijk cushion shading</td>
+</tr>
+<tr>
+<td><code>--github-token-file</code></td>
+<td><code>$GITHUB_TOKEN</code></td>
+<td>File containing GitHub personal access token</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="dirplot-hg-mercurial-history-treemap"><code>dirplot hg</code> — Mercurial history treemap<a class="headerlink" href="#dirplot-hg-mercurial-history-treemap" title="Permanent link">&para;</a></h2>
+<p>Renders a single changeset or an animated history of a Mercurial repository as a treemap. Without <code>--range</code> or <code>--period</code>, a single PNG of the tip (or the given rev) is produced. With <code>--range</code> or <code>--period</code>, an animated APNG or MP4 is produced — one frame per changeset.</p>
+<blockquote>
+<p><strong>Requires</strong> <code>hg</code> on <code>PATH</code>. <code>ffmpeg</code> is also required for MP4 output.</p>
+</blockquote>
+<p>The <code>repo</code> argument accepts a local path (<code>.</code>, <code>/path/to/repo</code>) optionally followed by <code>@rev</code> to pin to a specific revision or tag (e.g. <code>.@tip</code>, <code>.@1.0</code>, <code>.@abc1234</code>).</p>
+<p><strong>Single frame</strong> (no <code>--range</code> or <code>--period</code>):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c1"># Snapshot of tip</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>dirplot<span class="w"> </span>hg<span class="w"> </span>.<span class="w"> </span>--output<span class="w"> </span>snapshot.png
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="c1"># Specific revision or tag</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>dirplot<span class="w"> </span>hg<span class="w"> </span>.@tip<span class="w"> </span>--output<span class="w"> </span>tip.png
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>dirplot<span class="w"> </span>hg<span class="w"> </span>.@1.0<span class="w"> </span>--inline
+</code></pre></div>
+<p><strong>Animation</strong> (<code>--range</code> triggers multi-frame output):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="c1"># Full history as animated PNG</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>dirplot<span class="w"> </span>hg<span class="w"> </span>.<span class="w"> </span>--range<span class="w"> </span><span class="m">0</span>:tip<span class="w"> </span>--output<span class="w"> </span>history.png
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="c1"># Revision range</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>dirplot<span class="w"> </span>hg<span class="w"> </span>.<span class="w"> </span>--range<span class="w"> </span><span class="m">10</span>:tip<span class="w"> </span>--output<span class="w"> </span>history.mp4
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>
+<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="c1"># First 20 changesets of a range</span>
+<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>dirplot<span class="w"> </span>hg<span class="w"> </span>.<span class="w"> </span>--range<span class="w"> </span><span class="m">0</span>:tip<span class="w"> </span>--first<span class="w"> </span><span class="m">20</span><span class="w"> </span>--output<span class="w"> </span>history.png
+</code></pre></div>
+<h3 id="options_3">Options<a class="headerlink" href="#options_3" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--output</code> / <code>-o</code></td>
+<td>—</td>
+<td>Output file: <code>.png</code> (static or animated APNG) or <code>.mp4</code> / <code>.mov</code>. Required unless <code>--inline</code> is given</td>
+</tr>
+<tr>
+<td><code>--inline</code></td>
+<td>off</td>
+<td>Render and display the image directly in the terminal (single-frame mode only; not compatible with <code>--range</code>)</td>
+</tr>
+<tr>
+<td><code>--range</code></td>
+<td>—</td>
+<td>Mercurial revision range (e.g. <code>0:tip</code>, <code>10:tip</code>). Triggers animation mode</td>
+</tr>
+<tr>
+<td><code>--period</code></td>
+<td>—</td>
+<td>Relative time filter: <code>30d</code>, <code>24h</code>, <code>2w</code>, <code>1mo</code>, <code>30m</code>. Triggers animation mode</td>
+</tr>
+<tr>
+<td><code>--first</code> / <code>--last</code></td>
+<td>—</td>
+<td>After applying <code>--range</code> / <code>--period</code>, keep only the first or last N changesets</td>
+</tr>
+<tr>
+<td><code>--frame-duration</code></td>
+<td><code>1000</code></td>
+<td>Frame display time in ms (when <code>--total-duration</code> is not set)</td>
+</tr>
+<tr>
+<td><code>--total-duration</code></td>
+<td>—</td>
+<td>Target total animation length in seconds</td>
+</tr>
+<tr>
+<td><code>--fade-out</code> / <code>--no-fade-out</code></td>
+<td>off</td>
+<td>Append a fade-out sequence at the end (animation mode only)</td>
+</tr>
+<tr>
+<td><code>--fade-out-duration</code></td>
+<td><code>1.0</code></td>
+<td>Duration of the fade-out in seconds</td>
+</tr>
+<tr>
+<td><code>--fade-out-frames</code></td>
+<td>4 × duration</td>
+<td>Number of fade frames; defaults to 4 per second</td>
+</tr>
+<tr>
+<td><code>--fade-out-color</code></td>
+<td><code>auto</code></td>
+<td>Fade target: <code>auto</code> (black/white per mode), <code>transparent</code> (PNG/APNG only), CSS name, or hex</td>
+</tr>
+<tr>
+<td><code>--crf</code></td>
+<td><code>23</code></td>
+<td>MP4 quality: 0 = lossless, 51 = worst. Ignored for APNG</td>
+</tr>
+<tr>
+<td><code>--codec</code></td>
+<td><code>libx264</code></td>
+<td>MP4 codec: <code>libx264</code> (H.264) or <code>libx265</code> (~40% smaller at same quality)</td>
+</tr>
+<tr>
+<td><code>--workers</code></td>
+<td>all CPU cores</td>
+<td>Parallel render workers; must be a positive integer</td>
+</tr>
+<tr>
+<td><code>--log-scale</code></td>
+<td><code>0</code> (off)</td>
+<td>Log-scale compression ratio; any value &gt; 1 enables it</td>
+</tr>
+<tr>
+<td><code>--canvas</code></td>
+<td>terminal size</td>
+<td>Output dimensions as <code>WIDTHxHEIGHT</code></td>
+</tr>
+<tr>
+<td><code>--depth</code></td>
+<td>—</td>
+<td>Maximum directory depth</td>
+</tr>
+<tr>
+<td><code>--exclude</code> / <code>-e</code></td>
+<td>—</td>
+<td>Pattern to exclude (repeatable)</td>
+</tr>
+<tr>
+<td><code>--highlight</code> / <code>-H</code></td>
+<td>—</td>
+<td>Draw a coloured border on matching paths in every frame (repeatable). Same <code>pattern[@color]</code> syntax as <code>dirplot map --highlight</code></td>
+</tr>
+<tr>
+<td><code>--colormap</code></td>
+<td><code>tab20</code></td>
+<td>Matplotlib colormap</td>
+</tr>
+<tr>
+<td><code>--font-size</code></td>
+<td><code>12</code></td>
+<td>Directory label font size in pixels</td>
+</tr>
+<tr>
+<td><code>--cushion/--no-cushion</code></td>
+<td><code>--cushion</code></td>
+<td>Van Wijk cushion shading</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="dirplot-watch-live-watch-mode"><code>dirplot watch</code> — live watch mode<a class="headerlink" href="#dirplot-watch-live-watch-mode" title="Permanent link">&para;</a></h2>
+<p>Records filesystem events as JSONL for later replay as an animated treemap. Use <code>dirplot replay</code> to turn the recording into an APNG or MP4. Pass <code>--snapshot</code> to also write a live PNG/SVG on each change — best for small trees only, as rendering adds latency.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="c1"># Record events to a JSONL file (primary use case)</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>dirplot<span class="w"> </span>watch<span class="w"> </span>src<span class="w"> </span>--output<span class="w"> </span>events.jsonl
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="c1"># Watch multiple directories</span>
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>dirplot<span class="w"> </span>watch<span class="w"> </span>src<span class="w"> </span>tests<span class="w"> </span>--output<span class="w"> </span>events.jsonl
+<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>
+<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="c1"># Append to an existing log instead of truncating</span>
+<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a>dirplot<span class="w"> </span>watch<span class="w"> </span>src<span class="w"> </span>--output<span class="w"> </span>events.jsonl<span class="w"> </span>--append
+<a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a>
+<a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a><span class="c1"># Also write a live snapshot PNG on each change (small trees only)</span>
+<a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a>dirplot<span class="w"> </span>watch<span class="w"> </span>.<span class="w"> </span>--output<span class="w"> </span>events.jsonl<span class="w"> </span>--snapshot<span class="w"> </span>treemap.png
+<a id="__codelineno-8-12" name="__codelineno-8-12" href="#__codelineno-8-12"></a>
+<a id="__codelineno-8-13" name="__codelineno-8-13" href="#__codelineno-8-13"></a><span class="c1"># Snapshot only, no event log</span>
+<a id="__codelineno-8-14" name="__codelineno-8-14" href="#__codelineno-8-14"></a>dirplot<span class="w"> </span>watch<span class="w"> </span>.<span class="w"> </span>--snapshot<span class="w"> </span>treemap.png<span class="w"> </span>--debounce<span class="w"> </span><span class="m">1</span>.0
+</code></pre></div>
+<h3 id="options_4">Options<a class="headerlink" href="#options_4" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--output</code> / <code>-o</code></td>
+<td>—</td>
+<td>Write filesystem events as JSONL to this file, flushed after each regeneration. Use with <code>dirplot replay</code> to produce an animation</td>
+</tr>
+<tr>
+<td><code>--append/--no-append</code></td>
+<td>off</td>
+<td>Append to an existing <code>--output</code> file instead of truncating on startup</td>
+</tr>
+<tr>
+<td><code>--snapshot</code></td>
+<td>—</td>
+<td>Also write the current treemap as a PNG or SVG on each change (best for small trees)</td>
+</tr>
+<tr>
+<td><code>--debounce</code></td>
+<td><code>0.5</code></td>
+<td>Seconds of quiet before regenerating; <code>0</code> disables</td>
+</tr>
+<tr>
+<td><code>--log-scale</code></td>
+<td><code>0</code> (off)</td>
+<td>Log-scale compression ratio; any value &gt; 1 enables it</td>
+</tr>
+<tr>
+<td><code>--size</code> / <code>-S</code></td>
+<td>—</td>
+<td>Filter files by size range (e.g. <code>10M..500M</code>, <code>100M..</code>, <code>..50K</code>). Repeatable (OR logic)</td>
+</tr>
+<tr>
+<td><code>--keep-empty-dirs</code></td>
+<td>off</td>
+<td>Retain directories emptied by <code>--size</code> filtering</td>
+</tr>
+<tr>
+<td><code>--canvas</code></td>
+<td>terminal size</td>
+<td>Output dimensions as <code>WIDTHxHEIGHT</code></td>
+</tr>
+<tr>
+<td><code>--depth</code></td>
+<td>—</td>
+<td>Maximum recursion depth</td>
+</tr>
+<tr>
+<td><code>--include</code></td>
+<td>—</td>
+<td>Show only this subtree (repeatable). Allowlist complement to <code>--exclude</code></td>
+</tr>
+<tr>
+<td><code>--exclude</code> / <code>-e</code></td>
+<td>—</td>
+<td>Pattern to exclude (repeatable): plain name, glob (<code>*.egg-info</code>), <code>**</code> glob, or relative path</td>
+</tr>
+<tr>
+<td><code>--highlight</code> / <code>-H</code></td>
+<td>—</td>
+<td>Highlight matching paths with a coloured border (repeatable); append <code>@color</code> to set colour</td>
+</tr>
+<tr>
+<td><code>--colormap</code></td>
+<td><code>tab20</code></td>
+<td>Matplotlib colormap</td>
+</tr>
+<tr>
+<td><code>--font-size</code></td>
+<td><code>12</code></td>
+<td>Directory label font size in pixels</td>
+</tr>
+<tr>
+<td><code>--cushion/--no-cushion</code></td>
+<td><code>--cushion</code></td>
+<td>Van Wijk cushion shading</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="dirplot-replay-event-log-replay"><code>dirplot replay</code> — event log replay<a class="headerlink" href="#dirplot-replay-event-log-replay" title="Permanent link">&para;</a></h2>
+<p>Replays a JSONL event log produced by <code>dirplot watch --output</code> as an animated treemap. Events are grouped into time buckets (one frame per bucket). By default the full directory tree is scanned at replay time so unchanged files appear as context; pass <code>--changed-only</code> to show only files that appear in the event log.</p>
+<blockquote>
+<p><strong>Requires</strong> <code>ffmpeg</code> on <code>PATH</code> for MP4 output.</p>
+</blockquote>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="c1"># Replay as APNG (60-second buckets, 30-second total)</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>dirplot<span class="w"> </span>replay<span class="w"> </span>events.jsonl<span class="w"> </span>--output<span class="w"> </span>replay.apng<span class="w"> </span>--total-duration<span class="w"> </span><span class="m">30</span>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="c1"># Replay as MP4</span>
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>dirplot<span class="w"> </span>replay<span class="w"> </span>events.jsonl<span class="w"> </span>--output<span class="w"> </span>replay.mp4<span class="w"> </span>--total-duration<span class="w"> </span><span class="m">30</span>
+<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>dirplot<span class="w"> </span>replay<span class="w"> </span>events.jsonl<span class="w"> </span>--output<span class="w"> </span>replay.mp4<span class="w"> </span>--crf<span class="w"> </span><span class="m">18</span><span class="w">         </span><span class="c1"># higher quality</span>
+<a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>dirplot<span class="w"> </span>replay<span class="w"> </span>events.jsonl<span class="w"> </span>--output<span class="w"> </span>replay.mp4<span class="w"> </span>--codec<span class="w"> </span>libx265<span class="w">  </span><span class="c1"># smaller file</span>
+<a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a>
+<a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a><span class="c1"># Fine-grained buckets with fixed frame duration</span>
+<a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a>dirplot<span class="w"> </span>replay<span class="w"> </span>events.jsonl<span class="w"> </span>--output<span class="w"> </span>replay.apng<span class="w"> </span>--bucket<span class="w"> </span><span class="m">10</span><span class="w"> </span>--frame-duration<span class="w"> </span><span class="m">200</span>
+<a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a>
+<a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a><span class="c1"># Fade out at the end</span>
+<a id="__codelineno-9-13" name="__codelineno-9-13" href="#__codelineno-9-13"></a>dirplot<span class="w"> </span>replay<span class="w"> </span>events.jsonl<span class="w"> </span>--output<span class="w"> </span>replay.mp4<span class="w"> </span>--total-duration<span class="w"> </span><span class="m">30</span><span class="w"> </span>--fade-out
+<a id="__codelineno-9-14" name="__codelineno-9-14" href="#__codelineno-9-14"></a>dirplot<span class="w"> </span>replay<span class="w"> </span>events.jsonl<span class="w"> </span>--output<span class="w"> </span>replay.png<span class="w"> </span>--total-duration<span class="w"> </span><span class="m">30</span><span class="w"> </span>--fade-out<span class="w"> </span>--fade-out-color<span class="w"> </span>white
+</code></pre></div>
+<h3 id="options_5">Options<a class="headerlink" href="#options_5" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--output</code> / <code>-o</code></td>
+<td>required</td>
+<td>Output <code>.png</code>, <code>.apng</code>, or <code>.mp4</code></td>
+</tr>
+<tr>
+<td><code>--bucket</code></td>
+<td><code>60.0</code></td>
+<td>Time bucket size in seconds; one frame per bucket</td>
+</tr>
+<tr>
+<td><code>--frame-duration</code></td>
+<td><code>500</code></td>
+<td>Frame display time in ms (when <code>--total-duration</code> is not set)</td>
+</tr>
+<tr>
+<td><code>--total-duration</code></td>
+<td>—</td>
+<td>Target total animation length in seconds; frames scale proportionally to real time gaps</td>
+</tr>
+<tr>
+<td><code>--fade-out</code> / <code>--no-fade-out</code></td>
+<td>off</td>
+<td>Append a fade-out sequence at the end</td>
+</tr>
+<tr>
+<td><code>--fade-out-duration</code></td>
+<td><code>1.0</code></td>
+<td>Duration of the fade-out in seconds</td>
+</tr>
+<tr>
+<td><code>--fade-out-frames</code></td>
+<td>4 × duration</td>
+<td>Number of fade frames; defaults to 4 per second</td>
+</tr>
+<tr>
+<td><code>--fade-out-color</code></td>
+<td><code>auto</code></td>
+<td>Fade target: <code>auto</code> (black/white per mode), <code>transparent</code> (PNG/APNG only), CSS name, or hex</td>
+</tr>
+<tr>
+<td><code>--crf</code></td>
+<td><code>23</code></td>
+<td>MP4 quality: 0 = lossless, 51 = worst. Ignored for APNG</td>
+</tr>
+<tr>
+<td><code>--codec</code></td>
+<td><code>libx264</code></td>
+<td>MP4 codec: <code>libx264</code> (H.264) or <code>libx265</code> (H.265)</td>
+</tr>
+<tr>
+<td><code>--workers</code></td>
+<td>all CPU cores</td>
+<td>Parallel render workers; must be a positive integer</td>
+</tr>
+<tr>
+<td><code>--log-scale</code></td>
+<td><code>0</code> (off)</td>
+<td>Log-scale compression ratio; any value &gt; 1 enables it</td>
+</tr>
+<tr>
+<td><code>--size</code> / <code>-S</code></td>
+<td>—</td>
+<td>Filter files by size range (e.g. <code>10M..500M</code>, <code>100M..</code>, <code>..50K</code>). Repeatable (OR logic). Frames with no matching files are skipped</td>
+</tr>
+<tr>
+<td><code>--canvas</code></td>
+<td>terminal size</td>
+<td>Output dimensions as <code>WIDTHxHEIGHT</code></td>
+</tr>
+<tr>
+<td><code>--depth</code></td>
+<td>—</td>
+<td>Maximum directory depth</td>
+</tr>
+<tr>
+<td><code>--exclude</code> / <code>-e</code></td>
+<td>—</td>
+<td>Pattern to exclude (repeatable): plain name, glob (<code>*.egg-info</code>), <code>**</code> glob, or relative path</td>
+</tr>
+<tr>
+<td><code>--highlight</code> / <code>-H</code></td>
+<td>—</td>
+<td>Draw a coloured border on matching paths in every frame (repeatable). Same <code>pattern[@color]</code> syntax as <code>dirplot map --highlight</code></td>
+</tr>
+<tr>
+<td><code>--colormap</code></td>
+<td><code>tab20</code></td>
+<td>Matplotlib colormap</td>
+</tr>
+<tr>
+<td><code>--font-size</code></td>
+<td><code>12</code></td>
+<td>Directory label font size in pixels</td>
+</tr>
+<tr>
+<td><code>--cushion/--no-cushion</code></td>
+<td><code>--cushion</code></td>
+<td>Van Wijk cushion shading</td>
+</tr>
+<tr>
+<td><code>--changed-only</code></td>
+<td>off</td>
+<td>Show only files from the event log; skip the initial directory scan</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="dirplot-metrics-directory-metrics"><code>dirplot metrics</code> — directory metrics<a class="headerlink" href="#dirplot-metrics-directory-metrics" title="Permanent link">&para;</a></h2>
+<p>Scans a directory tree and prints a structured text summary: file/directory counts, total size, tree depth, scan time, top file extensions (by count or size), and the largest files and directories with their share of total size. All remote sources supported by <code>dirplot map</code> are accepted.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="c1"># Basic metrics for the current directory</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>dirplot<span class="w"> </span>metrics<span class="w"> </span>.
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="c1"># Remote sources work identically to `dirplot map`</span>
+<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>dirplot<span class="w"> </span>metrics<span class="w"> </span>github://pallets/flask
+<a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a>dirplot<span class="w"> </span>metrics<span class="w"> </span>s3://my-bucket<span class="w"> </span>--no-sign
+<a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a>dirplot<span class="w"> </span>metrics<span class="w"> </span>project.zip
+<a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a>
+<a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a><span class="c1"># Sort top extensions by total bytes instead of file count</span>
+<a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a>dirplot<span class="w"> </span>metrics<span class="w"> </span>.<span class="w"> </span>--sort-by<span class="w"> </span>size
+<a id="__codelineno-10-11" name="__codelineno-10-11" href="#__codelineno-10-11"></a>
+<a id="__codelineno-10-12" name="__codelineno-10-12" href="#__codelineno-10-12"></a><span class="c1"># Show only top 5 entries in each list</span>
+<a id="__codelineno-10-13" name="__codelineno-10-13" href="#__codelineno-10-13"></a>dirplot<span class="w"> </span>metrics<span class="w"> </span>.<span class="w"> </span>--top<span class="w"> </span><span class="m">5</span>
+<a id="__codelineno-10-14" name="__codelineno-10-14" href="#__codelineno-10-14"></a>
+<a id="__codelineno-10-15" name="__codelineno-10-15" href="#__codelineno-10-15"></a><span class="c1"># JSON output — pipe into jq, scripts, or monitoring tools</span>
+<a id="__codelineno-10-16" name="__codelineno-10-16" href="#__codelineno-10-16"></a>dirplot<span class="w"> </span>metrics<span class="w"> </span>.<span class="w"> </span>--json
+<a id="__codelineno-10-17" name="__codelineno-10-17" href="#__codelineno-10-17"></a>dirplot<span class="w"> </span>metrics<span class="w"> </span>.<span class="w"> </span>--json<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span><span class="s1">&#39;.largest_files[0]&#39;</span>
+<a id="__codelineno-10-18" name="__codelineno-10-18" href="#__codelineno-10-18"></a>
+<a id="__codelineno-10-19" name="__codelineno-10-19" href="#__codelineno-10-19"></a><span class="c1"># Combine with map to get treemap + metrics in one pass</span>
+<a id="__codelineno-10-20" name="__codelineno-10-20" href="#__codelineno-10-20"></a>dirplot<span class="w"> </span>map<span class="w"> </span>.<span class="w"> </span>--metrics<span class="w"> </span>--no-show
+</code></pre></div>
+<h3 id="output-fields">Output fields<a class="headerlink" href="#output-fields" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>  Files:      1,011
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>  Dirs:       70  (0 empty)
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>  Total size: 4.5 MB
+<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>  Depth:      7          ← maximum nesting level in the tree
+<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>  Scan time:  1.28s
+<a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a>  Top extensions (10) [by count]:
+<a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a>    .py                    962    2.3 MB
+<a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a>    .json                   19    48.2 KB
+<a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a>    …
+<a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a>  Largest files:
+<a id="__codelineno-11-11" name="__codelineno-11-11" href="#__codelineno-11-11"></a>    671.6 KB     14.9%  uv.lock
+<a id="__codelineno-11-12" name="__codelineno-11-12" href="#__codelineno-11-12"></a>    191.8 KB      4.3%  CHANGELOG.md
+<a id="__codelineno-11-13" name="__codelineno-11-13" href="#__codelineno-11-13"></a>    …
+<a id="__codelineno-11-14" name="__codelineno-11-14" href="#__codelineno-11-14"></a>  Largest dirs:
+<a id="__codelineno-11-15" name="__codelineno-11-15" href="#__codelineno-11-15"></a>    2.3 MB       51.1%  src
+<a id="__codelineno-11-16" name="__codelineno-11-16" href="#__codelineno-11-16"></a>    …
+</code></pre></div>
+<h3 id="options_6">Options<a class="headerlink" href="#options_6" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Short</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--top</code></td>
+<td></td>
+<td><code>10</code></td>
+<td>Number of entries to show in each list</td>
+</tr>
+<tr>
+<td><code>--sort-by</code></td>
+<td></td>
+<td><code>count</code></td>
+<td>Sort top extensions by <code>count</code> (files) or <code>size</code> (bytes)</td>
+</tr>
+<tr>
+<td><code>--json</code> / <code>--no-json</code></td>
+<td></td>
+<td>off</td>
+<td>Output all metrics as JSON</td>
+</tr>
+<tr>
+<td><code>--exclude</code></td>
+<td><code>-e</code></td>
+<td>—</td>
+<td>Pattern to exclude (repeatable): plain name, glob (<code>*.egg-info</code>), <code>**</code> glob, or relative path</td>
+</tr>
+<tr>
+<td><code>--include</code></td>
+<td></td>
+<td>—</td>
+<td>Keep only these subtrees (repeatable); the inverse of <code>--exclude</code></td>
+</tr>
+<tr>
+<td><code>--depth</code></td>
+<td></td>
+<td>unlimited</td>
+<td>Maximum recursion depth</td>
+</tr>
+<tr>
+<td><code>--paths-from</code></td>
+<td></td>
+<td>—</td>
+<td>File with path list (<code>tree</code>/<code>find</code> output); <code>-</code> for stdin</td>
+</tr>
+<tr>
+<td><code>--password-file</code></td>
+<td></td>
+<td>—</td>
+<td>File containing archive password; prompted interactively if needed</td>
+</tr>
+<tr>
+<td><code>--github-token-file</code></td>
+<td></td>
+<td><code>$GITHUB_TOKEN</code></td>
+<td>File containing GitHub personal access token</td>
+</tr>
+<tr>
+<td><code>--ssh-key</code></td>
+<td></td>
+<td>—</td>
+<td>SSH private key path</td>
+</tr>
+<tr>
+<td><code>--ssh-password-file</code></td>
+<td></td>
+<td>—</td>
+<td>File containing SSH password</td>
+</tr>
+<tr>
+<td><code>--aws-profile</code></td>
+<td></td>
+<td><code>$AWS_PROFILE</code></td>
+<td>Named AWS profile</td>
+</tr>
+<tr>
+<td><code>--no-sign</code></td>
+<td></td>
+<td>off</td>
+<td>Anonymous access for public S3 buckets</td>
+</tr>
+<tr>
+<td><code>--k8s-namespace</code></td>
+<td></td>
+<td>—</td>
+<td>Kubernetes namespace</td>
+</tr>
+<tr>
+<td><code>--k8s-container</code></td>
+<td></td>
+<td>—</td>
+<td>Container name for multi-container pods</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="dirplot-meta-read-embedded-metadata"><code>dirplot meta</code> — read embedded metadata<a class="headerlink" href="#dirplot-meta-read-embedded-metadata" title="Permanent link">&para;</a></h2>
+<p>Reads dirplot metadata (date, software version, OS, Python version, executed command) embedded in a PNG, SVG, or MP4/MOV output file.</p>
+<blockquote>
+<p><strong>Requires</strong> <code>ffprobe</code> on <code>PATH</code> (bundled with <a href="https://ffmpeg.org/">ffmpeg</a>) to read metadata from <code>.mp4</code> / <code>.mov</code> files.</p>
+</blockquote>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>dirplot<span class="w"> </span>meta<span class="w"> </span>treemap.png
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>dirplot<span class="w"> </span>meta<span class="w"> </span>treemap.svg
+<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>dirplot<span class="w"> </span>meta<span class="w"> </span>history.mp4
+<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a>dirplot<span class="w"> </span>meta<span class="w"> </span>a.png<span class="w"> </span>b.png<span class="w"> </span>c.svg<span class="w">   </span><span class="c1"># multiple files</span>
+<a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a>dirplot<span class="w"> </span>meta<span class="w"> </span>--json<span class="w"> </span>treemap.png<span class="w">  </span><span class="c1"># structured JSON output</span>
+</code></pre></div>
+<h3 id="options_7">Options<a class="headerlink" href="#options_7" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--json</code></td>
+<td>off</td>
+<td>Output metadata as structured JSON</td>
+</tr>
+</tbody>
+</table>
+<p>When <code>--json</code> is used, each file produces an object with: <code>file</code>, <code>has_metadata</code>, <code>created</code>, <code>version</code>, <code>command</code>, <code>os</code>, <code>python</code>. Multiple files return a JSON array.</p>
+<hr />
+<h2 id="dirplot-demo-run-example-commands"><code>dirplot demo</code> — run example commands<a class="headerlink" href="#dirplot-demo-run-example-commands" title="Permanent link">&para;</a></h2>
+<p>Runs a curated set of example commands covering each subcommand and saves outputs to a folder. Useful for a first-time walkthrough or to verify that everything works in your environment.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="c1"># Run all examples with defaults (saves to ./demo/)</span>
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>dirplot<span class="w"> </span>demo
+<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>
+<a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="c1"># Custom output folder and repo</span>
+<a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a>dirplot<span class="w"> </span>demo<span class="w"> </span>--output<span class="w"> </span>~/dirplot-demo<span class="w"> </span>--github-url<span class="w"> </span>https://github.com/pallets/flask
+<a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a>
+<a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a><span class="c1"># Step through commands one by one</span>
+<a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a>dirplot<span class="w"> </span>demo<span class="w"> </span>--interactive
+</code></pre></div>
+<p>Examples produced:</p>
+<table>
+<thead>
+<tr>
+<th>Output file</th>
+<th>Command</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><em>(stdout)</em></td>
+<td><code>dirplot termsize</code></td>
+</tr>
+<tr>
+<td><code>map-local.png</code></td>
+<td><code>dirplot map .</code> (dark mode, PNG)</td>
+</tr>
+<tr>
+<td><code>map-highlight.png</code></td>
+<td><code>dirplot map tests --highlight "tests/conftest.py@red" --highlight "**/test_git*.py@cyan" --highlight "tests/fixtures@lime"</code></td>
+</tr>
+<tr>
+<td><code>map-github.png</code></td>
+<td><code>dirplot map github://owner/repo</code> (dark mode, PNG)</td>
+</tr>
+<tr>
+<td><code>map-local.svg</code></td>
+<td><code>dirplot map .</code> (light mode, SVG)</td>
+</tr>
+<tr>
+<td><code>git-static.png</code></td>
+<td><code>dirplot git github://owner/repo --first 1</code> (static PNG of latest commit)</td>
+</tr>
+<tr>
+<td><code>git.mp4</code></td>
+<td><code>dirplot git github://owner/repo --range main --first 10 --total-duration 20</code></td>
+</tr>
+<tr>
+<td><code>git-animated.png</code></td>
+<td><code>dirplot git github://owner/repo --range main --first 10 --total-duration 20 --fade-out</code></td>
+</tr>
+<tr>
+<td><em>(stdout)</em></td>
+<td><code>dirplot meta map-local.png</code></td>
+</tr>
+</tbody>
+</table>
+<p><code>dirplot watch</code> and <code>dirplot replay</code> are listed but skipped with an explanatory note — both require interactive or pre-recorded input.</p>
+<h3 id="options_8">Options<a class="headerlink" href="#options_8" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Short</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--output</code></td>
+<td><code>-o</code></td>
+<td><code>demo</code></td>
+<td>Folder for generated output files</td>
+</tr>
+<tr>
+<td><code>--github-url</code></td>
+<td></td>
+<td><code>https://github.com/deeplook/dirplot</code></td>
+<td>GitHub repository URL for remote examples</td>
+</tr>
+<tr>
+<td><code>--interactive</code></td>
+<td><code>-i</code></td>
+<td>off</td>
+<td>Ask for confirmation before each command is run</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="dirplot-overview-command-overview"><code>dirplot overview</code> — command overview<a class="headerlink" href="#dirplot-overview-command-overview" title="Permanent link">&para;</a></h2>
+<p>Prints a structured overview of all commands, their arguments, options, and default values. Useful as a quick reference without leaving the terminal.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>dirplot<span class="w"> </span>overview
+</code></pre></div>
+<p>There are no options beyond <code>--help</code>.</p>
+<hr />
+<h2 id="dirplot-termsize-terminal-size"><code>dirplot termsize</code> — terminal size<a class="headerlink" href="#dirplot-termsize-terminal-size" title="Permanent link">&para;</a></h2>
+<p>Shows the current terminal size in characters and pixels. Run this before <code>dirplot map</code> to check what canvas size dirplot will use by default.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>dirplot<span class="w"> </span>termsize
+</code></pre></div>
+<p>Example output:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>Characters : 160 cols × 45 rows
+<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>Pixels     : 1280 × 720
+</code></pre></div>
+<p>There are no options beyond <code>--help</code>.</p>
+<hr />
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.sections", "navigation.top", "navigation.indexes", "search.highlight", "search.suggest", "content.code.copy"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

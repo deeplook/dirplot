@@ -1,0 +1,2052 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Nested treemap visualizations for directory trees and archives">
+      
+      
+      
+        <link rel="canonical" href="https://deeplook.github.io/dirplot/remote-sources/">
+      
+      
+        <link rel="prev" href="../serve/">
+      
+      
+        <link rel="next" href="../archives/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Remote Sources - dirplot</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#remote-sources" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="dirplot" class="md-header__button md-logo" aria-label="dirplot" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            dirplot
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Remote Sources
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/deeplook/dirplot" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    deeplook/dirplot
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../installation/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Installation
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../examples/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Examples
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../serve/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Web Interface
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    <li class="md-tabs__item md-tabs__item--active">
+      <a href="./" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Remote Sources
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../archives/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Archive Formats
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../cli/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  CLI Reference
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../api/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Python API
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../guides/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Guides
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../troubleshooting/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Troubleshooting
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="dirplot" class="md-nav__button md-logo" aria-label="dirplot" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    dirplot
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/deeplook/dirplot" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    deeplook/dirplot
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../serve/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Web Interface
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Remote Sources
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Remote Sources
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#remote-servers-via-ssh" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Remote Servers via SSH
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Remote Servers via SSH">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#usage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Usage
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#authentication" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Authentication
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ssh-config" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SSH config
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#options" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Options
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aws-s3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        AWS S3
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="AWS S3">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#usage_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Usage
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#authentication_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Authentication
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#options_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Options
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#public-buckets-to-explore" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Public buckets to explore
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#github-repositories" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GitHub Repositories
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="GitHub Repositories">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#usage_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Usage
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#authentication_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Authentication
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#options_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Options
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Notes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#google-drive" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Google Drive
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Google Drive">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Setup
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#usage_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Usage
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#notes_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Notes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#options_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Options
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#docker-containers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Docker Containers
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Docker Containers">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#usage_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Usage
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#requirements" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Requirements
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#notes_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Notes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#options_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Options
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#kubernetes-pods" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Kubernetes Pods
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Kubernetes Pods">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#usage_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Usage
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#requirements_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Requirements
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#notes_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Notes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#options_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Options
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../archives/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Archive Formats
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Python API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guides
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#remote-servers-via-ssh" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Remote Servers via SSH
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Remote Servers via SSH">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#usage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Usage
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#authentication" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Authentication
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ssh-config" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SSH config
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#options" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Options
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aws-s3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        AWS S3
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="AWS S3">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#usage_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Usage
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#authentication_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Authentication
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#options_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Options
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#public-buckets-to-explore" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Public buckets to explore
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#github-repositories" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GitHub Repositories
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="GitHub Repositories">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#usage_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Usage
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#authentication_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Authentication
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#options_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Options
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Notes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#google-drive" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Google Drive
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Google Drive">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Setup
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#usage_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Usage
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#notes_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Notes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#options_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Options
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#docker-containers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Docker Containers
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Docker Containers">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#usage_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Usage
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#requirements" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Requirements
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#notes_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Notes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#options_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Options
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#kubernetes-pods" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Kubernetes Pods
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Kubernetes Pods">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#usage_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Usage
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#requirements_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Requirements
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#notes_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Notes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#options_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Options
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="remote-sources">Remote Sources<a class="headerlink" href="#remote-sources" title="Permanent link">&para;</a></h1>
+<p>← <a href="../">Home</a></p>
+<p>dirplot can scan directory trees on remote sources without copying files locally. Remote backends are optional dependencies — see <a href="../installation/">Installation</a> for what to install per backend.</p>
+<blockquote>
+<p><strong>Warning:</strong> Remote trees can contain hundreds of thousands of files. Use <code>--depth N</code> to limit how far down the tree dirplot recurses until you have a feel for the size of the target. Start with <code>--depth 3</code>.</p>
+<p><strong>Tip:</strong> If one large file dominates the layout and squashes everything else into tiny slivers, add <code>--log-scale 4</code> to compress the size range. Values in the range <strong>2–10</strong> are most useful.</p>
+</blockquote>
+<ul>
+<li><a href="#remote-servers-via-ssh">SSH</a></li>
+<li><a href="#aws-s3">AWS S3</a></li>
+<li><a href="#github-repositories">GitHub Repositories</a></li>
+<li><a href="#google-drive">Google Drive</a></li>
+<li><a href="#docker-containers">Docker Containers</a></li>
+<li><a href="#kubernetes-pods">Kubernetes Pods</a></li>
+</ul>
+<hr />
+<h2 id="remote-servers-via-ssh">Remote Servers via SSH<a class="headerlink" href="#remote-servers-via-ssh" title="Permanent link">&para;</a></h2>
+<p>Scan hosts reachable over SSH using <a href="https://www.paramiko.org/">paramiko</a>.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;dirplot[ssh]&quot;</span>
+</code></pre></div>
+<h3 id="usage">Usage<a class="headerlink" href="#usage" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># ssh://user@host/path format</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>dirplot<span class="w"> </span>map<span class="w"> </span>ssh://alice@prod.example.com/var/www
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="c1"># SCP-style user@host:/path format</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>dirplot<span class="w"> </span>map<span class="w"> </span>alice@prod.example.com:/var/www
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="c1"># Exclude paths, cap depth, save to file</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>dirplot<span class="w"> </span>map<span class="w"> </span>ssh://alice@prod.example.com/var<span class="w"> </span>--exclude<span class="w"> </span>/var/cache<span class="w"> </span>--depth<span class="w"> </span><span class="m">4</span><span class="w"> </span>--output<span class="w"> </span>remote.png<span class="w"> </span>--no-show
+</code></pre></div>
+<h3 id="authentication">Authentication<a class="headerlink" href="#authentication" title="Permanent link">&para;</a></h3>
+<p>Credentials are resolved in this order:</p>
+<ol>
+<li><code>--ssh-key PATH</code> — explicit private key file</li>
+<li><code>IdentityFile</code> from <code>~/.ssh/config</code> for the target host</li>
+<li>ssh-agent (picked up automatically)</li>
+<li><code>--ssh-password-file FILE</code> — file containing the SSH password</li>
+<li>Interactive password prompt as a last resort</li>
+</ol>
+<h3 id="ssh-config">SSH config<a class="headerlink" href="#ssh-config" title="Permanent link">&para;</a></h3>
+<p><code>~/.ssh/config</code> is read automatically. Host aliases, custom ports, and <code>IdentityFile</code> directives all work as expected:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>Host prod
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    HostName prod.example.com
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    User alice
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>    IdentityFile ~/.ssh/prod_key
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>    Port 2222
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>dirplot<span class="w"> </span>map<span class="w"> </span>ssh://prod/var/www<span class="w">   </span><span class="c1"># resolves using the config block above</span>
+</code></pre></div>
+<h3 id="options">Options<a class="headerlink" href="#options" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--ssh-key</code></td>
+<td>standard SSH key paths</td>
+<td>Path to SSH private key</td>
+</tr>
+<tr>
+<td><code>--ssh-password-file</code></td>
+<td>—</td>
+<td>File containing SSH password</td>
+</tr>
+<tr>
+<td><code>--depth</code></td>
+<td>unlimited</td>
+<td>Maximum recursion depth</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="aws-s3">AWS S3<a class="headerlink" href="#aws-s3" title="Permanent link">&para;</a></h2>
+<p>Scan S3 buckets using <a href="https://boto3.amazonaws.com/v1/documentation/api/latest/index.html">boto3</a>. File sizes come from S3 object metadata — no data is downloaded.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;dirplot[s3]&quot;</span>
+</code></pre></div>
+<h3 id="usage_1">Usage<a class="headerlink" href="#usage_1" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># Scan a bucket prefix</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>dirplot<span class="w"> </span>map<span class="w"> </span>s3://my-bucket/path/to/prefix
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="c1"># Scan an entire bucket</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>dirplot<span class="w"> </span>map<span class="w"> </span>s3://my-bucket
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="c1"># Public bucket (no AWS credentials needed)</span>
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>dirplot<span class="w"> </span>map<span class="w"> </span>s3://noaa-ghcn-pds<span class="w"> </span>--no-sign
+<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>
+<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="c1"># Use a named AWS profile, cap depth, save to file</span>
+<a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a>dirplot<span class="w"> </span>map<span class="w"> </span>s3://my-bucket/data<span class="w"> </span>--aws-profile<span class="w"> </span>prod<span class="w"> </span>--depth<span class="w"> </span><span class="m">3</span><span class="w"> </span>--output<span class="w"> </span>s3.png<span class="w"> </span>--no-show
+</code></pre></div>
+<h3 id="authentication_1">Authentication<a class="headerlink" href="#authentication_1" title="Permanent link">&para;</a></h3>
+<p>boto3's standard credential chain is used automatically — no extra configuration needed if your environment is already set up for AWS. Credentials are resolved in this order:</p>
+<ol>
+<li><code>--aws-profile</code> (or <code>AWS_PROFILE</code> env var) — named profile from <code>~/.aws/config</code></li>
+<li><code>AWS_ACCESS_KEY_ID</code> / <code>AWS_SECRET_ACCESS_KEY</code> environment variables</li>
+<li><code>~/.aws/credentials</code> file</li>
+<li>IAM instance role (on EC2 / ECS / Lambda)</li>
+<li><code>--no-sign</code> — skip signing entirely for anonymous access to public buckets</li>
+</ol>
+<p><code>--aws-profile</code> takes precedence over <code>AWS_PROFILE</code> and all lower-priority methods in the chain.</p>
+<h3 id="options_1">Options<a class="headerlink" href="#options_1" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--aws-profile</code></td>
+<td><code>AWS_PROFILE</code> env var</td>
+<td>Named AWS profile</td>
+</tr>
+<tr>
+<td><code>--no-sign</code></td>
+<td>off</td>
+<td>Anonymous access for public buckets</td>
+</tr>
+<tr>
+<td><code>--depth</code></td>
+<td>unlimited</td>
+<td>Maximum recursion depth</td>
+</tr>
+<tr>
+<td><code>--exclude</code></td>
+<td>—</td>
+<td>Full <code>s3://bucket/key</code> URI to skip (repeatable)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="public-buckets-to-explore">Public buckets to explore<a class="headerlink" href="#public-buckets-to-explore" title="Permanent link">&para;</a></h3>
+<p>These buckets are publicly accessible with <code>--no-sign</code>. Use <code>--depth 2</code> or <code>--depth 3</code> on large buckets to avoid long scan times.</p>
+<table>
+<thead>
+<tr>
+<th>Bucket</th>
+<th>Contents</th>
+<th>Quick start</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>s3://noaa-ghcn-pds</code></td>
+<td>NOAA Global Historical Climatology Network</td>
+<td><code>dirplot map s3://noaa-ghcn-pds --no-sign --depth 2</code></td>
+</tr>
+<tr>
+<td><code>s3://noaa-goes16</code></td>
+<td>NOAA GOES-16 weather satellite imagery</td>
+<td><code>dirplot map s3://noaa-goes16 --no-sign --depth 3</code></td>
+</tr>
+<tr>
+<td><code>s3://sentinel-s2-l1c</code></td>
+<td>Copernicus Sentinel-2 satellite data (eu-central-1)</td>
+<td><code>dirplot map s3://sentinel-s2-l1c --no-sign --depth 2</code></td>
+</tr>
+<tr>
+<td><code>s3://1000genomes</code></td>
+<td>1000 Genomes Project</td>
+<td><code>dirplot map s3://1000genomes --no-sign --depth 3</code></td>
+</tr>
+</tbody>
+</table>
+<figure>
+  <img src="../images/s3.png" alt="NOAA GHCN S3 bucket treemap">
+  <figcaption><code>dirplot map s3://noaa-ghcn-pds --no-sign --depth 2</code></figcaption>
+</figure>
+
+<hr />
+<h2 id="github-repositories">GitHub Repositories<a class="headerlink" href="#github-repositories" title="Permanent link">&para;</a></h2>
+<p>Scan any GitHub repository using the <a href="https://docs.github.com/en/rest/git/trees">Git trees API</a>. File sizes come from blob metadata — no file content is downloaded. No extra dependency is required; dirplot uses <code>urllib</code> from the Python standard library.</p>
+<h3 id="usage_2">Usage<a class="headerlink" href="#usage_2" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c1"># github:// scheme</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>dirplot<span class="w"> </span>map<span class="w"> </span>github://owner/repo
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="c1"># Specific branch, tag, or commit SHA</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>dirplot<span class="w"> </span>map<span class="w"> </span>github://owner/repo@dev
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>
+<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="c1"># Full GitHub URL (also accepted)</span>
+<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>dirplot<span class="w"> </span>map<span class="w"> </span>https://github.com/owner/repo/tree/main
+</code></pre></div>
+<h3 id="authentication_2">Authentication<a class="headerlink" href="#authentication_2" title="Permanent link">&para;</a></h3>
+<p>A token is <strong>not required for public repositories</strong> under normal use. Each scan makes 1–2 API calls, and GitHub allows 60 unauthenticated requests per hour per IP. A token is needed when:</p>
+<ul>
+<li>Scanning <strong>private repositories</strong></li>
+<li>Running in CI/CD where many processes share the same IP</li>
+<li>Scanning repeatedly and hitting the unauthenticated rate limit</li>
+</ul>
+<p><strong>Option 1 — gh CLI (easiest):</strong> authenticate once and dirplot picks up your credentials automatically:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>gh<span class="w"> </span>auth<span class="w"> </span>login
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>dirplot<span class="w"> </span>map<span class="w"> </span>github://my-org/private-repo
+</code></pre></div>
+<p><strong>Option 2 — environment variable:</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">GITHUB_TOKEN</span><span class="o">=</span>ghp_…
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>dirplot<span class="w"> </span>map<span class="w"> </span>github://my-org/private-repo
+</code></pre></div>
+<p><strong>Option 3 — token file:</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>dirplot<span class="w"> </span>map<span class="w"> </span>github://my-org/private-repo<span class="w"> </span>--github-token-file<span class="w"> </span>~/.github-token
+</code></pre></div>
+<p>Token resolution order: <code>--github-token-file</code> → <code>$GITHUB_TOKEN</code> → <code>gh auth token</code>.</p>
+<h3 id="options_2">Options<a class="headerlink" href="#options_2" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--github-token-file</code></td>
+<td><code>$GITHUB_TOKEN</code></td>
+<td>File containing personal access token</td>
+</tr>
+<tr>
+<td><code>--depth</code></td>
+<td>unlimited</td>
+<td>Maximum recursion depth</td>
+</tr>
+<tr>
+<td><code>--exclude</code></td>
+<td>—</td>
+<td>Repo-relative path to skip (repeatable)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="notes">Notes<a class="headerlink" href="#notes" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Dotfiles and dot-directories (<code>.github</code>, <code>.env</code>, etc.) are skipped, consistent with local scanning behaviour.</li>
+<li>If the repository tree exceeds GitHub's API limit (~100k entries), the response will be truncated. dirplot prints a warning and renders what was returned. Use <code>--depth</code> to avoid this.</li>
+<li>The <code>--depth</code> flag here applies to the in-memory tree built from the API response, not to the number of API calls (the full flat tree is always fetched in one request).</li>
+</ul>
+<figure>
+  <img src="../images/fastapi.png" alt="FastAPI repository treemap">
+  <figcaption><code>dirplot map github://tiangolo/fastapi</code></figcaption>
+</figure>
+
+<figure>
+  <img src="../images/python.png" alt="CPython repository treemap">
+  <figcaption><code>dirplot map github://python/cpython</code></figcaption>
+</figure>
+
+<figure>
+  <img src="../images/flask.png" alt="Flask repository treemap">
+  <figcaption><code>dirplot map github://pallets/flask --legend</code></figcaption>
+</figure>
+
+<hr />
+<h2 id="google-drive">Google Drive<a class="headerlink" href="#google-drive" title="Permanent link">&para;</a></h2>
+<p>Scan a Google Drive using the <a href="https://gogcli.sh/">gog CLI</a> — a unified Google Workspace CLI that handles OAuth2 authentication. No extra Python dependency is needed; dirplot shells out to <code>gog</code> the same way the Docker backend uses <code>docker exec</code>.</p>
+<h3 id="setup">Setup<a class="headerlink" href="#setup" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="c1"># Install gog</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>brew<span class="w"> </span>install<span class="w"> </span>gogcli<span class="w">   </span><span class="c1"># macOS</span>
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="c1"># Authenticate once (opens browser for OAuth2)</span>
+<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>gog<span class="w"> </span>auth
+</code></pre></div>
+<h3 id="usage_3">Usage<a class="headerlink" href="#usage_3" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="c1"># Scan your entire Drive (My Drive + shared drives)</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>dirplot<span class="w"> </span>map<span class="w"> </span>gdrive://
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>
+<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="c1"># Scan with depth limit (recommended for large drives)</span>
+<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>dirplot<span class="w"> </span>map<span class="w"> </span>gdrive://<span class="w"> </span>--depth<span class="w"> </span><span class="m">3</span>
+<a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a>
+<a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a><span class="c1"># Scan a specific folder by its Drive folder ID</span>
+<a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a>dirplot<span class="w"> </span>map<span class="w"> </span>gdrive://1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms
+<a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a>
+<a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a><span class="c1"># Display inline in terminal</span>
+<a id="__codelineno-11-11" name="__codelineno-11-11" href="#__codelineno-11-11"></a>dirplot<span class="w"> </span>map<span class="w"> </span>gdrive://<span class="w"> </span>--depth<span class="w"> </span><span class="m">3</span><span class="w"> </span>--log-scale<span class="w"> </span><span class="m">4</span><span class="w"> </span>--inline
+</code></pre></div>
+<p>To find a folder ID: open the folder in Google Drive in your browser — the ID is the long string at the end of the URL (<code>https://drive.google.com/drive/folders/&lt;FOLDER_ID&gt;</code>).</p>
+<h3 id="notes_1">Notes<a class="headerlink" href="#notes_1" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Google-native formats</strong> (Docs, Sheets, Slides, Forms, …) have no byte size in the Drive API. dirplot shows them as 1 byte so they remain visible as tiles rather than disappearing.</li>
+<li><strong>Authentication</strong> is handled entirely by <code>gog</code>. Run <code>gog auth</code> once; tokens are cached and refreshed automatically.</li>
+<li><strong>Large drives</strong> can contain tens of thousands of files. Use <code>--depth N</code> to limit the scan until you have a feel for the size.</li>
+<li><strong>Dotfiles</strong> and dot-directories are skipped, consistent with local scanning behaviour.</li>
+</ul>
+<h3 id="options_3">Options<a class="headerlink" href="#options_3" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--depth</code></td>
+<td>unlimited</td>
+<td>Maximum recursion depth</td>
+</tr>
+<tr>
+<td><code>--exclude</code></td>
+<td>—</td>
+<td>Path pattern to skip (repeatable)</td>
+</tr>
+<tr>
+<td><code>--log-scale</code></td>
+<td>0 (off)</td>
+<td>Useful when a few large files dominate the layout</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="docker-containers">Docker Containers<a class="headerlink" href="#docker-containers" title="Permanent link">&para;</a></h2>
+<p>Scan a running Docker container's filesystem using <code>docker exec</code>. No extra dependency is required beyond the <code>docker</code> CLI being in <code>PATH</code>.</p>
+<h3 id="usage_4">Usage<a class="headerlink" href="#usage_4" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="c1"># docker://container/path — slash separator</span>
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>dirplot<span class="w"> </span>map<span class="w"> </span>docker://my-container/app
+<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>
+<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="c1"># docker://container:/path — colon separator (both forms accepted)</span>
+<a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a>dirplot<span class="w"> </span>map<span class="w"> </span>docker://my-container:/app
+<a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a>
+<a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a><span class="c1"># Real example</span>
+<a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a>docker<span class="w"> </span>run<span class="w"> </span>-d<span class="w"> </span>--name<span class="w"> </span>pg-demo<span class="w"> </span>-e<span class="w"> </span><span class="nv">POSTGRES_PASSWORD</span><span class="o">=</span>x<span class="w"> </span>postgres:17-alpine
+<a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a>dirplot<span class="w"> </span>map<span class="w"> </span>docker://pg-demo:/usr<span class="w"> </span>--inline
+<a id="__codelineno-12-10" name="__codelineno-12-10" href="#__codelineno-12-10"></a>docker<span class="w"> </span>rm<span class="w"> </span>-f<span class="w"> </span>pg-demo
+</code></pre></div>
+<h3 id="requirements">Requirements<a class="headerlink" href="#requirements" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>docker</code> CLI in <code>PATH</code></li>
+<li>The container must be running (<code>docker ps</code> should list it)</li>
+<li>The container image must have a <code>find</code> binary (true for all common Linux base images)</li>
+</ul>
+<h3 id="notes_2">Notes<a class="headerlink" href="#notes_2" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Symlinks are skipped.</li>
+<li>Dotfiles and dot-directories are skipped, consistent with local scanning behaviour.</li>
+<li><code>find</code> is first attempted with GNU find's <code>-printf</code> for efficiency; if that fails (BusyBox/Alpine images), a POSIX <code>sh</code> + <code>stat</code> fallback is used automatically.</li>
+</ul>
+<h3 id="options_4">Options<a class="headerlink" href="#options_4" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--depth</code></td>
+<td>unlimited</td>
+<td>Maximum recursion depth</td>
+</tr>
+<tr>
+<td><code>--exclude</code></td>
+<td>—</td>
+<td>Absolute path inside the container to skip (repeatable)</td>
+</tr>
+</tbody>
+</table>
+<figure>
+  <img src="../images/docker.png" alt="Postgres container /usr treemap">
+  <figcaption><code>dirplot map docker://pg-demo:/usr --log-scale 4</code></figcaption>
+</figure>
+
+<hr />
+<h2 id="kubernetes-pods">Kubernetes Pods<a class="headerlink" href="#kubernetes-pods" title="Permanent link">&para;</a></h2>
+<p>Scan a running Kubernetes pod's filesystem using <code>kubectl exec</code>. No extra dependency is required beyond <code>kubectl</code> being in <code>PATH</code> and configured to reach a cluster.</p>
+<h3 id="usage_5">Usage<a class="headerlink" href="#usage_5" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="c1"># Default namespace</span>
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>dirplot<span class="w"> </span>map<span class="w"> </span>pod://my-pod:/app
+<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>
+<a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="c1"># Explicit namespace via URL or flag</span>
+<a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a>dirplot<span class="w"> </span>map<span class="w"> </span>pod://my-pod@staging:/app
+<a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a>dirplot<span class="w"> </span>map<span class="w"> </span>pod://my-pod:/app<span class="w"> </span>--k8s-namespace<span class="w"> </span>staging
+<a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a>
+<a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a><span class="c1"># Multi-container pod — pick a specific container</span>
+<a id="__codelineno-13-9" name="__codelineno-13-9" href="#__codelineno-13-9"></a>dirplot<span class="w"> </span>map<span class="w"> </span>pod://my-pod:/app<span class="w"> </span>--k8s-container<span class="w"> </span>sidecar
+<a id="__codelineno-13-10" name="__codelineno-13-10" href="#__codelineno-13-10"></a>
+<a id="__codelineno-13-11" name="__codelineno-13-11" href="#__codelineno-13-11"></a><span class="c1"># Real example (minikube)</span>
+<a id="__codelineno-13-12" name="__codelineno-13-12" href="#__codelineno-13-12"></a>minikube<span class="w"> </span>start
+<a id="__codelineno-13-13" name="__codelineno-13-13" href="#__codelineno-13-13"></a>kubectl<span class="w"> </span>run<span class="w"> </span>pg-demo<span class="w"> </span>--image<span class="o">=</span>postgres:17-alpine<span class="w"> </span>--restart<span class="o">=</span>Never<span class="w"> </span>--env<span class="w"> </span><span class="nv">POSTGRES_PASSWORD</span><span class="o">=</span>x
+<a id="__codelineno-13-14" name="__codelineno-13-14" href="#__codelineno-13-14"></a>kubectl<span class="w"> </span><span class="nb">wait</span><span class="w"> </span>--for<span class="o">=</span><span class="nv">condition</span><span class="o">=</span>Ready<span class="w"> </span>pod/pg-demo<span class="w"> </span>--timeout<span class="o">=</span>90s
+<a id="__codelineno-13-15" name="__codelineno-13-15" href="#__codelineno-13-15"></a>dirplot<span class="w"> </span>map<span class="w"> </span>pod://pg-demo/var/lib/postgresql<span class="w"> </span>--inline
+<a id="__codelineno-13-16" name="__codelineno-13-16" href="#__codelineno-13-16"></a>kubectl<span class="w"> </span>delete<span class="w"> </span>pod<span class="w"> </span>pg-demo<span class="w"> </span>--grace-period<span class="o">=</span><span class="m">0</span>
+</code></pre></div>
+<h3 id="requirements_1">Requirements<a class="headerlink" href="#requirements_1" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>kubectl</code> CLI in <code>PATH</code>, configured for a reachable cluster</li>
+<li>The pod must be in <code>Running</code> state</li>
+<li>The pod image must have a <code>find</code> binary (true for all common Linux base images)</li>
+</ul>
+<h3 id="notes_3">Notes<a class="headerlink" href="#notes_3" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Symlinks are skipped.</li>
+<li>Dotfiles and dot-directories are skipped, consistent with local scanning behaviour.</li>
+<li>Unlike Docker scanning, <code>-xdev</code> is intentionally omitted so that mounted volumes (emptyDir, PVC, etc.) within the scanned path are traversed — this is the common case in k8s where images declare <code>VOLUME</code> entries that k8s always mounts separately.</li>
+<li><code>find</code> is first attempted with GNU find's <code>-printf</code>; if that fails (BusyBox/Alpine images), a POSIX <code>sh</code> + <code>stat</code> fallback is used automatically.</li>
+</ul>
+<h3 id="options_5">Options<a class="headerlink" href="#options_5" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--k8s-namespace</code></td>
+<td>current context default</td>
+<td>Kubernetes namespace</td>
+</tr>
+<tr>
+<td><code>--k8s-container</code></td>
+<td>pod default</td>
+<td>Container name for multi-container pods</td>
+</tr>
+<tr>
+<td><code>--depth</code></td>
+<td>unlimited</td>
+<td>Maximum recursion depth</td>
+</tr>
+<tr>
+<td><code>--exclude</code></td>
+<td>—</td>
+<td>Absolute path inside the pod to skip (repeatable)</td>
+</tr>
+</tbody>
+</table>
+<figure>
+  <img src="../images/k8s.png" alt="Postgres pod /var treemap">
+  <figcaption><code>dirplot map pod://pg-demo/var/</code></figcaption>
+</figure>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.sections", "navigation.top", "navigation.indexes", "search.highlight", "search.suggest", "content.code.copy"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

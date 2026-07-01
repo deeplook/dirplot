@@ -1,0 +1,1213 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Nested treemap visualizations for directory trees and archives">
+      
+      
+      
+        <link rel="canonical" href="https://deeplook.github.io/dirplot/troubleshooting/">
+      
+      
+        <link rel="prev" href="../guides/">
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Troubleshooting - dirplot</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#troubleshooting" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="dirplot" class="md-header__button md-logo" aria-label="dirplot" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            dirplot
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Troubleshooting
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/deeplook/dirplot" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    deeplook/dirplot
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../installation/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Installation
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../examples/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Examples
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../serve/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Web Interface
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../remote-sources/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Remote Sources
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../archives/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Archive Formats
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../cli/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  CLI Reference
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../api/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Python API
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../guides/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Guides
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    <li class="md-tabs__item md-tabs__item--active">
+      <a href="./" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Troubleshooting
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="dirplot" class="md-nav__button md-logo" aria-label="dirplot" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    dirplot
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/deeplook/dirplot" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    deeplook/dirplot
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../serve/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Web Interface
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../remote-sources/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Remote Sources
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../archives/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Archive Formats
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Python API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guides
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#image-is-the-wrong-size-or-too-small-in-inline-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Image is the wrong size or too small in --inline mode
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#-inline-shows-nothing-or-garbled-output" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        --inline shows nothing or garbled output
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#github-rate-limit-errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GitHub rate limit errors
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#large-remote-trees-are-slow-or-truncated" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Large remote trees are slow or truncated
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#archive-errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Archive errors
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mp4-output-fails" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MP4 output fails
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ssh-authentication-failures" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SSH authentication failures
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#s3-access-errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        S3 access errors
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#output-image-is-blank-or-all-one-colour" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Output image is blank or all one colour
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#labels-are-too-small-to-read" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Labels are too small to read
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#windows-wsl2-notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Windows / WSL2 notes
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#image-is-the-wrong-size-or-too-small-in-inline-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Image is the wrong size or too small in --inline mode
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#-inline-shows-nothing-or-garbled-output" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        --inline shows nothing or garbled output
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#github-rate-limit-errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GitHub rate limit errors
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#large-remote-trees-are-slow-or-truncated" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Large remote trees are slow or truncated
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#archive-errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Archive errors
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mp4-output-fails" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MP4 output fails
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ssh-authentication-failures" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SSH authentication failures
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#s3-access-errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        S3 access errors
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#output-image-is-blank-or-all-one-colour" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Output image is blank or all one colour
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#labels-are-too-small-to-read" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Labels are too small to read
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#windows-wsl2-notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Windows / WSL2 notes
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h1>
+<p>← <a href="../">Home</a></p>
+<ul>
+<li><a href="#image-is-the-wrong-size-or-too-small-in---inline-mode">Image is the wrong size or too small in <code>--inline</code> mode</a></li>
+<li><a href="#--inline-shows-nothing-or-garbled-output"><code>--inline</code> shows nothing or garbled output</a></li>
+<li><a href="#github-rate-limit-errors">GitHub rate limit errors</a></li>
+<li><a href="#large-remote-trees-are-slow-or-truncated">Large remote trees are slow or truncated</a></li>
+<li><a href="#archive-errors">Archive errors</a></li>
+<li><a href="#mp4-output-fails">MP4 output fails</a></li>
+<li><a href="#ssh-authentication-failures">SSH authentication failures</a></li>
+<li><a href="#s3-access-errors">S3 access errors</a></li>
+<li><a href="#output-image-is-blank-or-all-one-colour">Output image is blank or all one colour</a></li>
+<li><a href="#labels-are-too-small-to-read">Labels are too small to read</a></li>
+<li><a href="#windows--wsl2-notes">Windows / WSL2 notes</a></li>
+</ul>
+<hr />
+<h3 id="image-is-the-wrong-size-or-too-small-in-inline-mode">Image is the wrong size or too small in <code>--inline</code> mode<a class="headerlink" href="#image-is-the-wrong-size-or-too-small-in-inline-mode" title="Permanent link">&para;</a></h3>
+<p>dirplot reads the terminal pixel size via <code>TIOCGWINSZ</code>. This can fail or return wrong values when:</p>
+<ul>
+<li><strong>stdout is a pipe</strong> (e.g. <code>uv run</code>, <code>nohup</code>, CI): pass <code>--canvas WIDTHxHEIGHT</code> explicitly, or set <code>COLUMNS</code> and <code>LINES</code> env vars.</li>
+<li><strong>Inside Docker</strong>: same as above — the container has no tty.</li>
+<li><strong><code>--inline</code> in Docker</strong>: not supported; use <code>--output - | imgcat</code> instead (see <a href="../guides/#running-dirplot-via-docker">Running via Docker</a>).</li>
+</ul>
+<h3 id="-inline-shows-nothing-or-garbled-output"><code>--inline</code> shows nothing or garbled output<a class="headerlink" href="#-inline-shows-nothing-or-garbled-output" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Confirm your terminal is in the supported list in <a href="../guides/#inline-terminal-display">Inline terminal display</a>.</li>
+<li>In tmux/screen, the inline protocol may be blocked. Try running dirplot in a bare terminal session.</li>
+<li>AI coding tool terminals (Claude Code, Cursor, Copilot Chat) do not support inline images — use <code>--show</code> or <code>--output</code>.</li>
+</ul>
+<h3 id="github-rate-limit-errors">GitHub rate limit errors<a class="headerlink" href="#github-rate-limit-errors" title="Permanent link">&para;</a></h3>
+<p>Without a token, GitHub allows 60 unauthenticated API requests per IP per hour. Authenticate via:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>gh<span class="w"> </span>auth<span class="w"> </span>login<span class="w">                        </span><span class="c1"># Option 1: gh CLI (picked up automatically)</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="nb">export</span><span class="w"> </span><span class="nv">GITHUB_TOKEN</span><span class="o">=</span>ghp_…<span class="w">            </span><span class="c1"># Option 2: env var</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>dirplot<span class="w"> </span>map<span class="w"> </span>github://…<span class="w"> </span>--github-token-file<span class="w"> </span>~/.github-token<span class="w">   </span><span class="c1"># Option 3: token file</span>
+</code></pre></div>
+<p>See <a href="../remote-sources/#github-repositories">Examples — GitHub Repositories</a> for full authentication details.</p>
+<h3 id="large-remote-trees-are-slow-or-truncated">Large remote trees are slow or truncated<a class="headerlink" href="#large-remote-trees-are-slow-or-truncated" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Use <code>--depth N</code> to limit recursion (start with <code>--depth 3</code>).</li>
+<li>GitHub's Git Trees API truncates responses above ~100k entries; dirplot warns and renders what it received.</li>
+<li>For SSH scans, slow hosts may time out on very large trees — use <code>--depth</code> to reduce the <code>find</code> traversal.</li>
+<li>If one large file squashes everything else into tiny tiles, add <code>--log-scale 4</code>.</li>
+</ul>
+<h3 id="archive-errors">Archive errors<a class="headerlink" href="#archive-errors" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong><code>libarchive-c</code> import error</strong>: the Python binding is installed but the system C library is missing. Install it:
+  <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>brew<span class="w"> </span>install<span class="w"> </span>libarchive<span class="w">        </span><span class="c1"># macOS</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>sudo<span class="w"> </span>apt<span class="w"> </span>install<span class="w"> </span>libarchive-dev<span class="w">  </span><span class="c1"># Debian/Ubuntu</span>
+</code></pre></div></li>
+<li><strong>Password-protected archive</strong>: pass <code>--password-file &lt;file&gt;</code> or let dirplot prompt interactively. Use <code>--no-input</code> to fail instead of prompting.</li>
+<li><strong><code>.deb</code> / UDIF <code>.dmg</code> not supported</strong>: see <a href="../archives/#intentionally-unsupported-formats">Archive Formats — Intentionally unsupported formats</a>.</li>
+</ul>
+<h3 id="mp4-output-fails">MP4 output fails<a class="headerlink" href="#mp4-output-fails" title="Permanent link">&para;</a></h3>
+<p>Ensure <code>ffmpeg</code> is installed and on <code>PATH</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>ffmpeg<span class="w"> </span>-version<span class="w">   </span><span class="c1"># should print version info</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>brew<span class="w"> </span>install<span class="w"> </span>ffmpeg<span class="w">   </span><span class="c1"># macOS</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>sudo<span class="w"> </span>apt<span class="w"> </span>install<span class="w"> </span>ffmpeg<span class="w">   </span><span class="c1"># Debian/Ubuntu</span>
+</code></pre></div>
+<h3 id="ssh-authentication-failures">SSH authentication failures<a class="headerlink" href="#ssh-authentication-failures" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Ensure your key is loaded: <code>ssh-add -l</code> should list it. If not: <code>ssh-add ~/.ssh/id_ed25519</code>.</li>
+<li>Confirm the host is reachable: <code>ssh user@host ls /path/to/dir</code>.</li>
+<li>dirplot uses <code>paramiko</code> (pure-Python SSH); keys stored only in an SSH agent or in non-standard formats may need <code>--ssh-key /path/to/key</code>.</li>
+<li>Install the SSH extra if you see an import error: <code>pip install "dirplot[ssh]"</code>.</li>
+</ul>
+<h3 id="s3-access-errors">S3 access errors<a class="headerlink" href="#s3-access-errors" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong><code>NoCredentialsError</code></strong>: run <code>aws configure</code> or export <code>AWS_ACCESS_KEY_ID</code> / <code>AWS_SECRET_ACCESS_KEY</code> / <code>AWS_DEFAULT_REGION</code>.</li>
+<li><strong><code>AccessDenied</code></strong>: the IAM principal needs at minimum <code>s3:ListBucket</code> and <code>s3:GetObject</code> on the target bucket.</li>
+<li><strong>Slow scans on large buckets</strong>: use <code>--depth N</code> to limit prefix recursion (e.g. <code>--depth 2</code>).</li>
+</ul>
+<h3 id="output-image-is-blank-or-all-one-colour">Output image is blank or all one colour<a class="headerlink" href="#output-image-is-blank-or-all-one-colour" title="Permanent link">&para;</a></h3>
+<ul>
+<li>The directory may be empty or contain only zero-byte files. dirplot tiles are sized by file size — nothing to size means nothing to draw.</li>
+<li>With <code>--log-scale</code>, a single enormous file can dominate. Try without it first, then add <code>--log-scale 4</code> if the range is too wide.</li>
+<li>Check that the path resolves correctly: run <code>dirplot metrics &lt;path&gt;</code> first to confirm files are found.</li>
+</ul>
+<h3 id="labels-are-too-small-to-read">Labels are too small to read<a class="headerlink" href="#labels-are-too-small-to-read" title="Permanent link">&para;</a></h3>
+<p>The default font size is 12 px. If labels appear too small — common on high-resolution displays or when rendering at large canvas sizes — increase it with <code>--font-size</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>dirplot<span class="w"> </span>map<span class="w"> </span>.<span class="w"> </span>--font-size<span class="w"> </span><span class="m">16</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>dirplot<span class="w"> </span>git<span class="w"> </span>.<span class="w"> </span>--range<span class="w"> </span>main<span class="w"> </span>--output<span class="w"> </span>h.mp4<span class="w"> </span>--font-size<span class="w"> </span><span class="m">14</span>
+</code></pre></div>
+<p><code>--font-size</code> is available on <code>map</code>, <code>diff</code>, <code>git</code>, <code>hg</code>, and <code>replay</code>. Automatic font-size scaling based on canvas size is not yet implemented.</p>
+<h3 id="windows-wsl2-notes">Windows / WSL2 notes<a class="headerlink" href="#windows-wsl2-notes" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Inline display</strong>: WSL2 terminals running inside Windows Terminal do not support iTerm2 or Kitty protocols — use <code>--output file.png</code> and open the file, or use a supported terminal (e.g. Ghostty for Windows).</li>
+<li><strong><code>--inline</code> slow on WSL2</strong>: large images transferred over the WSL2 bridge can be slow; reduce canvas size with <code>--canvas 800x600</code>.</li>
+<li><strong>Path separators</strong>: always use forward slashes or WSL2 Linux paths (<code>/mnt/c/…</code>) — Windows-style paths with backslashes are not supported.</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.sections", "navigation.top", "navigation.indexes", "search.highlight", "search.suggest", "content.code.copy"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

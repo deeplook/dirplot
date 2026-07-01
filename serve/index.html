@@ -1,0 +1,1513 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Nested treemap visualizations for directory trees and archives">
+      
+      
+      
+        <link rel="canonical" href="https://deeplook.github.io/dirplot/serve/">
+      
+      
+        <link rel="prev" href="../examples/">
+      
+      
+        <link rel="next" href="../remote-sources/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Web Interface - dirplot</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#web-interface-dirplot-serve" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="dirplot" class="md-header__button md-logo" aria-label="dirplot" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            dirplot
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Web Interface
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/deeplook/dirplot" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    deeplook/dirplot
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../installation/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Installation
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../examples/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Examples
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    <li class="md-tabs__item md-tabs__item--active">
+      <a href="./" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Web Interface
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../remote-sources/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Remote Sources
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../archives/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Archive Formats
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../cli/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  CLI Reference
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../api/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Python API
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../guides/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Guides
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../troubleshooting/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Troubleshooting
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="dirplot" class="md-nav__button md-logo" aria-label="dirplot" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    dirplot
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/deeplook/dirplot" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    deeplook/dirplot
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Web Interface
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Web Interface
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#options" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Options
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#toolbar" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Toolbar
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Toolbar">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#source-input" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Source input
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#breadcrumbs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Breadcrumbs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#search" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Search
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#treemap" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Treemap
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Treemap">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#layout-vs-static-output" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Layout vs. static output
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#interaction" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Interaction
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#keyboard-shortcuts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Keyboard shortcuts
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sidebar" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sidebar
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Sidebar">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Settings
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#metrics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Metrics
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#preview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Preview
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#live-reload" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Live reload
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../remote-sources/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Remote Sources
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../archives/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Archive Formats
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Python API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guides
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#options" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Options
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#toolbar" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Toolbar
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Toolbar">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#source-input" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Source input
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#breadcrumbs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Breadcrumbs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#search" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Search
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#treemap" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Treemap
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Treemap">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#layout-vs-static-output" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Layout vs. static output
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#interaction" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Interaction
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#keyboard-shortcuts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Keyboard shortcuts
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sidebar" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sidebar
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Sidebar">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Settings
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#metrics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Metrics
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#preview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Preview
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#live-reload" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Live reload
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="web-interface-dirplot-serve">Web Interface (<code>dirplot serve</code>)<a class="headerlink" href="#web-interface-dirplot-serve" title="Permanent link">&para;</a></h1>
+<p>← <a href="../">Home</a></p>
+<p><code>dirplot serve</code> launches an interactive treemap in your browser. Unlike the static PNG/SVG output of <code>dirplot map</code>, the web interface lets you explore the tree live — zoom into directories, search, preview file contents, and tweak every setting without re-running the command.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>dirplot<span class="w"> </span>serve<span class="w"> </span>.
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>dirplot<span class="w"> </span>serve<span class="w"> </span>/path/to/project
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>dirplot<span class="w"> </span>serve<span class="w"> </span>github://owner/repo
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>dirplot<span class="w"> </span>serve<span class="w"> </span>s3://my-bucket
+</code></pre></div>
+<p>The server starts on <code>http://localhost:8000</code> by default. Press <code>Ctrl-C</code> to stop it.</p>
+<h2 id="options">Options<a class="headerlink" href="#options" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--port</code></td>
+<td><code>8000</code></td>
+<td>TCP port to listen on</td>
+</tr>
+<tr>
+<td><code>--host</code></td>
+<td><code>127.0.0.1</code></td>
+<td>Bind address (<code>0.0.0.0</code> to expose on LAN)</td>
+</tr>
+<tr>
+<td><code>--depth N</code></td>
+<td>unlimited</td>
+<td>Initial recursion depth</td>
+</tr>
+<tr>
+<td><code>--colormap NAME</code></td>
+<td><code>tab20</code></td>
+<td>Initial colormap</td>
+</tr>
+<tr>
+<td><code>--exclude PATTERN</code></td>
+<td>—</td>
+<td>Glob pattern to skip (repeatable)</td>
+</tr>
+<tr>
+<td><code>--log-scale N</code></td>
+<td><code>1</code> (off)</td>
+<td>Initial log-scale strength (2–10)</td>
+</tr>
+<tr>
+<td><code>--allow-write</code></td>
+<td>off</td>
+<td>Enable file delete/move via the context menu</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="toolbar">Toolbar<a class="headerlink" href="#toolbar" title="Permanent link">&para;</a></h2>
+<p>The toolbar runs across the top of the page and contains three areas from left to right.</p>
+<h3 id="source-input">Source input<a class="headerlink" href="#source-input" title="Permanent link">&para;</a></h3>
+<p>The source field (left of the breadcrumbs) shows the current root. Type any supported path or URL and press <strong>Enter</strong> to rescan:</p>
+<table>
+<thead>
+<tr>
+<th>Input</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Local directory</td>
+<td><code>/home/user/project</code> or <code>../sibling</code></td>
+</tr>
+<tr>
+<td>Archive (local)</td>
+<td><code>/tmp/release.tar.gz</code></td>
+</tr>
+<tr>
+<td>Archive (remote URL)</td>
+<td><code>https://example.com/archive.zip</code></td>
+</tr>
+<tr>
+<td>GitHub repository</td>
+<td><code>github://owner/repo</code> or <code>https://github.com/owner/repo</code></td>
+</tr>
+<tr>
+<td>SSH remote</td>
+<td><code>ssh://user@host/path</code></td>
+</tr>
+<tr>
+<td>AWS S3</td>
+<td><code>s3://bucket/prefix</code></td>
+</tr>
+<tr>
+<td>Docker container</td>
+<td><code>docker://container/path</code></td>
+</tr>
+<tr>
+<td>Kubernetes pod</td>
+<td><code>pod://pod-name/path</code> or <code>pod://pod-name@namespace/path</code></td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>Note:</strong> Remote URL archives are downloaded to a temporary file (max 100 MB), scanned, then deleted immediately.</p>
+</blockquote>
+<h3 id="breadcrumbs">Breadcrumbs<a class="headerlink" href="#breadcrumbs" title="Permanent link">&para;</a></h3>
+<p>Shows your current zoom path inside the tree. Click any crumb to jump back to that level.</p>
+<h3 id="search">Search<a class="headerlink" href="#search" title="Permanent link">&para;</a></h3>
+<p>Type to highlight matching files. The <code>.*</code> pill to the right of the input toggles <strong>regular expression</strong> mode — the pill turns accent-coloured when active. Invalid regex patterns turn the input border red without crashing.</p>
+<hr />
+<h2 id="treemap">Treemap<a class="headerlink" href="#treemap" title="Permanent link">&para;</a></h2>
+<p>The main canvas renders the directory tree as a nested squarify treemap. Tile area is proportional to file size (or log-scaled size when log-scale &gt; 1).</p>
+<h3 id="layout-vs-static-output">Layout vs. static output<a class="headerlink" href="#layout-vs-static-output" title="Permanent link">&para;</a></h3>
+<p>The web view and <code>dirplot map</code> both use the squarified treemap algorithm (Bruls et al. 2000) and both reserve the same header height for directory labels before running the layout. They still produce different tile arrangements because:</p>
+<ul>
+<li><strong>Different squarify implementations.</strong> D3's <code>treemapSquarify</code> and the Python <code>squarify</code> package implement the same algorithm but differ in floating-point arithmetic and edge-case handling. A single borderline split near the root propagates to a completely different arrangement below it.</li>
+<li><strong>Slightly different padding amounts.</strong> The exact pixel amounts subtracted for borders and inner gaps differ between the two renderers, changing the aspect ratio of the rectangle squarify receives at each level.</li>
+<li><strong>Rounding at different points.</strong> D3 rounds tile coordinates after computing the full hierarchy; the Python code rounds after each recursive call and passes the rounded bounds to the next level, accumulating error differently.</li>
+</ul>
+<h3 id="interaction">Interaction<a class="headerlink" href="#interaction" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Action</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Click a file tile</td>
+<td>Show info panel; load preview if Preview tab is open</td>
+</tr>
+<tr>
+<td>Double-click a directory tile</td>
+<td>Zoom into that directory</td>
+</tr>
+<tr>
+<td>Click the canvas background</td>
+<td>Clear selection</td>
+</tr>
+<tr>
+<td>Right-click any tile</td>
+<td>Open context menu (rename / delete if <code>--allow-write</code>)</td>
+</tr>
+<tr>
+<td>Shift-click tiles</td>
+<td>Multi-select</td>
+</tr>
+</tbody>
+</table>
+<h3 id="keyboard-shortcuts">Keyboard shortcuts<a class="headerlink" href="#keyboard-shortcuts" title="Permanent link">&para;</a></h3>
+<p>All shortcuts are suppressed when an input field has focus. Press <strong>Esc</strong> to blur any input and return focus to the canvas.</p>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>j</code></td>
+<td>Move keyboard focus to next tile</td>
+</tr>
+<tr>
+<td><code>k</code></td>
+<td>Move keyboard focus to previous tile</td>
+</tr>
+<tr>
+<td><code>Enter</code></td>
+<td>Zoom into focused directory; preview focused file (if Preview tab open)</td>
+</tr>
+<tr>
+<td><code>Backspace</code></td>
+<td>Zoom out one level</td>
+</tr>
+<tr>
+<td><code>/</code></td>
+<td>Jump focus to the search field</td>
+</tr>
+<tr>
+<td><code>Esc</code></td>
+<td>Clear focus, close info panel, deselect all; blur any input</td>
+</tr>
+</tbody>
+</table>
+<p>The keyboard-focused tile is highlighted with an accent-coloured outline.</p>
+<hr />
+<h2 id="sidebar">Sidebar<a class="headerlink" href="#sidebar" title="Permanent link">&para;</a></h2>
+<p>The sidebar on the right has three tabs: <strong>Settings</strong>, <strong>Metrics</strong>, and <strong>Preview</strong>. Collapse or expand it with the <code>‹</code> / <code>›</code> toggle, or drag the resize handle.</p>
+<h3 id="settings">Settings<a class="headerlink" href="#settings" title="Permanent link">&para;</a></h3>
+<p>All settings apply instantly — there is no Apply button.</p>
+<table>
+<thead>
+<tr>
+<th>Setting</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Dark mode</td>
+<td>Toggle between dark and light theme</td>
+</tr>
+<tr>
+<td>Depth</td>
+<td>Maximum recursion depth (∞ button removes the limit)</td>
+</tr>
+<tr>
+<td>Log scale</td>
+<td>Compress the size range so small files remain visible (1 = off, 2–10)</td>
+</tr>
+<tr>
+<td>Font size</td>
+<td>Label font size inside tiles</td>
+</tr>
+<tr>
+<td>Colormap</td>
+<td>Color palette for file extensions</td>
+</tr>
+<tr>
+<td>Code theme</td>
+<td>Syntax highlighting theme for text file previews (10 paired dark/light options)</td>
+</tr>
+<tr>
+<td>Canvas size</td>
+<td>Fix the treemap to an explicit W × H (blank = auto)</td>
+</tr>
+<tr>
+<td>Exclude</td>
+<td>Glob patterns to hide, one per line</td>
+</tr>
+<tr>
+<td>Include</td>
+<td>Subtree paths to keep, one per line (all others hidden)</td>
+</tr>
+<tr>
+<td>Highlight</td>
+<td><code>glob@color</code> rules, one per line — e.g. <code>**/*.py@orange</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Reset all</strong> restores every setting to its startup default.</p>
+<h3 id="metrics">Metrics<a class="headerlink" href="#metrics" title="Permanent link">&para;</a></h3>
+<p>Displays aggregate statistics for the current tree: total size, file count, directory count, average file size, largest file, deepest path, and scan duration.</p>
+<h3 id="preview">Preview<a class="headerlink" href="#preview" title="Permanent link">&para;</a></h3>
+<p>Previews the last-clicked file. The panel stays empty until you click a tile — switching to this tab does <strong>not</strong> auto-load a preview; click a tile while the tab is open.</p>
+<table>
+<thead>
+<tr>
+<th>File type</th>
+<th>Preview</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Images (PNG, JPG, GIF, SVG, WebP, BMP, ICO)</td>
+<td>Inline <code>&lt;img&gt;</code></td>
+</tr>
+<tr>
+<td>Video (MP4, MOV, WebM)</td>
+<td>Inline <code>&lt;video controls&gt;</code> player</td>
+</tr>
+<tr>
+<td>PDF</td>
+<td>Inline <code>&lt;iframe&gt;</code> with the browser's native PDF viewer</td>
+</tr>
+<tr>
+<td>Text / code</td>
+<td>Syntax-highlighted with highlight.js</td>
+</tr>
+<tr>
+<td>Binary</td>
+<td>Hex dump of the first 1 000 bytes</td>
+</tr>
+</tbody>
+</table>
+<p>For PNG, SVG, MP4, and MOV files that were created by dirplot, any embedded metadata (Date, Software, Command, Python, OS, URL) is shown in a table below the preview.</p>
+<blockquote>
+<p><strong>Note:</strong> File preview is unavailable for remote sources (GitHub, S3, etc.) since the files are not accessible on the local filesystem.</p>
+</blockquote>
+<hr />
+<h2 id="live-reload">Live reload<a class="headerlink" href="#live-reload" title="Permanent link">&para;</a></h2>
+<p>The server watches the scanned directory for changes via a WebSocket connection. When files are added, removed, or modified the treemap refreshes automatically. Live reload is only active for local filesystem sources.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.sections", "navigation.top", "navigation.indexes", "search.highlight", "search.suggest", "content.code.copy"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>
