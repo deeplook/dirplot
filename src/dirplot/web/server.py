@@ -9,6 +9,7 @@ from pathlib import Path
 _HERE = Path(__file__).parent
 _TEMPLATES_DIR = _HERE / "templates"
 _STATIC_DIR = _HERE / "static"
+_FONTS_DIR = _HERE.parent / "fonts"
 
 
 @dataclass
@@ -69,6 +70,7 @@ def create_app(config: ServeConfig):  # type: ignore[no-untyped-def]
 
     app = fastapi.FastAPI(title="dirplot", docs_url=None, redoc_url=None)
     templates = Jinja2Templates(directory=str(_TEMPLATES_DIR))
+    app.mount("/static/fonts", StaticFiles(directory=str(_FONTS_DIR)), name="fonts")
     app.mount("/static", StaticFiles(directory=str(_STATIC_DIR)), name="static")
 
     def _scan_and_serialize(
