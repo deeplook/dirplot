@@ -121,4 +121,5 @@ def serve_cmd(
         host=host,
         port=port,
         log_level="warning" if quiet else "info",
+        lifespan="off",
     )

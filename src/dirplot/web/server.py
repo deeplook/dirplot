@@ -419,7 +419,7 @@ def create_app(config: ServeConfig):  # type: ignore[no-untyped-def]
             while True:
                 msg = await asyncio.wait_for(queue.get(), timeout=30)
                 await ws.send_text(msg)
-        except (WebSocketDisconnect, asyncio.TimeoutError):
+        except (WebSocketDisconnect, asyncio.TimeoutError, asyncio.CancelledError):
             pass
         finally:
             observer.stop()
