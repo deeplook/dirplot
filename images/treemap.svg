@@ -1,0 +1,892 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+     width="800" height="400" viewBox="0 0 800 400">
+<style>/*<![CDATA[*/.tile {
+    cursor: pointer;
+    transition: filter 0.10s ease;
+}
+.tile:hover {
+    filter: brightness(1.22) drop-shadow(0 0 3px rgba(255,255,255,0.45));
+}
+.dir-tile {
+    cursor: default;
+    transition: filter 0.10s ease;
+}
+.dir-tile:hover {
+    filter: brightness(1.18);
+}
+/*]]>*/</style>
+<defs>
+<linearGradient x1="0" y1="0" x2="1" y2="1" gradientUnits="objectBoundingBox" id="d0">
+<stop offset="0.0" stop-color="white" stop-opacity="0.2" />
+<stop offset="0.5" stop-color="black" stop-opacity="0.0" />
+<stop offset="1.0" stop-color="black" stop-opacity="0.2" />
+</linearGradient>
+<linearGradient x1="0" y1="0" x2="1" y2="1" gradientUnits="objectBoundingBox" id="d1">
+<stop offset="0.0" stop-color="white" stop-opacity="0.1" />
+<stop offset="0.5" stop-color="black" stop-opacity="0.0" />
+<stop offset="1.0" stop-color="black" stop-opacity="0.1" />
+</linearGradient>
+<clipPath id="d2">
+<rect x="2" y="2" width="796" height="16" />
+</clipPath>
+<clipPath id="d3">
+<rect x="18" y="20" width="224" height="16" />
+</clipPath>
+<clipPath id="d4">
+<rect x="19" y="37" width="47" height="44" />
+</clipPath>
+<clipPath id="d5">
+<rect x="69" y="37" width="53" height="44" />
+</clipPath>
+<clipPath id="d6">
+<rect x="125" y="37" width="61" height="44" />
+</clipPath>
+<clipPath id="d7">
+<rect x="189" y="37" width="52" height="44" />
+</clipPath>
+<clipPath id="d8">
+<rect x="19" y="84" width="57" height="48" />
+</clipPath>
+<clipPath id="d9">
+<rect x="79" y="84" width="59" height="48" />
+</clipPath>
+<clipPath id="d10">
+<rect x="141" y="84" width="56" height="48" />
+</clipPath>
+<clipPath id="d11">
+<rect x="200" y="84" width="41" height="48" />
+</clipPath>
+<clipPath id="d12">
+<rect x="19" y="135" width="54" height="48" />
+</clipPath>
+<clipPath id="d13">
+<rect x="76" y="135" width="54" height="48" />
+</clipPath>
+<clipPath id="d14">
+<rect x="133" y="135" width="52" height="48" />
+</clipPath>
+<clipPath id="d15">
+<rect x="188" y="135" width="53" height="48" />
+</clipPath>
+<clipPath id="d16">
+<rect x="19" y="186" width="54" height="52" />
+</clipPath>
+<clipPath id="d17">
+<rect x="19" y="241" width="54" height="50" />
+</clipPath>
+<clipPath id="d18">
+<rect x="19" y="294" width="54" height="49" />
+</clipPath>
+<clipPath id="d19">
+<rect x="19" y="346" width="54" height="49" />
+</clipPath>
+<clipPath id="d20">
+<rect x="76" y="186" width="46" height="47" />
+</clipPath>
+<clipPath id="d21">
+<rect x="125" y="186" width="55" height="47" />
+</clipPath>
+<clipPath id="d22">
+<rect x="183" y="186" width="58" height="47" />
+</clipPath>
+<clipPath id="d23">
+<rect x="76" y="236" width="53" height="56" />
+</clipPath>
+<clipPath id="d24">
+<rect x="76" y="295" width="53" height="49" />
+</clipPath>
+<clipPath id="d25">
+<rect x="76" y="347" width="53" height="48" />
+</clipPath>
+<clipPath id="d26">
+<rect x="132" y="236" width="55" height="52" />
+</clipPath>
+<clipPath id="d27">
+<rect x="190" y="236" width="51" height="52" />
+</clipPath>
+<clipPath id="d28">
+<rect x="132" y="291" width="52" height="55" />
+</clipPath>
+<clipPath id="d29">
+<rect x="132" y="349" width="52" height="46" />
+</clipPath>
+<clipPath id="d30">
+<rect x="187" y="291" width="54" height="51" />
+</clipPath>
+<clipPath id="d31">
+<rect x="187" y="345" width="54" height="50" />
+</clipPath>
+<clipPath id="d32">
+<rect x="246" y="19" width="30" height="94" />
+</clipPath>
+<clipPath id="d33">
+<rect x="246" y="116" width="30" height="79" />
+</clipPath>
+<clipPath id="d34">
+<rect x="246" y="198" width="30" height="96" />
+</clipPath>
+<clipPath id="d35">
+<rect x="246" y="297" width="30" height="100" />
+</clipPath>
+<clipPath id="d36">
+<rect x="280" y="20" width="140" height="16" />
+</clipPath>
+<clipPath id="d37">
+<rect x="282" y="45" width="136" height="16" />
+</clipPath>
+<clipPath id="d38">
+<rect x="283" y="62" width="32" height="48" />
+</clipPath>
+<clipPath id="d39">
+<rect x="318" y="62" width="50" height="48" />
+</clipPath>
+<clipPath id="d40">
+<rect x="371" y="62" width="46" height="48" />
+</clipPath>
+<clipPath id="d41">
+<rect x="283" y="113" width="43" height="53" />
+</clipPath>
+<clipPath id="d42">
+<rect x="283" y="169" width="43" height="55" />
+</clipPath>
+<clipPath id="d43">
+<rect x="329" y="113" width="45" height="52" />
+</clipPath>
+<clipPath id="d44">
+<rect x="377" y="113" width="40" height="52" />
+</clipPath>
+<clipPath id="d45">
+<rect x="329" y="168" width="45" height="56" />
+</clipPath>
+<clipPath id="d46">
+<rect x="377" y="168" width="40" height="56" />
+</clipPath>
+<clipPath id="d47">
+<rect x="281" y="229" width="46" height="60" />
+</clipPath>
+<clipPath id="d48">
+<rect x="330" y="229" width="42" height="60" />
+</clipPath>
+<clipPath id="d49">
+<rect x="375" y="229" width="44" height="60" />
+</clipPath>
+<clipPath id="d50">
+<rect x="281" y="292" width="54" height="50" />
+</clipPath>
+<clipPath id="d51">
+<rect x="281" y="345" width="54" height="50" />
+</clipPath>
+<clipPath id="d52">
+<rect x="338" y="292" width="35" height="68" />
+</clipPath>
+<clipPath id="d53">
+<rect x="376" y="292" width="43" height="68" />
+</clipPath>
+<clipPath id="d54">
+<rect x="338" y="363" width="81" height="32" />
+</clipPath>
+<clipPath id="d55">
+<rect x="424" y="19" width="78" height="36" />
+</clipPath>
+<clipPath id="d56">
+<rect x="505" y="19" width="54" height="36" />
+</clipPath>
+<clipPath id="d57">
+<rect x="562" y="19" width="77" height="36" />
+</clipPath>
+<clipPath id="d58">
+<rect x="642" y="19" width="78" height="36" />
+</clipPath>
+<clipPath id="d59">
+<rect x="723" y="19" width="74" height="36" />
+</clipPath>
+<clipPath id="d60">
+<rect x="425" y="59" width="78" height="16" />
+</clipPath>
+<clipPath id="d61">
+<rect x="426" y="76" width="76" height="41" />
+</clipPath>
+<clipPath id="d62">
+<rect x="426" y="120" width="76" height="40" />
+</clipPath>
+<clipPath id="d63">
+<rect x="426" y="163" width="76" height="41" />
+</clipPath>
+<clipPath id="d64">
+<rect x="426" y="207" width="42" height="73" />
+</clipPath>
+<clipPath id="d65">
+<rect x="471" y="207" width="31" height="73" />
+</clipPath>
+<clipPath id="d66">
+<rect x="424" y="285" width="80" height="34" />
+</clipPath>
+<clipPath id="d67">
+<rect x="424" y="322" width="80" height="37" />
+</clipPath>
+<clipPath id="d68">
+<rect x="424" y="362" width="80" height="35" />
+</clipPath>
+<clipPath id="d69">
+<rect x="508" y="59" width="288" height="16" />
+</clipPath>
+<clipPath id="d70">
+<rect x="521" y="77" width="147" height="16" />
+</clipPath>
+<clipPath id="d71">
+<rect x="522" y="94" width="20" height="47" />
+</clipPath>
+<clipPath id="d72">
+<rect x="545" y="94" width="29" height="47" />
+</clipPath>
+<clipPath id="d73">
+<rect x="577" y="94" width="26" height="47" />
+</clipPath>
+<clipPath id="d74">
+<rect x="606" y="94" width="32" height="47" />
+</clipPath>
+<clipPath id="d75">
+<rect x="641" y="94" width="26" height="47" />
+</clipPath>
+<clipPath id="d76">
+<rect x="672" y="76" width="59" height="33" />
+</clipPath>
+<clipPath id="d77">
+<rect x="672" y="112" width="59" height="31" />
+</clipPath>
+<clipPath id="d78">
+<rect x="734" y="76" width="61" height="36" />
+</clipPath>
+<clipPath id="d79">
+<rect x="734" y="115" width="61" height="28" />
+</clipPath>
+<clipPath id="d80">
+<rect x="507" y="148" width="57" height="50" />
+</clipPath>
+<clipPath id="d81">
+<rect x="507" y="201" width="57" height="50" />
+</clipPath>
+<clipPath id="d82">
+<rect x="507" y="254" width="57" height="39" />
+</clipPath>
+<clipPath id="d83">
+<rect x="507" y="296" width="57" height="48" />
+</clipPath>
+<clipPath id="d84">
+<rect x="507" y="347" width="57" height="50" />
+</clipPath>
+<clipPath id="d85">
+<rect x="567" y="148" width="19" height="43" />
+</clipPath>
+<clipPath id="d86">
+<rect x="589" y="148" width="73" height="43" />
+</clipPath>
+<clipPath id="d87">
+<rect x="665" y="148" width="65" height="43" />
+</clipPath>
+<clipPath id="d88">
+<rect x="733" y="148" width="64" height="43" />
+</clipPath>
+<clipPath id="d89">
+<rect x="567" y="194" width="154" height="18" />
+</clipPath>
+<clipPath id="d90">
+<rect x="568" y="216" width="152" height="16" />
+</clipPath>
+<clipPath id="d91">
+<rect x="569" y="233" width="23" height="98" />
+</clipPath>
+<clipPath id="d92">
+<rect x="596" y="234" width="122" height="16" />
+</clipPath>
+<clipPath id="d93">
+<rect x="597" y="251" width="47" height="39" />
+</clipPath>
+<clipPath id="d94">
+<rect x="597" y="293" width="47" height="36" />
+</clipPath>
+<clipPath id="d95">
+<rect x="647" y="251" width="34" height="51" />
+</clipPath>
+<clipPath id="d96">
+<rect x="684" y="251" width="33" height="51" />
+</clipPath>
+<clipPath id="d97">
+<rect x="647" y="305" width="70" height="24" />
+</clipPath>
+<clipPath id="d98">
+<rect x="569" y="334" width="35" height="61" />
+</clipPath>
+<clipPath id="d99">
+<rect x="607" y="334" width="36" height="61" />
+</clipPath>
+<clipPath id="d100">
+<rect x="646" y="334" width="34" height="61" />
+</clipPath>
+<clipPath id="d101">
+<rect x="683" y="334" width="36" height="61" />
+</clipPath>
+<clipPath id="d102">
+<rect x="724" y="194" width="73" height="37" />
+</clipPath>
+<clipPath id="d103">
+<rect x="724" y="234" width="73" height="42" />
+</clipPath>
+<clipPath id="d104">
+<rect x="724" y="279" width="73" height="33" />
+</clipPath>
+<clipPath id="d105">
+<rect x="724" y="315" width="73" height="40" />
+</clipPath>
+<clipPath id="d106">
+<rect x="724" y="358" width="73" height="39" />
+</clipPath>
+</defs>
+<metadata>
+  <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:dirplot="https://github.com/deeplook/dirplot#">
+    <rdf:Description>
+    <dirplot:Date>2026-05-20T13:33:47Z</dirplot:Date>
+    <dirplot:Software>dirplot 0.5.0</dirplot:Software>
+    <dirplot:URL>https://github.com/deeplook/dirplot</dirplot:URL>
+    <dirplot:Python>3.12.10</dirplot:Python>
+    <dirplot:OS>Darwin 24.6.0</dirplot:OS>
+    <dirplot:Command>dirplot map src/dirplot --log-scale 4 --canvas 800x400 --no-show --output docs/images/treemap.svg</dirplot:Command>
+    </rdf:Description>
+  </rdf:RDF>
+</metadata>
+
+<rect x="0" y="0" width="800" height="400" fill="#1a1a2e" />
+<use xlink:href="#d0" />
+<use xlink:href="#d1" />
+<rect x="0" y="0" width="800" height="400" fill="none" stroke="white" stroke-width="1" />
+<rect x="1" y="1" width="798" height="398" fill="none" stroke="black" stroke-width="1" />
+<rect x="2" y="2" width="796" height="16" fill="#1c1c2e" class="dir-tile" data-name="dirplot" data-size="2035390" data-is-dir="1" data-count="34" data-ext="" />
+<use xlink:href="#d2" />
+<text x="400.0" y="10.0" font-size="12" text-anchor="middle" dominant-baseline="middle" fill="#e0e0e0" font-family="JetBrains Mono, Consolas, monospace" font-weight="bold" clip-path="url(#d2)" pointer-events="none">dirplot — 100 files, 8 dirs, 1.9 MB (2,035,390 bytes), depth: 3</text>
+<rect x="2" y="18" width="797" height="381" fill="black" />
+<rect x="2" y="18" width="13" height="179" fill="#3572a5" stroke="#003467" stroke-width="1" class="tile" data-name="__init__.py" data-size="433" data-ext=".py" data-is-dir="0" />
+<rect x="2" y="18" width="13" height="179" fill="url(#d0)" pointer-events="none" />
+<rect x="2" y="198" width="13" height="200" fill="#3572a5" stroke="#003467" stroke-width="1" class="tile" data-name="__main__.py" data-size="1403" data-ext=".py" data-is-dir="0" />
+<rect x="2" y="198" width="13" height="200" fill="url(#d0)" pointer-events="none" />
+<rect x="16" y="18" width="228" height="380" fill="none" stroke="white" stroke-width="1" />
+<rect x="17" y="19" width="226" height="378" fill="none" stroke="black" stroke-width="1" />
+<rect x="18" y="20" width="224" height="16" fill="#1c1c2e" class="dir-tile" data-name="__pycache__" data-size="331547" data-is-dir="1" data-count="28" data-ext="" />
+<use xlink:href="#d3" />
+<text x="130.0" y="28.0" font-size="12" text-anchor="middle" dominant-baseline="middle" fill="#e0e0e0" font-family="JetBrains Mono, Consolas, monospace" font-weight="bold" clip-path="url(#d3)" pointer-events="none">__pycache__</text>
+<rect x="18" y="36" width="225" height="361" fill="black" />
+<rect x="18" y="36" width="49" height="46" fill="#ff9896" stroke="#c15a58" stroke-width="1" class="tile" data-name="__init__.cpython-312.pyc" data-size="585" data-ext=".pyc" data-is-dir="0" />
+<rect x="18" y="36" width="49" height="46" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d4" />
+<text x="42.5" y="53.300000000000004" font-size="6" text-anchor="middle" fill="#000000" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d4)" pointer-events="none"><tspan x="42.5" dy="0">__init__</tspan><tspan x="42.5" dy="1.2em">.cpython</tspan><tspan x="42.5" dy="1.2em">-312.pyc</tspan></text>
+<rect x="68" y="36" width="55" height="46" fill="#ff9896" stroke="#c15a58" stroke-width="1" class="tile" data-name="__main__.cpython-312.pyc" data-size="2138" data-ext=".pyc" data-is-dir="0" />
+<rect x="68" y="36" width="55" height="46" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d5" />
+<text x="95.5" y="53.300000000000004" font-size="6" text-anchor="middle" fill="#000000" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d5)" pointer-events="none"><tspan x="95.5" dy="0">__main__</tspan><tspan x="95.5" dy="1.2em">.cpython-312</tspan><tspan x="95.5" dy="1.2em">.pyc</tspan></text>
+<rect x="124" y="36" width="63" height="46" fill="#ff9896" stroke="#c15a58" stroke-width="1" class="tile" data-name="_overview.cpython-312.pyc" data-size="10962" data-ext=".pyc" data-is-dir="0" />
+<rect x="124" y="36" width="63" height="46" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d6" />
+<text x="155.5" y="56.9" font-size="6" text-anchor="middle" fill="#000000" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d6)" pointer-events="none"><tspan x="155.5" dy="0">_overview</tspan><tspan x="155.5" dy="1.2em">.cpython-312.pyc</tspan></text>
+<rect x="188" y="36" width="54" height="46" fill="#ff9896" stroke="#c15a58" stroke-width="1" class="tile" data-name="app.cpython-312.pyc" data-size="1836" data-ext=".pyc" data-is-dir="0" />
+<rect x="188" y="36" width="54" height="46" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d7" />
+<text x="215.0" y="56.9" font-size="6" text-anchor="middle" fill="#000000" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d7)" pointer-events="none"><tspan x="215.0" dy="0">app.cpython</tspan><tspan x="215.0" dy="1.2em">-312.pyc</tspan></text>
+<rect x="18" y="83" width="59" height="50" fill="#ff9896" stroke="#c15a58" stroke-width="1" class="tile" data-name="archives.cpython-312.pyc" data-size="15108" data-ext=".pyc" data-is-dir="0" />
+<rect x="18" y="83" width="59" height="50" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d8" />
+<text x="47.5" y="102.3" font-size="6" text-anchor="middle" fill="#000000" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d8)" pointer-events="none"><tspan x="47.5" dy="0">archives</tspan><tspan x="47.5" dy="1.2em">.cpython-312</tspan><tspan x="47.5" dy="1.2em">.pyc</tspan></text>
+<rect x="78" y="83" width="61" height="50" fill="#ff9896" stroke="#c15a58" stroke-width="1" class="tile" data-name="colors.cpython-312.pyc" data-size="26291" data-ext=".pyc" data-is-dir="0" />
+<rect x="78" y="83" width="61" height="50" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d9" />
+<text x="108.5" y="105.89999999999999" font-size="6" text-anchor="middle" fill="#000000" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d9)" pointer-events="none"><tspan x="108.5" dy="0">colors.cpython</tspan><tspan x="108.5" dy="1.2em">-312.pyc</tspan></text>
+<rect x="140" y="83" width="58" height="50" fill="#ff9896" stroke="#c15a58" stroke-width="1" class="tile" data-name="console.cpython-312.pyc" data-size="9904" data-ext=".pyc" data-is-dir="0" />
+<rect x="140" y="83" width="58" height="50" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d10" />
+<text x="169.0" y="102.3" font-size="6" text-anchor="middle" fill="#000000" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d10)" pointer-events="none"><tspan x="169.0" dy="0">console</tspan><tspan x="169.0" dy="1.2em">.cpython-312</tspan><tspan x="169.0" dy="1.2em">.pyc</tspan></text>
+<rect x="199" y="83" width="43" height="50" fill="#ff9896" stroke="#c15a58" stroke-width="1" class="tile" data-name="defaults.cpython-312.pyc" data-size="416" data-ext=".pyc" data-is-dir="0" />
+<rect x="199" y="83" width="43" height="50" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d11" />
+<text x="220.5" y="102.3" font-size="6" text-anchor="middle" fill="#000000" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d11)" pointer-events="none"><tspan x="220.5" dy="0">defaults</tspan><tspan x="220.5" dy="1.2em">.cpython</tspan><tspan x="220.5" dy="1.2em">-312.pyc</tspan></text>
+<rect x="18" y="134" width="56" height="50" fill="#ff9896" stroke="#c15a58" stroke-width="1" class="tile" data-name="display.cpython-312.pyc" data-size="9975" data-ext=".pyc" data-is-dir="0" />
+<rect x="18" y="134" width="56" height="50" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d12" />
+<text x="46.0" y="153.29999999999998" font-size="6" text-anchor="middle" fill="#000000" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d12)" pointer-events="none"><tspan x="46.0" dy="0">display</tspan><tspan x="46.0" dy="1.2em">.cpython-312</tspan><tspan x="46.0" dy="1.2em">.pyc</tspan></text>
+<rect x="75" y="134" width="56" height="50" fill="#ff9896" stroke="#c15a58" stroke-width="1" class="tile" data-name="docker.cpython-312.pyc" data-size="9669" data-ext=".pyc" data-is-dir="0" />
+<rect x="75" y="134" width="56" height="50" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d13" />
+<text x="103.0" y="153.29999999999998" font-size="6" text-anchor="middle" fill="#000000" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d13)" pointer-events="none"><tspan x="103.0" dy="0">docker</tspan><tspan x="103.0" dy="1.2em">.cpython-312</tspan><tspan x="103.0" dy="1.2em">.pyc</tspan></text>
+<rect x="132" y="134" width="54" height="50" fill="#ff9896" stroke="#c15a58" stroke-width="1" class="tile" data-name="filters.cpython-312.pyc" data-size="5243" data-ext=".pyc" data-is-dir="0" />
+<rect x="132" y="134" width="54" height="50" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d14" />
+<text x="159.0" y="153.29999999999998" font-size="6" text-anchor="middle" fill="#000000" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d14)" pointer-events="none"><tspan x="159.0" dy="0">filters</tspan><tspan x="159.0" dy="1.2em">.cpython-312</tspan><tspan x="159.0" dy="1.2em">.pyc</tspan></text>
+<rect x="187" y="134" width="55" height="50" fill="#ff9896" stroke="#c15a58" stroke-width="1" class="tile" data-name="gdrive.cpython-312.pyc" data-size="8335" data-ext=".pyc" data-is-dir="0" />
+<rect x="187" y="134" width="55" height="50" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d15" />
+<text x="214.5" y="153.29999999999998" font-size="6" text-anchor="middle" fill="#000000" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d15)" pointer-events="none"><tspan x="214.5" dy="0">gdrive</tspan><tspan x="214.5" dy="1.2em">.cpython-312</tspan><tspan x="214.5" dy="1.2em">.pyc</tspan></text>
+<rect x="18" y="185" width="56" height="54" fill="#ff9896" stroke="#c15a58" stroke-width="1" class="tile" data-name="git_scanner.cpython-312.pyc" data-size="18155" data-ext=".pyc" data-is-dir="0" />
+<rect x="18" y="185" width="56" height="54" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d16" />
+<text x="46.0" y="206.29999999999998" font-size="6" text-anchor="middle" fill="#000000" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d16)" pointer-events="none"><tspan x="46.0" dy="0">git_scanner</tspan><tspan x="46.0" dy="1.2em">.cpython-312</tspan><tspan x="46.0" dy="1.2em">.pyc</tspan></text>
+<rect x="18" y="240" width="56" height="52" fill="#ff9896" stroke="#c15a58" stroke-width="1" class="tile" data-name="github.cpython-312.pyc" data-size="13092" data-ext=".pyc" data-is-dir="0" />
+<rect x="18" y="240" width="56" height="52" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d17" />
+<text x="46.0" y="260.3" font-size="6" text-anchor="middle" fill="#000000" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d17)" pointer-events="none"><tspan x="46.0" dy="0">github</tspan><tspan x="46.0" dy="1.2em">.cpython-312</tspan><tspan x="46.0" dy="1.2em">.pyc</tspan></text>
+<rect x="18" y="293" width="56" height="51" fill="#ff9896" stroke="#c15a58" stroke-width="1" class="tile" data-name="hg_scanner.cpython-312.pyc" data-size="10001" data-ext=".pyc" data-is-dir="0" />
+<rect x="18" y="293" width="56" height="51" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d18" />
+<text x="46.0" y="312.8" font-size="6" text-anchor="middle" fill="#000000" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d18)" pointer-events="none"><tspan x="46.0" dy="0">hg_scanner</tspan><tspan x="46.0" dy="1.2em">.cpython-312</tspan><tspan x="46.0" dy="1.2em">.pyc</tspan></text>
+<rect x="18" y="345" width="56" height="51" fill="#ff9896" stroke="#c15a58" stroke-width="1" class="tile" data-name="k8s.cpython-312.pyc" data-size="11265" data-ext=".pyc" data-is-dir="0" />
+<rect x="18" y="345" width="56" height="51" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d19" />
+<text x="46.0" y="368.40000000000003" font-size="6" text-anchor="middle" fill="#000000" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d19)" pointer-events="none"><tspan x="46.0" dy="0">k8s.cpython</tspan><tspan x="46.0" dy="1.2em">-312.pyc</tspan></text>
+<rect x="75" y="185" width="48" height="49" fill="#ff9896" stroke="#c15a58" stroke-width="1" class="tile" data-name="main.cpython-312.pyc" data-size="981" data-ext=".pyc" data-is-dir="0" />
+<rect x="75" y="185" width="48" height="49" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d20" />
+<text x="99.0" y="203.79999999999998" font-size="6" text-anchor="middle" fill="#000000" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d20)" pointer-events="none"><tspan x="99.0" dy="0">main</tspan><tspan x="99.0" dy="1.2em">.cpython</tspan><tspan x="99.0" dy="1.2em">-312.pyc</tspan></text>
+<rect x="124" y="185" width="57" height="49" fill="#ff9896" stroke="#c15a58" stroke-width="1" class="tile" data-name="pathlist.cpython-312.pyc" data-size="6979" data-ext=".pyc" data-is-dir="0" />
+<rect x="124" y="185" width="57" height="49" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d21" />
+<text x="152.5" y="203.79999999999998" font-size="6" text-anchor="middle" fill="#000000" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d21)" pointer-events="none"><tspan x="152.5" dy="0">pathlist</tspan><tspan x="152.5" dy="1.2em">.cpython-312</tspan><tspan x="152.5" dy="1.2em">.pyc</tspan></text>
+<rect x="182" y="185" width="60" height="49" fill="#ff9896" stroke="#c15a58" stroke-width="1" class="tile" data-name="pipeline.cpython-312.pyc" data-size="12847" data-ext=".pyc" data-is-dir="0" />
+<rect x="182" y="185" width="60" height="49" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d22" />
+<text x="212.0" y="203.79999999999998" font-size="6" text-anchor="middle" fill="#000000" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d22)" pointer-events="none"><tspan x="212.0" dy="0">pipeline</tspan><tspan x="212.0" dy="1.2em">.cpython-312</tspan><tspan x="212.0" dy="1.2em">.pyc</tspan></text>
+<rect x="75" y="235" width="55" height="58" fill="#ff9896" stroke="#c15a58" stroke-width="1" class="tile" data-name="render_png.cpython-312.pyc" data-size="43464" data-ext=".pyc" data-is-dir="0" />
+<rect x="75" y="235" width="55" height="58" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d23" />
+<text x="102.5" y="258.3" font-size="6" text-anchor="middle" fill="#000000" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d23)" pointer-events="none"><tspan x="102.5" dy="0">render_png</tspan><tspan x="102.5" dy="1.2em">.cpython-312</tspan><tspan x="102.5" dy="1.2em">.pyc</tspan></text>
+<rect x="75" y="294" width="55" height="51" fill="#ff9896" stroke="#c15a58" stroke-width="1" class="tile" data-name="replay_scanner.cpython-312.pyc" data-size="7641" data-ext=".pyc" data-is-dir="0" />
+<rect x="75" y="294" width="55" height="51" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d24" />
+<text x="102.5" y="310.20000000000005" font-size="6" text-anchor="middle" fill="#000000" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d24)" pointer-events="none"><tspan x="102.5" dy="0">replay</tspan><tspan x="102.5" dy="1.2em">_scanner</tspan><tspan x="102.5" dy="1.2em">.cpython-312</tspan><tspan x="102.5" dy="1.2em">.pyc</tspan></text>
+<rect x="75" y="346" width="55" height="50" fill="#ff9896" stroke="#c15a58" stroke-width="1" class="tile" data-name="s3.cpython-312.pyc" data-size="7057" data-ext=".pyc" data-is-dir="0" />
+<rect x="75" y="346" width="55" height="50" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d25" />
+<text x="102.5" y="368.90000000000003" font-size="6" text-anchor="middle" fill="#000000" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d25)" pointer-events="none"><tspan x="102.5" dy="0">s3.cpython</tspan><tspan x="102.5" dy="1.2em">-312.pyc</tspan></text>
+<rect x="131" y="235" width="57" height="54" fill="#ff9896" stroke="#c15a58" stroke-width="1" class="tile" data-name="scanner.cpython-312.pyc" data-size="25095" data-ext=".pyc" data-is-dir="0" />
+<rect x="131" y="235" width="57" height="54" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d26" />
+<text x="159.5" y="256.3" font-size="6" text-anchor="middle" fill="#000000" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d26)" pointer-events="none"><tspan x="159.5" dy="0">scanner</tspan><tspan x="159.5" dy="1.2em">.cpython-312</tspan><tspan x="159.5" dy="1.2em">.pyc</tspan></text>
+<rect x="189" y="235" width="53" height="54" fill="#ff9896" stroke="#c15a58" stroke-width="1" class="tile" data-name="ssh.cpython-312.pyc" data-size="9300" data-ext=".pyc" data-is-dir="0" />
+<rect x="189" y="235" width="53" height="54" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d27" />
+<text x="215.5" y="259.90000000000003" font-size="6" text-anchor="middle" fill="#000000" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d27)" pointer-events="none"><tspan x="215.5" dy="0">ssh.cpython</tspan><tspan x="215.5" dy="1.2em">-312.pyc</tspan></text>
+<rect x="131" y="290" width="54" height="57" fill="#ff9896" stroke="#c15a58" stroke-width="1" class="tile" data-name="svg_render.cpython-312.pyc" data-size="26854" data-ext=".pyc" data-is-dir="0" />
+<rect x="131" y="290" width="54" height="57" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d28" />
+<text x="158.0" y="312.8" font-size="6" text-anchor="middle" fill="#000000" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d28)" pointer-events="none"><tspan x="158.0" dy="0">svg_render</tspan><tspan x="158.0" dy="1.2em">.cpython-312</tspan><tspan x="158.0" dy="1.2em">.pyc</tspan></text>
+<rect x="131" y="348" width="54" height="48" fill="#ff9896" stroke="#c15a58" stroke-width="1" class="tile" data-name="terminal.cpython-312.pyc" data-size="2719" data-ext=".pyc" data-is-dir="0" />
+<rect x="131" y="348" width="54" height="48" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d29" />
+<text x="158.0" y="366.3" font-size="6" text-anchor="middle" fill="#000000" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d29)" pointer-events="none"><tspan x="158.0" dy="0">terminal</tspan><tspan x="158.0" dy="1.2em">.cpython-312</tspan><tspan x="158.0" dy="1.2em">.pyc</tspan></text>
+<rect x="186" y="290" width="56" height="53" fill="#ff9896" stroke="#c15a58" stroke-width="1" class="tile" data-name="vpath.cpython-312.pyc" data-size="21103" data-ext=".pyc" data-is-dir="0" />
+<rect x="186" y="290" width="56" height="53" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d30" />
+<text x="214.0" y="314.40000000000003" font-size="6" text-anchor="middle" fill="#000000" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d30)" pointer-events="none"><tspan x="214.0" dy="0">vpath.cpython</tspan><tspan x="214.0" dy="1.2em">-312.pyc</tspan></text>
+<rect x="186" y="344" width="56" height="52" fill="#ff9896" stroke="#c15a58" stroke-width="1" class="tile" data-name="watch.cpython-312.pyc" data-size="14532" data-ext=".pyc" data-is-dir="0" />
+<rect x="186" y="344" width="56" height="52" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d31" />
+<text x="214.0" y="367.90000000000003" font-size="6" text-anchor="middle" fill="#000000" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d31)" pointer-events="none"><tspan x="214.0" dy="0">watch.cpython</tspan><tspan x="214.0" dy="1.2em">-312.pyc</tspan></text>
+<rect x="16" y="18" width="228" height="380" fill="url(#d1)" pointer-events="none" />
+<rect x="245" y="18" width="32" height="96" fill="#3572a5" stroke="#003467" stroke-width="1" class="tile" data-name="_overview.py" data-size="8283" data-ext=".py" data-is-dir="0" />
+<rect x="245" y="18" width="32" height="96" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d32" />
+<text x="261.0" y="63.9" font-size="6" text-anchor="middle" fill="#ffffff" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d32)" pointer-events="none"><tspan x="261.0" dy="0">_overvi</tspan><tspan x="261.0" dy="1.2em">ew.py</tspan></text>
+<rect x="245" y="115" width="32" height="81" fill="#3572a5" stroke="#003467" stroke-width="1" class="tile" data-name="app.py" data-size="1108" data-ext=".py" data-is-dir="0" />
+<rect x="245" y="115" width="32" height="81" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d33" />
+<text x="261.0" y="155.5" font-size="6" text-anchor="middle" dominant-baseline="middle" fill="#ffffff" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d33)" pointer-events="none">app.py</text>
+<rect x="245" y="197" width="32" height="98" fill="#3572a5" stroke="#003467" stroke-width="1" class="tile" data-name="archives.py" data-size="12234" data-ext=".py" data-is-dir="0" />
+<rect x="245" y="197" width="32" height="98" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d34" />
+<text x="261.0" y="243.9" font-size="6" text-anchor="middle" fill="#ffffff" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d34)" pointer-events="none"><tspan x="261.0" dy="0">archive</tspan><tspan x="261.0" dy="1.2em">s.py</tspan></text>
+<rect x="245" y="296" width="32" height="102" fill="#3572a5" stroke="#003467" stroke-width="1" class="tile" data-name="colors.py" data-size="18048" data-ext=".py" data-is-dir="0" />
+<rect x="245" y="296" width="32" height="102" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d35" />
+<text x="261.0" y="344.90000000000003" font-size="6" text-anchor="middle" fill="#ffffff" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d35)" pointer-events="none"><tspan x="261.0" dy="0">colors</tspan><tspan x="261.0" dy="1.2em">.py</tspan></text>
+<rect x="278" y="18" width="144" height="380" fill="none" stroke="white" stroke-width="1" />
+<rect x="279" y="19" width="142" height="378" fill="none" stroke="black" stroke-width="1" />
+<rect x="280" y="20" width="140" height="16" fill="#1c1c2e" class="dir-tile" data-name="commands" data-size="266686" data-is-dir="1" data-count="10" data-ext="" />
+<use xlink:href="#d36" />
+<text x="350.0" y="28.0" font-size="12" text-anchor="middle" dominant-baseline="middle" fill="#e0e0e0" font-family="JetBrains Mono, Consolas, monospace" font-weight="bold" clip-path="url(#d36)" pointer-events="none">commands</text>
+<rect x="280" y="36" width="141" height="361" fill="black" />
+<rect x="280" y="36" width="140" height="6" fill="#3572a5" stroke="#003467" stroke-width="1" class="tile" data-name="__init__.py" data-size="1" data-ext=".py" data-is-dir="0" />
+<rect x="280" y="36" width="140" height="6" fill="url(#d0)" pointer-events="none" />
+<rect x="280" y="43" width="140" height="184" fill="none" stroke="white" stroke-width="1" />
+<rect x="281" y="44" width="138" height="182" fill="none" stroke="black" stroke-width="1" />
+<rect x="282" y="45" width="136" height="16" fill="#1c1c2e" class="dir-tile" data-name="__pycache__" data-size="139454" data-is-dir="1" data-count="9" data-ext="" />
+<use xlink:href="#d37" />
+<text x="350.0" y="53.0" font-size="12" text-anchor="middle" dominant-baseline="middle" fill="#e0e0e0" font-family="JetBrains Mono, Consolas, monospace" font-weight="bold" clip-path="url(#d37)" pointer-events="none">__pycache__</text>
+<rect x="282" y="61" width="137" height="165" fill="black" />
+<rect x="282" y="61" width="34" height="50" fill="#ff9896" stroke="#c15a58" stroke-width="1" class="tile" data-name="__init__.cpython-312.pyc" data-size="160" data-ext=".pyc" data-is-dir="0" />
+<rect x="282" y="61" width="34" height="50" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d38" />
+<text x="299.0" y="76.69999999999999" font-size="6" text-anchor="middle" fill="#000000" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d38)" pointer-events="none"><tspan x="299.0" dy="0">__init_</tspan><tspan x="299.0" dy="1.2em">_</tspan><tspan x="299.0" dy="1.2em">.cpython</tspan><tspan x="299.0" dy="1.2em">-312.pyc</tspan></text>
+<rect x="317" y="61" width="52" height="50" fill="#ff9896" stroke="#c15a58" stroke-width="1" class="tile" data-name="diff.cpython-312.pyc" data-size="23689" data-ext=".pyc" data-is-dir="0" />
+<rect x="317" y="61" width="52" height="50" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d39" />
+<text x="343.0" y="83.89999999999999" font-size="6" text-anchor="middle" fill="#000000" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d39)" pointer-events="none"><tspan x="343.0" dy="0">diff.cpython</tspan><tspan x="343.0" dy="1.2em">-312.pyc</tspan></text>
+<rect x="370" y="61" width="48" height="50" fill="#ff9896" stroke="#c15a58" stroke-width="1" class="tile" data-name="metrics.cpython-312.pyc" data-size="7188" data-ext=".pyc" data-is-dir="0" />
+<rect x="370" y="61" width="48" height="50" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d40" />
+<text x="394.0" y="80.3" font-size="6" text-anchor="middle" fill="#000000" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d40)" pointer-events="none"><tspan x="394.0" dy="0">metrics</tspan><tspan x="394.0" dy="1.2em">.cpython</tspan><tspan x="394.0" dy="1.2em">-312.pyc</tspan></text>
+<rect x="282" y="112" width="45" height="55" fill="#ff9896" stroke="#c15a58" stroke-width="1" class="tile" data-name="misc.cpython-312.pyc" data-size="13346" data-ext=".pyc" data-is-dir="0" />
+<rect x="282" y="112" width="45" height="55" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d41" />
+<text x="304.5" y="133.79999999999998" font-size="6" text-anchor="middle" fill="#000000" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d41)" pointer-events="none"><tspan x="304.5" dy="0">misc</tspan><tspan x="304.5" dy="1.2em">.cpython</tspan><tspan x="304.5" dy="1.2em">-312.pyc</tspan></text>
+<rect x="282" y="168" width="45" height="57" fill="#ff9896" stroke="#c15a58" stroke-width="1" class="tile" data-name="replay.cpython-312.pyc" data-size="17784" data-ext=".pyc" data-is-dir="0" />
+<rect x="282" y="168" width="45" height="57" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d42" />
+<text x="304.5" y="190.79999999999998" font-size="6" text-anchor="middle" fill="#000000" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d42)" pointer-events="none"><tspan x="304.5" dy="0">replay</tspan><tspan x="304.5" dy="1.2em">.cpython</tspan><tspan x="304.5" dy="1.2em">-312.pyc</tspan></text>
+<rect x="328" y="112" width="47" height="54" fill="#ff9896" stroke="#c15a58" stroke-width="1" class="tile" data-name="treemap.cpython-312.pyc" data-size="18240" data-ext=".pyc" data-is-dir="0" />
+<rect x="328" y="112" width="47" height="54" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d43" />
+<text x="351.5" y="133.29999999999998" font-size="6" text-anchor="middle" fill="#000000" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d43)" pointer-events="none"><tspan x="351.5" dy="0">treemap</tspan><tspan x="351.5" dy="1.2em">.cpython</tspan><tspan x="351.5" dy="1.2em">-312.pyc</tspan></text>
+<rect x="376" y="112" width="42" height="54" fill="#ff9896" stroke="#c15a58" stroke-width="1" class="tile" data-name="treemap_simple.cpython-312.pyc" data-size="5202" data-ext=".pyc" data-is-dir="0" />
+<rect x="376" y="112" width="42" height="54" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d44" />
+<text x="397.0" y="129.7" font-size="6" text-anchor="middle" fill="#000000" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d44)" pointer-events="none"><tspan x="397.0" dy="0">treemap</tspan><tspan x="397.0" dy="1.2em">_simple</tspan><tspan x="397.0" dy="1.2em">.cpython</tspan><tspan x="397.0" dy="1.2em">-312.pyc</tspan></text>
+<rect x="328" y="167" width="47" height="58" fill="#ff9896" stroke="#c15a58" stroke-width="1" class="tile" data-name="vcs.cpython-312.pyc" data-size="44138" data-ext=".pyc" data-is-dir="0" />
+<rect x="328" y="167" width="47" height="58" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d45" />
+<text x="351.5" y="190.29999999999998" font-size="6" text-anchor="middle" fill="#000000" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d45)" pointer-events="none"><tspan x="351.5" dy="0">vcs</tspan><tspan x="351.5" dy="1.2em">.cpython</tspan><tspan x="351.5" dy="1.2em">-312.pyc</tspan></text>
+<rect x="376" y="167" width="42" height="58" fill="#ff9896" stroke="#c15a58" stroke-width="1" class="tile" data-name="watch.cpython-312.pyc" data-size="9707" data-ext=".pyc" data-is-dir="0" />
+<rect x="376" y="167" width="42" height="58" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d46" />
+<text x="397.0" y="190.29999999999998" font-size="6" text-anchor="middle" fill="#000000" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d46)" pointer-events="none"><tspan x="397.0" dy="0">watch</tspan><tspan x="397.0" dy="1.2em">.cpython</tspan><tspan x="397.0" dy="1.2em">-312.pyc</tspan></text>
+<rect x="280" y="43" width="140" height="184" fill="url(#d1)" pointer-events="none" />
+<rect x="280" y="228" width="48" height="62" fill="#3572a5" stroke="#003467" stroke-width="1" class="tile" data-name="diff.py" data-size="20623" data-ext=".py" data-is-dir="0" />
+<rect x="280" y="228" width="48" height="62" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d47" />
+<text x="304.0" y="259.0" font-size="6" text-anchor="middle" dominant-baseline="middle" fill="#ffffff" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d47)" pointer-events="none">diff.py</text>
+<rect x="329" y="228" width="44" height="62" fill="#3572a5" stroke="#003467" stroke-width="1" class="tile" data-name="metrics.py" data-size="6039" data-ext=".py" data-is-dir="0" />
+<rect x="329" y="228" width="44" height="62" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d48" />
+<text x="351.0" y="259.0" font-size="6" text-anchor="middle" dominant-baseline="middle" fill="#ffffff" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d48)" pointer-events="none">metrics.py</text>
+<rect x="374" y="228" width="46" height="62" fill="#3572a5" stroke="#003467" stroke-width="1" class="tile" data-name="misc.py" data-size="12123" data-ext=".py" data-is-dir="0" />
+<rect x="374" y="228" width="46" height="62" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d49" />
+<text x="397.0" y="259.0" font-size="6" text-anchor="middle" dominant-baseline="middle" fill="#ffffff" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d49)" pointer-events="none">misc.py</text>
+<rect x="280" y="291" width="56" height="52" fill="#3572a5" stroke="#003467" stroke-width="1" class="tile" data-name="replay.py" data-size="15512" data-ext=".py" data-is-dir="0" />
+<rect x="280" y="291" width="56" height="52" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d50" />
+<text x="308.0" y="317.0" font-size="6" text-anchor="middle" dominant-baseline="middle" fill="#ffffff" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d50)" pointer-events="none">replay.py</text>
+<rect x="280" y="344" width="56" height="52" fill="#3572a5" stroke="#003467" stroke-width="1" class="tile" data-name="treemap.py" data-size="16291" data-ext=".py" data-is-dir="0" />
+<rect x="280" y="344" width="56" height="52" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d51" />
+<text x="308.0" y="370.0" font-size="6" text-anchor="middle" dominant-baseline="middle" fill="#ffffff" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d51)" pointer-events="none">treemap.py</text>
+<rect x="337" y="291" width="37" height="70" fill="#3572a5" stroke="#003467" stroke-width="1" class="tile" data-name="treemap_simple.py" data-size="3333" data-ext=".py" data-is-dir="0" />
+<rect x="337" y="291" width="37" height="70" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d52" />
+<text x="355.5" y="320.3" font-size="6" text-anchor="middle" fill="#ffffff" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d52)" pointer-events="none"><tspan x="355.5" dy="0">treemap</tspan><tspan x="355.5" dy="1.2em">_simple</tspan><tspan x="355.5" dy="1.2em">.py</tspan></text>
+<rect x="375" y="291" width="45" height="70" fill="#3572a5" stroke="#003467" stroke-width="1" class="tile" data-name="vcs.py" data-size="45490" data-ext=".py" data-is-dir="0" />
+<rect x="375" y="291" width="45" height="70" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d53" />
+<text x="397.5" y="326.0" font-size="6" text-anchor="middle" dominant-baseline="middle" fill="#ffffff" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d53)" pointer-events="none">vcs.py</text>
+<rect x="337" y="362" width="83" height="34" fill="#3572a5" stroke="#003467" stroke-width="1" class="tile" data-name="watch.py" data-size="7820" data-ext=".py" data-is-dir="0" />
+<rect x="337" y="362" width="83" height="34" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d54" />
+<text x="378.5" y="379.0" font-size="8" text-anchor="middle" dominant-baseline="middle" fill="#ffffff" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d54)" pointer-events="none">watch.py</text>
+<rect x="278" y="18" width="144" height="380" fill="url(#d1)" pointer-events="none" />
+<rect x="423" y="18" width="80" height="38" fill="#3572a5" stroke="#003467" stroke-width="1" class="tile" data-name="console.py" data-size="7565" data-ext=".py" data-is-dir="0" />
+<rect x="423" y="18" width="80" height="38" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d55" />
+<text x="463.0" y="37.0" font-size="8" text-anchor="middle" dominant-baseline="middle" fill="#ffffff" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d55)" pointer-events="none">console.py</text>
+<rect x="504" y="18" width="56" height="38" fill="#3572a5" stroke="#003467" stroke-width="1" class="tile" data-name="defaults.py" data-size="154" data-ext=".py" data-is-dir="0" />
+<rect x="504" y="18" width="56" height="38" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d56" />
+<text x="532.0" y="37.0" font-size="6" text-anchor="middle" dominant-baseline="middle" fill="#ffffff" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d56)" pointer-events="none">defaults.py</text>
+<rect x="561" y="18" width="79" height="38" fill="#3572a5" stroke="#003467" stroke-width="1" class="tile" data-name="display.py" data-size="6230" data-ext=".py" data-is-dir="0" />
+<rect x="561" y="18" width="79" height="38" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d57" />
+<text x="600.5" y="37.0" font-size="7" text-anchor="middle" dominant-baseline="middle" fill="#ffffff" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d57)" pointer-events="none">display.py</text>
+<rect x="641" y="18" width="80" height="38" fill="#3572a5" stroke="#003467" stroke-width="1" class="tile" data-name="docker.py" data-size="8348" data-ext=".py" data-is-dir="0" />
+<rect x="641" y="18" width="80" height="38" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d58" />
+<text x="681.0" y="37.0" font-size="8" text-anchor="middle" dominant-baseline="middle" fill="#ffffff" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d58)" pointer-events="none">docker.py</text>
+<rect x="722" y="18" width="76" height="38" fill="#3572a5" stroke="#003467" stroke-width="1" class="tile" data-name="filters.py" data-size="3633" data-ext=".py" data-is-dir="0" />
+<rect x="722" y="18" width="76" height="38" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d59" />
+<text x="760.0" y="37.0" font-size="7" text-anchor="middle" dominant-baseline="middle" fill="#ffffff" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d59)" pointer-events="none">filters.py</text>
+<rect x="423" y="57" width="82" height="226" fill="none" stroke="white" stroke-width="1" />
+<rect x="424" y="58" width="80" height="224" fill="none" stroke="black" stroke-width="1" />
+<rect x="425" y="59" width="78" height="16" fill="#1c1c2e" class="dir-tile" data-name="fonts" data-size="1103974" data-is-dir="1" data-count="5" data-ext="" />
+<use xlink:href="#d60" />
+<text x="464.0" y="67.0" font-size="12" text-anchor="middle" dominant-baseline="middle" fill="#e0e0e0" font-family="JetBrains Mono, Consolas, monospace" font-weight="bold" clip-path="url(#d60)" pointer-events="none">fonts</text>
+<rect x="425" y="75" width="79" height="207" fill="black" />
+<rect x="425" y="75" width="78" height="43" fill="#ffbb78" stroke="#c17d3a" stroke-width="1" class="tile" data-name="JetBrainsMono-Bold.ttf" data-size="274096" data-ext=".ttf" data-is-dir="0" />
+<rect x="425" y="75" width="78" height="43" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d61" />
+<text x="464.0" y="94.05" font-size="7" text-anchor="middle" fill="#000000" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d61)" pointer-events="none"><tspan x="464.0" dy="0">JetBrainsMono</tspan><tspan x="464.0" dy="1.2em">-Bold.ttf</tspan></text>
+<rect x="425" y="119" width="78" height="42" fill="#ffbb78" stroke="#c17d3a" stroke-width="1" class="tile" data-name="JetBrainsMono-BoldItalic.ttf" data-size="279172" data-ext=".ttf" data-is-dir="0" />
+<rect x="425" y="119" width="78" height="42" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d62" />
+<text x="464.0" y="137.54999999999998" font-size="7" text-anchor="middle" fill="#000000" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d62)" pointer-events="none"><tspan x="464.0" dy="0">JetBrainsMono</tspan><tspan x="464.0" dy="1.2em">-BoldItalic.ttf</tspan></text>
+<rect x="425" y="162" width="78" height="43" fill="#ffbb78" stroke="#c17d3a" stroke-width="1" class="tile" data-name="JetBrainsMono-Italic.ttf" data-size="276084" data-ext=".ttf" data-is-dir="0" />
+<rect x="425" y="162" width="78" height="43" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d63" />
+<text x="464.0" y="181.04999999999998" font-size="7" text-anchor="middle" fill="#000000" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d63)" pointer-events="none"><tspan x="464.0" dy="0">JetBrainsMono</tspan><tspan x="464.0" dy="1.2em">-Italic.ttf</tspan></text>
+<rect x="425" y="206" width="44" height="75" fill="#ffbb78" stroke="#c17d3a" stroke-width="1" class="tile" data-name="JetBrainsMono-Regular.ttf" data-size="270224" data-ext=".ttf" data-is-dir="0" />
+<rect x="425" y="206" width="44" height="75" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d64" />
+<text x="447.0" y="237.79999999999998" font-size="6" text-anchor="middle" fill="#000000" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d64)" pointer-events="none"><tspan x="447.0" dy="0">JetBrainsMo</tspan><tspan x="447.0" dy="1.2em">no-Regular</tspan><tspan x="447.0" dy="1.2em">.ttf</tspan></text>
+<rect x="470" y="206" width="33" height="75" fill="#800000" stroke="#420000" stroke-width="1" class="tile" data-name="OFL.txt" data-size="4398" data-ext=".txt" data-is-dir="0" />
+<rect x="470" y="206" width="33" height="75" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d65" />
+<text x="486.5" y="243.5" font-size="6" text-anchor="middle" dominant-baseline="middle" fill="#ffffff" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d65)" pointer-events="none">OFL.txt</text>
+<rect x="423" y="57" width="82" height="226" fill="url(#d1)" pointer-events="none" />
+<rect x="423" y="284" width="82" height="36" fill="#3572a5" stroke="#003467" stroke-width="1" class="tile" data-name="gdrive.py" data-size="6333" data-ext=".py" data-is-dir="0" />
+<rect x="423" y="284" width="82" height="36" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d66" />
+<text x="464.0" y="302.0" font-size="8" text-anchor="middle" dominant-baseline="middle" fill="#ffffff" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d66)" pointer-events="none">gdrive.py</text>
+<rect x="423" y="321" width="82" height="39" fill="#3572a5" stroke="#003467" stroke-width="1" class="tile" data-name="git_scanner.py" data-size="14720" data-ext=".py" data-is-dir="0" />
+<rect x="423" y="321" width="82" height="39" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d67" />
+<text x="464.0" y="340.5" font-size="8" text-anchor="middle" dominant-baseline="middle" fill="#ffffff" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d67)" pointer-events="none">git_scanner.py</text>
+<rect x="423" y="361" width="82" height="37" fill="#3572a5" stroke="#003467" stroke-width="1" class="tile" data-name="github.py" data-size="10304" data-ext=".py" data-is-dir="0" />
+<rect x="423" y="361" width="82" height="37" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d68" />
+<text x="464.0" y="379.5" font-size="8" text-anchor="middle" dominant-baseline="middle" fill="#ffffff" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d68)" pointer-events="none">github.py</text>
+<rect x="506" y="57" width="292" height="89" fill="none" stroke="white" stroke-width="1" />
+<rect x="507" y="58" width="290" height="87" fill="none" stroke="black" stroke-width="1" />
+<rect x="508" y="59" width="288" height="16" fill="#1c1c2e" class="dir-tile" data-name="helpers" data-size="45939" data-is-dir="1" data-count="6" data-ext="" />
+<use xlink:href="#d69" />
+<text x="652.0" y="67.0" font-size="12" text-anchor="middle" dominant-baseline="middle" fill="#e0e0e0" font-family="JetBrains Mono, Consolas, monospace" font-weight="bold" clip-path="url(#d69)" pointer-events="none">helpers</text>
+<rect x="508" y="75" width="289" height="70" fill="black" />
+<rect x="508" y="75" width="10" height="69" fill="#3572a5" stroke="#003467" stroke-width="1" class="tile" data-name="__init__.py" data-size="1" data-ext=".py" data-is-dir="0" />
+<rect x="508" y="75" width="10" height="69" fill="url(#d0)" pointer-events="none" />
+<rect x="519" y="75" width="151" height="69" fill="none" stroke="white" stroke-width="1" />
+<rect x="520" y="76" width="149" height="67" fill="none" stroke="black" stroke-width="1" />
+<rect x="521" y="77" width="147" height="16" fill="#1c1c2e" class="dir-tile" data-name="__pycache__" data-size="25517" data-is-dir="1" data-count="5" data-ext="" />
+<use xlink:href="#d70" />
+<text x="594.5" y="85.0" font-size="12" text-anchor="middle" dominant-baseline="middle" fill="#e0e0e0" font-family="JetBrains Mono, Consolas, monospace" font-weight="bold" clip-path="url(#d70)" pointer-events="none">__pycache__</text>
+<rect x="521" y="93" width="148" height="50" fill="black" />
+<rect x="521" y="93" width="22" height="49" fill="#ff9896" stroke="#c15a58" stroke-width="1" class="tile" data-name="__init__.cpython-312.pyc" data-size="159" data-ext=".pyc" data-is-dir="0" />
+<rect x="521" y="93" width="22" height="49" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d71" />
+<text x="532.0" y="97.4" font-size="6" text-anchor="middle" fill="#000000" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d71)" pointer-events="none"><tspan x="532.0" dy="0">_</tspan><tspan x="532.0" dy="1.2em">_init</tspan><tspan x="532.0" dy="1.2em">__</tspan><tspan x="532.0" dy="1.2em">.cpyt</tspan><tspan x="532.0" dy="1.2em">hon</tspan><tspan x="532.0" dy="1.2em">-312</tspan><tspan x="532.0" dy="1.2em">.pyc</tspan></text>
+<rect x="544" y="93" width="31" height="49" fill="#ff9896" stroke="#c15a58" stroke-width="1" class="tile" data-name="animation.cpython-312.pyc" data-size="4836" data-ext=".pyc" data-is-dir="0" />
+<rect x="544" y="93" width="31" height="49" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d72" />
+<text x="559.5" y="104.6" font-size="6" text-anchor="middle" fill="#000000" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d72)" pointer-events="none"><tspan x="559.5" dy="0">animati</tspan><tspan x="559.5" dy="1.2em">on</tspan><tspan x="559.5" dy="1.2em">.cpytho</tspan><tspan x="559.5" dy="1.2em">n-312</tspan><tspan x="559.5" dy="1.2em">.pyc</tspan></text>
+<rect x="576" y="93" width="28" height="49" fill="#ff9896" stroke="#c15a58" stroke-width="1" class="tile" data-name="highlights.cpython-312.pyc" data-size="1567" data-ext=".pyc" data-is-dir="0" />
+<rect x="576" y="93" width="28" height="49" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d73" />
+<text x="590.0" y="101.0" font-size="6" text-anchor="middle" fill="#000000" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d73)" pointer-events="none"><tspan x="590.0" dy="0">highli</tspan><tspan x="590.0" dy="1.2em">ghts</tspan><tspan x="590.0" dy="1.2em">.cpyth</tspan><tspan x="590.0" dy="1.2em">on</tspan><tspan x="590.0" dy="1.2em">-312</tspan><tspan x="590.0" dy="1.2em">.pyc</tspan></text>
+<rect x="605" y="93" width="34" height="49" fill="#ff9896" stroke="#c15a58" stroke-width="1" class="tile" data-name="scan.cpython-312.pyc" data-size="17463" data-ext=".pyc" data-is-dir="0" />
+<rect x="605" y="93" width="34" height="49" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d74" />
+<text x="622.0" y="111.8" font-size="6" text-anchor="middle" fill="#000000" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d74)" pointer-events="none"><tspan x="622.0" dy="0">scan</tspan><tspan x="622.0" dy="1.2em">.cpython</tspan><tspan x="622.0" dy="1.2em">-312.pyc</tspan></text>
+<rect x="640" y="93" width="28" height="49" fill="#ff9896" stroke="#c15a58" stroke-width="1" class="tile" data-name="time.cpython-312.pyc" data-size="1492" data-ext=".pyc" data-is-dir="0" />
+<rect x="640" y="93" width="28" height="49" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d75" />
+<text x="654.0" y="104.6" font-size="6" text-anchor="middle" fill="#000000" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d75)" pointer-events="none"><tspan x="654.0" dy="0">time</tspan><tspan x="654.0" dy="1.2em">.cpyth</tspan><tspan x="654.0" dy="1.2em">on</tspan><tspan x="654.0" dy="1.2em">-312</tspan><tspan x="654.0" dy="1.2em">.pyc</tspan></text>
+<rect x="519" y="75" width="151" height="69" fill="url(#d1)" pointer-events="none" />
+<rect x="671" y="75" width="61" height="35" fill="#3572a5" stroke="#003467" stroke-width="1" class="tile" data-name="animation.py" data-size="3326" data-ext=".py" data-is-dir="0" />
+<rect x="671" y="75" width="61" height="35" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d76" />
+<text x="701.5" y="92.5" font-size="6" text-anchor="middle" dominant-baseline="middle" fill="#ffffff" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d76)" pointer-events="none">animation.py</text>
+<rect x="671" y="111" width="61" height="33" fill="#3572a5" stroke="#003467" stroke-width="1" class="tile" data-name="highlights.py" data-size="1417" data-ext=".py" data-is-dir="0" />
+<rect x="671" y="111" width="61" height="33" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d77" />
+<text x="701.5" y="127.5" font-size="6" text-anchor="middle" dominant-baseline="middle" fill="#ffffff" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d77)" pointer-events="none">highlights.py</text>
+<rect x="733" y="75" width="63" height="38" fill="#3572a5" stroke="#003467" stroke-width="1" class="tile" data-name="scan.py" data-size="14830" data-ext=".py" data-is-dir="0" />
+<rect x="733" y="75" width="63" height="38" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d78" />
+<text x="764.5" y="94.0" font-size="6" text-anchor="middle" dominant-baseline="middle" fill="#ffffff" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d78)" pointer-events="none">scan.py</text>
+<rect x="733" y="114" width="63" height="30" fill="#3572a5" stroke="#003467" stroke-width="1" class="tile" data-name="time.py" data-size="848" data-ext=".py" data-is-dir="0" />
+<rect x="733" y="114" width="63" height="30" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d79" />
+<text x="764.5" y="129.0" font-size="6" text-anchor="middle" dominant-baseline="middle" fill="#ffffff" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d79)" pointer-events="none">time.py</text>
+<rect x="506" y="57" width="292" height="89" fill="url(#d1)" pointer-events="none" />
+<rect x="506" y="147" width="59" height="52" fill="#3572a5" stroke="#003467" stroke-width="1" class="tile" data-name="hg_scanner.py" data-size="8619" data-ext=".py" data-is-dir="0" />
+<rect x="506" y="147" width="59" height="52" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d80" />
+<text x="535.5" y="173.0" font-size="6" text-anchor="middle" dominant-baseline="middle" fill="#ffffff" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d80)" pointer-events="none">hg_scanner.py</text>
+<rect x="506" y="200" width="59" height="52" fill="#3572a5" stroke="#003467" stroke-width="1" class="tile" data-name="k8s.py" data-size="9511" data-ext=".py" data-is-dir="0" />
+<rect x="506" y="200" width="59" height="52" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d81" />
+<text x="535.5" y="226.0" font-size="6" text-anchor="middle" dominant-baseline="middle" fill="#ffffff" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d81)" pointer-events="none">k8s.py</text>
+<rect x="506" y="253" width="59" height="41" fill="#3572a5" stroke="#003467" stroke-width="1" class="tile" data-name="main.py" data-size="740" data-ext=".py" data-is-dir="0" />
+<rect x="506" y="253" width="59" height="41" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d82" />
+<text x="535.5" y="273.5" font-size="6" text-anchor="middle" dominant-baseline="middle" fill="#ffffff" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d82)" pointer-events="none">main.py</text>
+<rect x="506" y="295" width="59" height="50" fill="#3572a5" stroke="#003467" stroke-width="1" class="tile" data-name="pathlist.py" data-size="5555" data-ext=".py" data-is-dir="0" />
+<rect x="506" y="295" width="59" height="50" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d83" />
+<text x="535.5" y="320.0" font-size="6" text-anchor="middle" dominant-baseline="middle" fill="#ffffff" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d83)" pointer-events="none">pathlist.py</text>
+<rect x="506" y="346" width="59" height="52" fill="#3572a5" stroke="#003467" stroke-width="1" class="tile" data-name="pipeline.py" data-size="8909" data-ext=".py" data-is-dir="0" />
+<rect x="506" y="346" width="59" height="52" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d84" />
+<text x="535.5" y="372.0" font-size="6" text-anchor="middle" dominant-baseline="middle" fill="#ffffff" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d84)" pointer-events="none">pipeline.py</text>
+<rect x="566" y="147" width="21" height="45" fill="#7f7f7f" stroke="#414141" stroke-width="1" class="tile" data-name="py.typed" data-size="1" data-ext=".typed" data-is-dir="0" />
+<rect x="566" y="147" width="21" height="45" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d85" />
+<text x="576.5" y="163.79999999999998" font-size="6" text-anchor="middle" fill="#ffffff" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d85)" pointer-events="none"><tspan x="576.5" dy="0">py</tspan><tspan x="576.5" dy="1.2em">.typ</tspan><tspan x="576.5" dy="1.2em">ed</tspan></text>
+<rect x="588" y="147" width="75" height="45" fill="#3572a5" stroke="#003467" stroke-width="1" class="tile" data-name="render_png.py" data-size="34958" data-ext=".py" data-is-dir="0" />
+<rect x="588" y="147" width="75" height="45" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d86" />
+<text x="625.5" y="169.5" font-size="7" text-anchor="middle" dominant-baseline="middle" fill="#ffffff" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d86)" pointer-events="none">render_png.py</text>
+<rect x="664" y="147" width="67" height="45" fill="#3572a5" stroke="#003467" stroke-width="1" class="tile" data-name="replay_scanner.py" data-size="6241" data-ext=".py" data-is-dir="0" />
+<rect x="664" y="147" width="67" height="45" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d87" />
+<text x="697.5" y="169.5" font-size="6" text-anchor="middle" dominant-baseline="middle" fill="#ffffff" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d87)" pointer-events="none">replay_scanner.py</text>
+<rect x="732" y="147" width="66" height="45" fill="#3572a5" stroke="#003467" stroke-width="1" class="tile" data-name="s3.py" data-size="5571" data-ext=".py" data-is-dir="0" />
+<rect x="732" y="147" width="66" height="45" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d88" />
+<text x="765.0" y="169.5" font-size="6" text-anchor="middle" dominant-baseline="middle" fill="#ffffff" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d88)" pointer-events="none">s3.py</text>
+<rect x="566" y="193" width="156" height="20" fill="#3572a5" stroke="#003467" stroke-width="1" class="tile" data-name="scanner.py" data-size="17724" data-ext=".py" data-is-dir="0" />
+<rect x="566" y="193" width="156" height="20" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d89" />
+<text x="644.0" y="203.0" font-size="14" text-anchor="middle" dominant-baseline="middle" fill="#ffffff" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d89)" pointer-events="none">scanner.py</text>
+<rect x="566" y="214" width="156" height="184" fill="none" stroke="white" stroke-width="1" />
+<rect x="567" y="215" width="154" height="182" fill="none" stroke="black" stroke-width="1" />
+<rect x="568" y="216" width="152" height="16" fill="#1c1c2e" class="dir-tile" data-name="sources" data-size="33181" data-is-dir="1" data-count="6" data-ext="" />
+<use xlink:href="#d90" />
+<text x="644.0" y="224.0" font-size="12" text-anchor="middle" dominant-baseline="middle" fill="#e0e0e0" font-family="JetBrains Mono, Consolas, monospace" font-weight="bold" clip-path="url(#d90)" pointer-events="none">sources</text>
+<rect x="568" y="232" width="153" height="165" fill="black" />
+<rect x="568" y="232" width="25" height="100" fill="#3572a5" stroke="#003467" stroke-width="1" class="tile" data-name="__init__.py" data-size="5168" data-ext=".py" data-is-dir="0" />
+<rect x="568" y="232" width="25" height="100" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d91" />
+<text x="580.5" y="276.3" font-size="6" text-anchor="middle" fill="#ffffff" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d91)" pointer-events="none"><tspan x="580.5" dy="0">_</tspan><tspan x="580.5" dy="1.2em">_init</tspan><tspan x="580.5" dy="1.2em">__.py</tspan></text>
+<rect x="594" y="232" width="126" height="100" fill="none" stroke="white" stroke-width="1" />
+<rect x="595" y="233" width="124" height="98" fill="none" stroke="black" stroke-width="1" />
+<rect x="596" y="234" width="122" height="16" fill="#1c1c2e" class="dir-tile" data-name="__pycache__" data-size="19201" data-is-dir="1" data-count="5" data-ext="" />
+<use xlink:href="#d92" />
+<text x="657.0" y="242.0" font-size="12" text-anchor="middle" dominant-baseline="middle" fill="#e0e0e0" font-family="JetBrains Mono, Consolas, monospace" font-weight="bold" clip-path="url(#d92)" pointer-events="none">__pycache__</text>
+<rect x="596" y="250" width="123" height="81" fill="black" />
+<rect x="596" y="250" width="49" height="41" fill="#ff9896" stroke="#c15a58" stroke-width="1" class="tile" data-name="__init__.cpython-312.pyc" data-size="6864" data-ext=".pyc" data-is-dir="0" />
+<rect x="596" y="250" width="49" height="41" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d93" />
+<text x="620.5" y="264.8" font-size="6" text-anchor="middle" fill="#000000" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d93)" pointer-events="none"><tspan x="620.5" dy="0">__init__</tspan><tspan x="620.5" dy="1.2em">.cpython</tspan><tspan x="620.5" dy="1.2em">-312.pyc</tspan></text>
+<rect x="596" y="292" width="49" height="38" fill="#ff9896" stroke="#c15a58" stroke-width="1" class="tile" data-name="archive.cpython-312.pyc" data-size="2661" data-ext=".pyc" data-is-dir="0" />
+<rect x="596" y="292" width="49" height="38" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d94" />
+<text x="620.5" y="305.3" font-size="6" text-anchor="middle" fill="#000000" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d94)" pointer-events="none"><tspan x="620.5" dy="0">archive</tspan><tspan x="620.5" dy="1.2em">.cpython</tspan><tspan x="620.5" dy="1.2em">-312.pyc</tspan></text>
+<rect x="646" y="250" width="36" height="53" fill="#ff9896" stroke="#c15a58" stroke-width="1" class="tile" data-name="filesystem.cpython-312.pyc" data-size="3974" data-ext=".pyc" data-is-dir="0" />
+<rect x="646" y="250" width="36" height="53" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d95" />
+<text x="664.0" y="267.20000000000005" font-size="6" text-anchor="middle" fill="#000000" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d95)" pointer-events="none"><tspan x="664.0" dy="0">filesyst</tspan><tspan x="664.0" dy="1.2em">em</tspan><tspan x="664.0" dy="1.2em">.cpython</tspan><tspan x="664.0" dy="1.2em">-312.pyc</tspan></text>
+<rect x="683" y="250" width="35" height="53" fill="#ff9896" stroke="#c15a58" stroke-width="1" class="tile" data-name="github.cpython-312.pyc" data-size="2527" data-ext=".pyc" data-is-dir="0" />
+<rect x="683" y="250" width="35" height="53" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d96" />
+<text x="700.5" y="270.8" font-size="6" text-anchor="middle" fill="#000000" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d96)" pointer-events="none"><tspan x="700.5" dy="0">github</tspan><tspan x="700.5" dy="1.2em">.cpython</tspan><tspan x="700.5" dy="1.2em">-312.pyc</tspan></text>
+<rect x="646" y="304" width="72" height="26" fill="#ff9896" stroke="#c15a58" stroke-width="1" class="tile" data-name="ssh.cpython-312.pyc" data-size="3175" data-ext=".pyc" data-is-dir="0" />
+<rect x="646" y="304" width="72" height="26" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d97" />
+<text x="682.0" y="314.55" font-size="7" text-anchor="middle" fill="#000000" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d97)" pointer-events="none"><tspan x="682.0" dy="0">ssh.cpython-312</tspan><tspan x="682.0" dy="1.2em">.pyc</tspan></text>
+<rect x="594" y="232" width="126" height="100" fill="url(#d1)" pointer-events="none" />
+<rect x="568" y="333" width="37" height="63" fill="#3572a5" stroke="#003467" stroke-width="1" class="tile" data-name="archive.py" data-size="1755" data-ext=".py" data-is-dir="0" />
+<rect x="568" y="333" width="37" height="63" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d98" />
+<text x="586.5" y="362.40000000000003" font-size="6" text-anchor="middle" fill="#ffffff" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d98)" pointer-events="none"><tspan x="586.5" dy="0">archive</tspan><tspan x="586.5" dy="1.2em">.py</tspan></text>
+<rect x="606" y="333" width="38" height="63" fill="#3572a5" stroke="#003467" stroke-width="1" class="tile" data-name="filesystem.py" data-size="2786" data-ext=".py" data-is-dir="0" />
+<rect x="606" y="333" width="38" height="63" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d99" />
+<text x="625.0" y="362.40000000000003" font-size="6" text-anchor="middle" fill="#ffffff" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d99)" pointer-events="none"><tspan x="625.0" dy="0">filesyste</tspan><tspan x="625.0" dy="1.2em">m.py</tspan></text>
+<rect x="645" y="333" width="36" height="63" fill="#3572a5" stroke="#003467" stroke-width="1" class="tile" data-name="github.py" data-size="1870" data-ext=".py" data-is-dir="0" />
+<rect x="645" y="333" width="36" height="63" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d100" />
+<text x="663.0" y="362.40000000000003" font-size="6" text-anchor="middle" fill="#ffffff" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d100)" pointer-events="none"><tspan x="663.0" dy="0">github</tspan><tspan x="663.0" dy="1.2em">.py</tspan></text>
+<rect x="682" y="333" width="38" height="63" fill="#3572a5" stroke="#003467" stroke-width="1" class="tile" data-name="ssh.py" data-size="2401" data-ext=".py" data-is-dir="0" />
+<rect x="682" y="333" width="38" height="63" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d101" />
+<text x="701.0" y="364.5" font-size="6" text-anchor="middle" dominant-baseline="middle" fill="#ffffff" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d101)" pointer-events="none">ssh.py</text>
+<rect x="566" y="214" width="156" height="184" fill="url(#d1)" pointer-events="none" />
+<rect x="723" y="193" width="75" height="39" fill="#3572a5" stroke="#003467" stroke-width="1" class="tile" data-name="ssh.py" data-size="7337" data-ext=".py" data-is-dir="0" />
+<rect x="723" y="193" width="75" height="39" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d102" />
+<text x="760.5" y="212.5" font-size="7" text-anchor="middle" dominant-baseline="middle" fill="#ffffff" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d102)" pointer-events="none">ssh.py</text>
+<rect x="723" y="233" width="75" height="44" fill="#3572a5" stroke="#003467" stroke-width="1" class="tile" data-name="svg_render.py" data-size="24915" data-ext=".py" data-is-dir="0" />
+<rect x="723" y="233" width="75" height="44" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d103" />
+<text x="760.5" y="255.0" font-size="7" text-anchor="middle" dominant-baseline="middle" fill="#ffffff" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d103)" pointer-events="none">svg_render.py</text>
+<rect x="723" y="278" width="75" height="35" fill="#3572a5" stroke="#003467" stroke-width="1" class="tile" data-name="terminal.py" data-size="1778" data-ext=".py" data-is-dir="0" />
+<rect x="723" y="278" width="75" height="35" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d104" />
+<text x="760.5" y="295.5" font-size="7" text-anchor="middle" dominant-baseline="middle" fill="#ffffff" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d104)" pointer-events="none">terminal.py</text>
+<rect x="723" y="314" width="75" height="42" fill="#3572a5" stroke="#003467" stroke-width="1" class="tile" data-name="vpath.py" data-size="12887" data-ext=".py" data-is-dir="0" />
+<rect x="723" y="314" width="75" height="42" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d105" />
+<text x="760.5" y="335.0" font-size="7" text-anchor="middle" dominant-baseline="middle" fill="#ffffff" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d105)" pointer-events="none">vpath.py</text>
+<rect x="723" y="357" width="75" height="41" fill="#3572a5" stroke="#003467" stroke-width="1" class="tile" data-name="watch.py" data-size="10521" data-ext=".py" data-is-dir="0" />
+<rect x="723" y="357" width="75" height="41" fill="url(#d0)" pointer-events="none" />
+<use xlink:href="#d106" />
+<text x="760.5" y="377.5" font-size="7" text-anchor="middle" dominant-baseline="middle" fill="#ffffff" font-family="JetBrains Mono, Consolas, monospace" clip-path="url(#d106)" pointer-events="none">watch.py</text>
+<rect x="0" y="0" width="800" height="400" fill="url(#d1)" pointer-events="none" />
+<g id="_dp_tip" visibility="hidden" pointer-events="none">
+<rect x="0" y="0" width="226" height="58" id="_dp_tip_bg" fill="#141424" rx="4" stroke="#606070" stroke-width="1" fill-opacity="0.72" />
+<text x="10" y="15" font-size="11" id="_dp_tip_l0" fill="#e8e8e8" font-family="JetBrains Mono, Consolas, monospace" font-weight="bold"></text>
+<text x="10" y="29" font-size="10" id="_dp_tip_l1" fill="#a0a8b0" font-family="JetBrains Mono, Consolas, monospace"></text>
+<text x="10" y="43" font-size="10" id="_dp_tip_l2" fill="#707880" font-family="JetBrains Mono, Consolas, monospace"></text>
+</g>
+<script>/*<![CDATA[*/(function () {
+  var TIP_W = 226, TIP_H = 58;
+
+  function humanSize(b) {
+    b = +b;
+    if (b < 1024)       return b + ' B';
+    if (b < 1048576)    return (b / 1024).toFixed(1) + ' KB';
+    if (b < 1073741824) return (b / 1048576).toFixed(1) + ' MB';
+    return (b / 1073741824).toFixed(2) + ' GB';
+  }
+
+  var tip, tipL0, tipL1, tipL2;
+
+  function init() {
+    tip  = document.getElementById('_dp_tip');
+    tipL0 = document.getElementById('_dp_tip_l0');
+    tipL1 = document.getElementById('_dp_tip_l1');
+    tipL2 = document.getElementById('_dp_tip_l2');
+    if (!tip) return;
+
+    document.querySelectorAll('.tile, .dir-tile').forEach(function (el) {
+      el.addEventListener('mouseenter', onEnter);
+      el.addEventListener('mousemove',  onMove);
+      el.addEventListener('mouseleave', onLeave);
+    });
+  }
+
+  function toSVGPt(evt) {
+    var svg = evt.currentTarget.ownerSVGElement || evt.currentTarget;
+    var pt  = svg.createSVGPoint();
+    pt.x = evt.clientX; pt.y = evt.clientY;
+    return pt.matrixTransform(svg.getScreenCTM().inverse());
+  }
+
+  function place(evt) {
+    var sp  = toSVGPt(evt);
+    var svg = evt.currentTarget.ownerSVGElement || evt.currentTarget;
+    var vb  = svg.viewBox.baseVal;
+    var tx  = sp.x + 14, ty = sp.y + 14;
+    if (tx + TIP_W + 4 > vb.width)  tx = sp.x - TIP_W - 6;
+    if (ty + TIP_H + 4 > vb.height) ty = sp.y - TIP_H - 6;
+    tip.setAttribute('transform', 'translate(' + tx + ',' + ty + ')');
+  }
+
+  function onEnter(evt) {
+    var d = evt.currentTarget.dataset;
+    var isDir = d.isDir === '1';
+    tipL0.textContent = d.name + (isDir ? '/' : '');
+    if (isDir) {
+      tipL1.textContent = humanSize(d.size) + ' total';
+      tipL2.textContent = (+d.count) + ' item' + (+d.count !== 1 ? 's' : '');
+    } else {
+      tipL1.textContent = humanSize(d.size);
+      tipL2.textContent = d.ext || '(no extension)';
+    }
+    place(evt);
+    tip.setAttribute('visibility', 'visible');
+  }
+
+  function onMove(evt)  { place(evt); }
+  function onLeave()    { tip.setAttribute('visibility', 'hidden'); }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
+/*]]>*/</script>
+</svg>
