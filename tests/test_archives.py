@@ -270,13 +270,13 @@ rar_cli = RAR_CLI
 skip_no_rar = pytest.mark.skipif(rar_cli is None, reason="rar CLI not installed or not runnable")
 
 
-def test_rar_probe_skips_hanging_cli(monkeypatch: pytest.MonkeyPatch) -> None:
-    def timeout(*args: object, **kwargs: object) -> subprocess.CompletedProcess[bytes]:
-        raise subprocess.TimeoutExpired("rar", 3)
-
-    monkeypatch.setattr("tests.conftest.shutil.which", lambda _name: "/fake/rar")
-    monkeypatch.setattr("tests.conftest.subprocess.run", timeout)
-
+def test_macos_rar_is_not_invoked_without_opt_in(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr("tests.conftest.sys.platform", "darwin")
+    monkeypatch.delenv("DIRPLOT_TEST_RAR", raising=False)
+    monkeypatch.setattr(
+        "tests.conftest.shutil.which",
+        lambda _name: pytest.fail("RAR lookup should be skipped on macOS"),
+    )
     assert _usable_rar_cli() is None
 
 

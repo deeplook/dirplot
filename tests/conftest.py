@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import io
+import os
 import shutil
 import subprocess
+import sys
 import tarfile
 import tempfile
 import zipfile
@@ -25,12 +27,18 @@ _SAMPLE_FILES: list[tuple[str, bytes]] = [
 
 
 def _usable_rar_cli() -> str | None:
-    """Return RAR CLI only if it can create a tiny archive within a timeout.
+    """Return a usable RAR CLI, without invoking it on macOS by default.
 
-    Merely finding an executable on PATH is not sufficient: macOS Gatekeeper
-    can block it, and some unusable binaries hang without output. Treat those
-    CLIs as unavailable so RAR fixtures remain optional.
+    Starting a Gatekeeper-blocked binary can open a system dialog even when
+    launched with a timeout. On macOS, require an explicit opt-in before any
+    RAR subprocess is run. Set DIRPLOT_TEST_RAR=1 to opt in. Elsewhere, a
+    bounded archive creation probe checks that the executable works.
     """
+    if sys.platform == "darwin":
+        if os.environ.get("DIRPLOT_TEST_RAR") != "1":
+            return None
+        return shutil.which("rar")
+
     rar_cli = shutil.which("rar")
     if rar_cli is None:
         return None
