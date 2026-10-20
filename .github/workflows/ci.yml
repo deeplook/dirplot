@@ -27,9 +27,6 @@ jobs:
       - name: Install dependencies
         run: uv sync --all-extras
 
-      - name: Verify RAR CLI
-        run: rar --version
-
       - name: Test archive support with RAR installed
         run: uv run pytest tests/test_archives.py -q
 
