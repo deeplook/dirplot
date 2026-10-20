@@ -7,6 +7,29 @@ on:
     branches: [main]
 
 jobs:
+  test-rar:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install RAR CLI
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes rar unrar
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+
+      - name: Set up Python 3.12
+        run: uv python install 3.12
+
+      - name: Install dependencies
+        run: uv sync --all-extras
+
+      - name: Test archive support with RAR installed
+        run: uv run pytest tests/test_archives.py -q
+
   test:
     runs-on: ubuntu-latest
     strategy:

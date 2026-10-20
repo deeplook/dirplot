@@ -14,7 +14,7 @@ from typer.testing import CliRunner
 
 from dirplot.archives import PasswordRequired, build_tree_archive, is_archive_path
 from dirplot.main import app
-from tests.conftest import ENCRYPTED_PASSWORD
+from tests.conftest import ENCRYPTED_PASSWORD, RAR_CLI, _usable_rar_cli
 
 # ---------------------------------------------------------------------------
 # is_archive_path
@@ -266,8 +266,35 @@ def test_7z_dotfile_skipped(tmp_path: Path) -> None:
 # RAR tests (skipped if the `rar` CLI is not installed)
 # ---------------------------------------------------------------------------
 
-rar_cli = shutil.which("rar")
-skip_no_rar = pytest.mark.skipif(rar_cli is None, reason="rar CLI not installed")
+rar_cli = RAR_CLI
+skip_no_rar = pytest.mark.skipif(rar_cli is None, reason="rar CLI not installed or not runnable")
+
+
+def test_macos_rar_gatekeeper_rejection_skips_cli(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr("tests.conftest.sys.platform", "darwin")
+    monkeypatch.delenv("DIRPLOT_TEST_RAR", raising=False)
+    monkeypatch.setattr("tests.conftest.shutil.which", lambda name: f"/fake/{name}")
+
+    def reject(*args: object, **kwargs: object) -> subprocess.CompletedProcess[bytes]:
+        assert args[0] == ["/fake/spctl", "--assess", "--type", "execute", "/fake/rar"]
+        return subprocess.CompletedProcess(args[0], 3, stdout=b"rejected", stderr=b"")
+
+    monkeypatch.setattr("tests.conftest.subprocess.run", reject)
+
+    assert _usable_rar_cli() is None
+
+
+def test_macos_rar_gatekeeper_acceptance_enables_cli(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr("tests.conftest.sys.platform", "darwin")
+    monkeypatch.delenv("DIRPLOT_TEST_RAR", raising=False)
+    monkeypatch.setattr("tests.conftest.shutil.which", lambda name: f"/fake/{name}")
+
+    def accept(*args: object, **kwargs: object) -> subprocess.CompletedProcess[bytes]:
+        return subprocess.CompletedProcess(args[0], 0, stdout=b"accepted", stderr=b"")
+
+    monkeypatch.setattr("tests.conftest.subprocess.run", accept)
+
+    assert _usable_rar_cli() == "/fake/rar"
 
 
 def _make_rar(tmp_path: Path, members: list[tuple[str, bytes]]) -> Path:
@@ -281,7 +308,11 @@ def _make_rar(tmp_path: Path, members: list[tuple[str, bytes]]) -> Path:
         dest.write_bytes(data)
     archive = tmp_path / "test.rar"
     subprocess.run(
-        [rar_cli, "a", "-r", str(archive), "."], cwd=src, check=True, capture_output=True
+        [rar_cli, "a", "-r", str(archive), "."],
+        cwd=src,
+        check=True,
+        capture_output=True,
+        timeout=15,
     )
     return archive
 
