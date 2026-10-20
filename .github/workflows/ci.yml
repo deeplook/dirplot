@@ -16,7 +16,7 @@ jobs:
       - name: Install RAR CLI
         run: |
           sudo apt-get update
-          sudo apt-get install --yes rar
+          sudo apt-get install --yes rar unrar
 
       - name: Install uv
         uses: astral-sh/setup-uv@v7
