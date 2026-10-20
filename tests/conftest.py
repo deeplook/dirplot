@@ -27,17 +27,31 @@ _SAMPLE_FILES: list[tuple[str, bytes]] = [
 
 
 def _usable_rar_cli() -> str | None:
-    """Return a usable RAR CLI, without invoking it on macOS by default.
+    """Return RAR CLI only when available and permitted by platform policy.
 
     Starting a Gatekeeper-blocked binary can open a system dialog even when
-    launched with a timeout. On macOS, require an explicit opt-in before any
-    RAR subprocess is run. Set DIRPLOT_TEST_RAR=1 to opt in. Elsewhere, a
-    bounded archive creation probe checks that the executable works.
+    launched with a timeout. On macOS, use ``spctl`` to assess the executable
+    without launching it. Set DIRPLOT_TEST_RAR=1 to override a rejected or
+    unavailable assessment. Elsewhere, a bounded archive creation probe checks
+    that the executable works.
     """
     if sys.platform == "darwin":
-        if os.environ.get("DIRPLOT_TEST_RAR") != "1":
+        rar_cli = shutil.which("rar")
+        if rar_cli is None:
             return None
-        return shutil.which("rar")
+        if os.environ.get("DIRPLOT_TEST_RAR") == "1":
+            return rar_cli
+        spctl = shutil.which("spctl") or "/usr/sbin/spctl"
+        try:
+            assessment = subprocess.run(
+                [spctl, "--assess", "--type", "execute", rar_cli],
+                capture_output=True,
+                timeout=5,
+                check=False,
+            )
+        except (OSError, subprocess.SubprocessError):
+            return None
+        return rar_cli if assessment.returncode == 0 else None
 
     rar_cli = shutil.which("rar")
     if rar_cli is None:
