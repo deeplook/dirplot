@@ -14,7 +14,7 @@ from typer.testing import CliRunner
 
 from dirplot.archives import PasswordRequired, build_tree_archive, is_archive_path
 from dirplot.main import app
-from tests.conftest import ENCRYPTED_PASSWORD
+from tests.conftest import ENCRYPTED_PASSWORD, RAR_CLI, _usable_rar_cli
 
 # ---------------------------------------------------------------------------
 # is_archive_path
@@ -266,8 +266,18 @@ def test_7z_dotfile_skipped(tmp_path: Path) -> None:
 # RAR tests (skipped if the `rar` CLI is not installed)
 # ---------------------------------------------------------------------------
 
-rar_cli = shutil.which("rar")
-skip_no_rar = pytest.mark.skipif(rar_cli is None, reason="rar CLI not installed")
+rar_cli = RAR_CLI
+skip_no_rar = pytest.mark.skipif(rar_cli is None, reason="rar CLI not installed or not runnable")
+
+
+def test_rar_probe_skips_hanging_cli(monkeypatch: pytest.MonkeyPatch) -> None:
+    def timeout(*args: object, **kwargs: object) -> subprocess.CompletedProcess[bytes]:
+        raise subprocess.TimeoutExpired("rar", 3)
+
+    monkeypatch.setattr("tests.conftest.shutil.which", lambda _name: "/fake/rar")
+    monkeypatch.setattr("tests.conftest.subprocess.run", timeout)
+
+    assert _usable_rar_cli() is None
 
 
 def _make_rar(tmp_path: Path, members: list[tuple[str, bytes]]) -> Path:
@@ -281,7 +291,11 @@ def _make_rar(tmp_path: Path, members: list[tuple[str, bytes]]) -> Path:
         dest.write_bytes(data)
     archive = tmp_path / "test.rar"
     subprocess.run(
-        [rar_cli, "a", "-r", str(archive), "."], cwd=src, check=True, capture_output=True
+        [rar_cli, "a", "-r", str(archive), "."],
+        cwd=src,
+        check=True,
+        capture_output=True,
+        timeout=15,
     )
     return archive
 

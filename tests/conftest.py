@@ -24,6 +24,38 @@ _SAMPLE_FILES: list[tuple[str, bytes]] = [
 ]
 
 
+def _usable_rar_cli() -> str | None:
+    """Return RAR CLI only if it can create a tiny archive within a timeout.
+
+    Merely finding an executable on PATH is not sufficient: macOS Gatekeeper
+    can block it, and some unusable binaries hang without output. Treat those
+    CLIs as unavailable so RAR fixtures remain optional.
+    """
+    rar_cli = shutil.which("rar")
+    if rar_cli is None:
+        return None
+    try:
+        with tempfile.TemporaryDirectory() as tmp:
+            probe_dir = Path(tmp)
+            source = probe_dir / "probe.txt"
+            source.write_text("probe", encoding="utf-8")
+            archive = probe_dir / "probe.rar"
+            subprocess.run(
+                [rar_cli, "a", str(archive), str(source)],
+                capture_output=True,
+                timeout=3,
+                check=True,
+            )
+            if not archive.is_file() or archive.stat().st_size == 0:
+                return None
+    except (OSError, subprocess.SubprocessError):
+        return None
+    return rar_cli
+
+
+RAR_CLI = _usable_rar_cli()
+
+
 def _zip_bytes() -> bytes:
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w") as zf:
@@ -103,8 +135,7 @@ def sample_archives(tmp_path_factory: pytest.TempPathFactory) -> dict[str, Path]
         archives[".7z"] = p
 
     # RAR (only if the rar CLI is available)
-    rar_cli = shutil.which("rar")
-    if rar_cli:
+    if RAR_CLI:
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
             for name, data in _SAMPLE_FILES:
@@ -112,10 +143,18 @@ def sample_archives(tmp_path_factory: pytest.TempPathFactory) -> dict[str, Path]
                 f.parent.mkdir(parents=True, exist_ok=True)
                 f.write_bytes(data)
             p = base / "sample.rar"
-            subprocess.run(
-                [rar_cli, "a", "-r", str(p), "."], cwd=tmp_path, check=True, capture_output=True
-            )
-            archives[".rar"] = p
+            try:
+                subprocess.run(
+                    [RAR_CLI, "a", "-r", str(p), "."],
+                    cwd=tmp_path,
+                    check=True,
+                    capture_output=True,
+                    timeout=15,
+                )
+            except (OSError, subprocess.SubprocessError):
+                pass
+            else:
+                archives[".rar"] = p
 
     # .tar.zst / .tzst (only if bsdtar with zstd support is available)
     bsdtar_cli = shutil.which("bsdtar")
@@ -212,8 +251,7 @@ def encrypted_archives(tmp_path_factory: pytest.TempPathFactory) -> dict[str, Pa
             archives[".zip"] = p
 
     # --- RAR with header encryption (requires rar CLI) ---
-    rar_cli = shutil.which("rar")
-    if rar_cli:
+    if RAR_CLI:
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
             for name, data in _SAMPLE_FILES:
@@ -221,13 +259,18 @@ def encrypted_archives(tmp_path_factory: pytest.TempPathFactory) -> dict[str, Pa
                 f.parent.mkdir(parents=True, exist_ok=True)
                 f.write_bytes(data)
             p = base / "encrypted.rar"
-            subprocess.run(
-                [rar_cli, "a", "-r", f"-hp{ENCRYPTED_PASSWORD}", str(p), "."],
-                cwd=str(tmp_path),
-                check=True,
-                capture_output=True,
-            )
-            archives[".rar"] = p
+            try:
+                subprocess.run(
+                    [RAR_CLI, "a", "-r", f"-hp{ENCRYPTED_PASSWORD}", str(p), "."],
+                    cwd=str(tmp_path),
+                    check=True,
+                    capture_output=True,
+                    timeout=15,
+                )
+            except (OSError, subprocess.SubprocessError):
+                pass
+            else:
+                archives[".rar"] = p
 
     return archives
 
