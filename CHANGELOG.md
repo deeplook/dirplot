@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Testing
+
+- **RAR archive coverage in CI** — a dedicated Ubuntu job installs `rar` and `unrar` and runs
+  the archive tests with RAR enabled. On macOS, tests assess `rar` with Gatekeeper before using it
+  and skip RAR coverage if macOS rejects it, avoiding blocked-executable popups.
+
 ### Added
 
 - **Manual reload and auto-reload controls in `serve`** — the web UI gained a toolbar **Reload**
