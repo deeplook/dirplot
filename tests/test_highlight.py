@@ -16,6 +16,14 @@ from dirplot.svg_render import create_treemap_svg
 runner = CliRunner()
 
 
+def _image_pixels(img: Image.Image) -> list[tuple[int, ...]]:
+    """Return pixels without using Pillow's deprecated ``getdata`` on new versions."""
+    get_flattened_data = getattr(img, "get_flattened_data", None)
+    if get_flattened_data is not None:
+        return list(get_flattened_data())
+    return list(img.getdata())
+
+
 # ---------------------------------------------------------------------------
 # resolve_highlight_specs
 # ---------------------------------------------------------------------------
@@ -144,7 +152,7 @@ def test_png_highlight_border_pixels(tmp_path: Path) -> None:
 
     # Check that at least one red-ish pixel exists in the image
     # (the highlight border is drawn in pure red (255, 0, 0))
-    pixels = list(img.getdata())
+    pixels = _image_pixels(img)
     assert any(r > 200 and g < 50 and b < 50 for r, g, b in pixels), (
         "Expected at least one red border pixel from the highlight"
     )
@@ -159,7 +167,7 @@ def test_png_no_highlight_no_red_border(tmp_path: Path) -> None:
     buf = create_treemap(root, width_px=400, height_px=300, cushion=False)
     img = Image.open(buf).convert("RGB")
 
-    pixels = list(img.getdata())
+    pixels = _image_pixels(img)
     # The Linguist palette for .py and .md does not use pure red
     pure_red = sum(1 for r, g, b in pixels if r > 240 and g < 20 and b < 20)
     assert pure_red == 0, f"Unexpected {pure_red} pure-red pixels without highlights"
@@ -181,7 +189,7 @@ def test_png_custom_color_highlight(tmp_path: Path) -> None:
         highlights={target: "green"},
     )
     img = Image.open(buf).convert("RGB")
-    pixels = list(img.getdata())
+    pixels = _image_pixels(img)
     # Expect at least one clearly greenish pixel
     assert any(g > 100 and r < 50 and b < 50 for r, g, b in pixels), "Expected green border pixels"
 

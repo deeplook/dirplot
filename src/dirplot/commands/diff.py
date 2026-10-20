@@ -57,7 +57,7 @@ def diff_cmd(
     fmt: str | None = typer.Option(
         None,
         "--format",
-        help="Output format: png or svg (inferred from --output extension if omitted)",
+        help="Output format: png, svg, or jxl (inferred from --output extension if omitted)",
         metavar="FORMAT",
     ),
     show: bool = typer.Option(True, "--show/--no-show", help="Display the image after rendering"),
@@ -469,13 +469,16 @@ def diff_cmd(
 
     # Resolve format
     if fmt is not None:
-        if fmt not in ("png", "svg"):
-            typer.echo(f"Unknown format '{fmt}'. Valid options: png, svg", err=True)
+        output_format = fmt.lower()
+        if output_format not in ("png", "svg", "jxl"):
+            typer.echo(f"Unknown format '{fmt}'. Valid options: png, svg, jxl", err=True)
             raise typer.Exit(1)
-        use_svg = fmt == "svg"
-    elif output is not None and output.suffix.lower() == ".svg":
-        use_svg = True
+        use_svg = output_format == "svg"
+    elif output is not None and output.suffix.lower() in (".svg", ".jxl"):
+        output_format = output.suffix.lower()[1:]
+        use_svg = output_format == "svg"
     else:
+        output_format = "png"
         use_svg = False
 
     label_a = title_a or Path(tree_a).name
@@ -513,12 +516,23 @@ def diff_cmd(
         )
     t_render = time.monotonic() - t_render_start
 
+    if output_format == "jxl":
+        from dirplot.image_formats import encode_jxl
+
+        try:
+            output_buf = encode_jxl(buf)
+        except RuntimeError as exc:
+            typer.echo(f"Error: {exc}", err=True)
+            raise typer.Exit(1) from None
+    else:
+        output_buf = buf
+
     if output is not None:
         if to_stdout:
-            sys.stdout.buffer.write(buf.read())
+            sys.stdout.buffer.write(output_buf.read())
             buf.seek(0)
         else:
-            output.write_bytes(buf.read())
+            output.write_bytes(output_buf.read())
             _info(f"Saved diff to {output}  [{t_render:.1f}s]")
             buf.seek(0)
 

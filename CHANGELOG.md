@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **JPEG XL output** — `map` and `diff` accept `--format jxl` or infer JXL from a `.jxl` output
+  filename. `git` and `hg` support `.jxl` for static snapshots, and `watch` supports `.jxl`
+  snapshots. Install the optional encoder with `pip install "dirplot[jxl]"`.
+
 - **Manual reload and auto-reload controls in `serve`** — the web UI gained a toolbar **Reload**
   button that rescans the source and updates the treemap in place (preserving the current zoom and
   without touching the sidebar). A new **Auto-reload** toggle in the Settings tab connects or

@@ -110,6 +110,43 @@ def test_cli_stdout_svg(sample_tree: Path) -> None:
     assert "<?xml" not in result.stderr
 
 
+def test_map_jxl_output(sample_tree: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    import dirplot.image_formats
+
+    monkeypatch.setattr(dirplot.image_formats, "encode_jxl", lambda _buf: BytesIO(b"mock-jxl"))
+    output = tmp_path / "map.jxl"
+    result = runner.invoke(
+        app, ["map", str(sample_tree), "--no-show", "--output", str(output), "--canvas", "100x100"]
+    )
+    assert result.exit_code == 0, result.output
+    assert output.read_bytes() == b"mock-jxl"
+
+
+def test_map_jxl_format_option(
+    sample_tree: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import dirplot.image_formats
+
+    monkeypatch.setattr(dirplot.image_formats, "encode_jxl", lambda _buf: BytesIO(b"mock-jxl"))
+    output = tmp_path / "map.data"
+    result = runner.invoke(
+        app,
+        [
+            "map",
+            str(sample_tree),
+            "--no-show",
+            "--output",
+            str(output),
+            "--format",
+            "jxl",
+            "--canvas",
+            "100x100",
+        ],
+    )
+    assert result.exit_code == 0, result.output
+    assert output.read_bytes() == b"mock-jxl"
+
+
 def test_cli_literal_dash_paths_after_separator(tmp_path: Path) -> None:
     for name in ("--no-color", "--legend"):
         target = tmp_path / name

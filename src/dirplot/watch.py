@@ -55,6 +55,7 @@ class TreemapEventHandler(FileSystemEventHandler):
         self.cushion = cushion
         self.dark = dark
         self.use_svg = snapshot is not None and snapshot.suffix.lower() == ".svg"
+        self.use_jxl = snapshot is not None and snapshot.suffix.lower() == ".jxl"
         self.logscale = logscale
         self.debounce = debounce
         self.output = output
@@ -140,6 +141,10 @@ class TreemapEventHandler(FileSystemEventHandler):
                     logscale=self.logscale,
                 )
                 if self.snapshot is not None:
+                    if self.use_jxl:
+                        from dirplot.image_formats import encode_jxl
+
+                        buf = encode_jxl(buf)
                     self.snapshot.write_bytes(buf.read())
                     print(f"Updated {self.snapshot}", file=sys.stderr)
             self._prev_rect_map = rect_map

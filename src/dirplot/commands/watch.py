@@ -44,7 +44,7 @@ def watch_cmd(
         None,
         "--snapshot",
         help=(
-            "Also write the current treemap as a PNG or SVG on each change. "
+            "Also write the current treemap as a PNG, SVG, or JXL on each change. "
             "Convenient for small trees; avoid on large directories as rendering adds latency."
         ),
         metavar="FILE",
@@ -117,7 +117,7 @@ def watch_cmd(
     """Watch directories and record filesystem events as JSONL for later replay.
 
     Use `dirplot replay` to turn the recording into an animated treemap.
-    Pass --snapshot to also write a live PNG/SVG on each change (best for small trees).
+    Pass --snapshot to also write a live PNG/SVG/JXL on each change (best for small trees).
 
     Example: dirplot watch src --output events.jsonl
     """
