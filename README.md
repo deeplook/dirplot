@@ -32,7 +32,7 @@ dirplot map . --inline # display inline in terminal (iTerm2 / Kitty / Ghostty)
 ## Features
 
 - Squarified treemap layout; file area proportional to size; per-extension colours (GitHub Linguist palette for known types, configurable Matplotlib colormap for the rest).
-- PNG, animated PNG (APNG), MP4, and MOV output for single frames and animations; interactive SVG for static maps; renders at terminal pixel size or a custom `WIDTHxHEIGHT`.
+- PNG, optional JPEG XL (JXL), animated PNG (APNG), MP4, and MOV output; interactive SVG for static maps; renders at terminal pixel size or a custom `WIDTHxHEIGHT`.
 - **Inline terminal display** — renders directly into iTerm2, Kitty, Ghostty, WezTerm, and Warp without opening a separate window; protocol auto-detected.
 - **Animate git history** (`dirplot git`), **Mercurial history** (`dirplot hg`), and **replay filesystem event logs** (`dirplot replay`) — output APNG, MP4, or MOV. **Watch live filesystems** (`dirplot watch`) with optional snapshot and event logging.
 - **Scan metrics** (`dirplot metrics`) — file/dir counts, total size, depth, top extensions by count or size, largest files and directories with percentage of total; JSON output supported.

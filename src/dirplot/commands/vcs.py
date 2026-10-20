@@ -410,8 +410,8 @@ def git_cmd(
                 "Error: animation --output must be a .png (APNG), .mp4, or .mov file.", err=True
             )
             raise typer.Exit(1)
-        if not is_animation and output.suffix.lower() not in {".png", ".svg"}:
-            typer.echo("Error: snapshot --output must be a .png or .svg file.", err=True)
+        if not is_animation and output.suffix.lower() not in {".png", ".svg", ".jxl"}:
+            typer.echo("Error: snapshot --output must be a .png, .svg, or .jxl file.", err=True)
             raise typer.Exit(1)
 
     period_dt: datetime | None = None
@@ -747,6 +747,14 @@ def git_cmd(
             display_inline(out_buf, cols=inline_cols)
         else:
             assert output is not None
+            if output.suffix.lower() == ".jxl":
+                from dirplot.image_formats import encode_jxl
+
+                try:
+                    out_buf = encode_jxl(out_buf)
+                except RuntimeError as exc:
+                    typer.echo(f"Error: {exc}", err=True)
+                    raise typer.Exit(1) from None
             output.write_bytes(out_buf.read())
             if not quiet:
                 typer.echo(f"Wrote {output}", err=True)
@@ -937,8 +945,8 @@ def hg_cmd(
                 "Error: animation --output must be a .png (APNG), .mp4, or .mov file.", err=True
             )
             raise typer.Exit(1)
-        if not is_animation and output.suffix.lower() not in {".png", ".svg"}:
-            typer.echo("Error: snapshot --output must be a .png or .svg file.", err=True)
+        if not is_animation and output.suffix.lower() not in {".png", ".svg", ".jxl"}:
+            typer.echo("Error: snapshot --output must be a .png, .svg, or .jxl file.", err=True)
             raise typer.Exit(1)
 
     period_dt: datetime | None = None
@@ -1214,6 +1222,14 @@ def hg_cmd(
             display_inline(out_buf, cols=inline_cols)
         else:
             assert output is not None
+            if output.suffix.lower() == ".jxl":
+                from dirplot.image_formats import encode_jxl
+
+                try:
+                    out_buf = encode_jxl(out_buf)
+                except RuntimeError as exc:
+                    typer.echo(f"Error: {exc}", err=True)
+                    raise typer.Exit(1) from None
             output.write_bytes(out_buf.read())
             if not quiet:
                 typer.echo(f"Wrote {output}", err=True)

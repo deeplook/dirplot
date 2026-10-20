@@ -36,6 +36,7 @@ Install only what you need:
 | `ssh` | Scan remote servers via SSH (adds [paramiko](https://www.paramiko.org/)) | `pip install "dirplot[ssh]"` |
 | `s3` | Scan AWS S3 buckets (adds [boto3](https://boto3.amazonaws.com/)) | `pip install "dirplot[s3]"` |
 | `libarchive` | Additional archive formats: `.tar.zst`, `.iso`, `.dmg`, `.rpm`, `.cab`, … (requires system [libarchive](https://libarchive.org/)) | `pip install "dirplot[libarchive]"` |
+| `jxl` | JPEG XL (`.jxl`) output for static treemaps and snapshots | `pip install "dirplot[jxl]"` |
 
 **Remote backend CLIs** — no Python package needed; dirplot shells out to these directly:
 
