@@ -3,7 +3,7 @@ FROM python:3.12.13-slim
 WORKDIR /app
 
 # Install build tools needed by some optional deps
-RUN pip install --no-cache-dir uv==0.11.3
+RUN pip install --no-cache-dir "uv>=0.13.4"
 
 # Copy project metadata first for layer caching
 COPY pyproject.toml README.md ./
